@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import {
+  persistGenerationToSupabase,
+  persistLineworkToSupabase,
   persistBillingEventToSupabase,
   listBillingHistoryFromSupabase,
   safePersistCreditEventToSupabase,
@@ -19,6 +21,10 @@ import { getAuthSession } from "./auth-core.mjs";
 const defaultFreeCredits = 3;
 const defaultStorePath = join(process.cwd(), "data", "inkfirst-store.json");
 const clientCookieName = "inkfirst_client_id";
+
+function hasSupabaseStore(env = process.env) {
+  return Boolean(env.NEXT_PUBLIC_SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY);
+}
 
 export function getStorePath(env = process.env) {
   return env.INKFIRST_STORE_PATH || defaultStorePath;
@@ -104,6 +110,15 @@ export async function getQuotaState(clientId, storePath = getStorePath()) {
     return supabaseResult.quota;
   }
 
+  if (!supabaseResult.skipped && hasSupabaseStore()) {
+    return {
+      freeRemaining: defaultFreeCredits,
+      paidRemaining: 0,
+      totalRemaining: defaultFreeCredits,
+      highResolution: false
+    };
+  }
+
   const store = await readStore(storePath);
   const client = ensureClient(store, clientId);
   await writeStore(store, storePath);
@@ -170,6 +185,29 @@ export async function mergeLocalAnonymousClientIntoUser(clientId, user, storePat
 }
 
 export async function consumeGenerationCredit(clientId, input, generation, storePath = getStorePath()) {
+  if (hasSupabaseStore()) {
+    const quota = await getQuotaState(clientId);
+
+    if (quota.totalRemaining <= 0) {
+      throw new Error("No generation credits remaining");
+    }
+
+    const nextQuota = {
+      ...quota,
+      freeRemaining: quota.freeRemaining > 0 ? quota.freeRemaining - 1 : quota.freeRemaining,
+      paidRemaining: quota.freeRemaining > 0 ? quota.paidRemaining : quota.paidRemaining - 1
+    };
+    nextQuota.totalRemaining = nextQuota.freeRemaining + nextQuota.paidRemaining;
+
+    const savedGeneration = buildSavedGeneration(clientId, input, generation);
+    await persistGenerationToSupabase(clientId, savedGeneration, nextQuota);
+
+    return {
+      generation: savedGeneration,
+      quota: nextQuota
+    };
+  }
+
   const store = await readStore(storePath);
   const client = ensureClient(store, clientId);
   await syncClientFromSupabase(clientId, client);
@@ -186,7 +224,20 @@ export async function consumeGenerationCredit(clientId, input, generation, store
 
   client.updatedAt = nowIso();
 
-  const savedGeneration = {
+  const savedGeneration = buildSavedGeneration(clientId, input, generation);
+
+  store.generations.unshift(savedGeneration);
+  await writeStore(store, storePath);
+  await safePersistGenerationToSupabase(clientId, savedGeneration, toQuota(client));
+
+  return {
+    generation: savedGeneration,
+    quota: toQuota(client)
+  };
+}
+
+function buildSavedGeneration(clientId, input, generation) {
+  return {
     id: `gen_${randomUUID()}`,
     clientId,
     providerGenerationId: generation.id,
@@ -204,15 +255,6 @@ export async function consumeGenerationCredit(clientId, input, generation, store
       complexity: input.complexity
     },
     createdAt: nowIso()
-  };
-
-  store.generations.unshift(savedGeneration);
-  await writeStore(store, storePath);
-  await safePersistGenerationToSupabase(clientId, savedGeneration, toQuota(client));
-
-  return {
-    generation: savedGeneration,
-    quota: toQuota(client)
   };
 }
 
@@ -232,6 +274,35 @@ export async function getGeneration(clientId, generationId, storePath = getStore
 }
 
 export async function consumeLineworkCredit(clientId, generationId, linework, storePath = getStorePath()) {
+  if (hasSupabaseStore()) {
+    const generation = await getGeneration(clientId, generationId);
+
+    if (!generation) {
+      throw new Error("Saved generation was not found");
+    }
+
+    const quota = await getQuotaState(clientId);
+
+    if (quota.totalRemaining <= 0) {
+      throw new Error("No generation credits remaining");
+    }
+
+    const nextQuota = {
+      ...quota,
+      freeRemaining: quota.freeRemaining > 0 ? quota.freeRemaining - 1 : quota.freeRemaining,
+      paidRemaining: quota.freeRemaining > 0 ? quota.paidRemaining : quota.paidRemaining - 1
+    };
+    nextQuota.totalRemaining = nextQuota.freeRemaining + nextQuota.paidRemaining;
+
+    const updatedGeneration = applyLineworkToGeneration(generation, linework);
+    await persistLineworkToSupabase(clientId, updatedGeneration, nextQuota);
+
+    return {
+      generation: { ...updatedGeneration },
+      quota: nextQuota
+    };
+  }
+
   const store = await readStore(storePath);
   const client = ensureClient(store, clientId);
   await syncClientFromSupabase(clientId, client);
@@ -266,6 +337,18 @@ export async function consumeLineworkCredit(clientId, generationId, linework, st
   }
 
   client.updatedAt = nowIso();
+  applyLineworkToGeneration(generation, linework);
+
+  await writeStore(store, storePath);
+  await safePersistLineworkToSupabase(clientId, generation, toQuota(client));
+
+  return {
+    generation: { ...generation },
+    quota: toQuota(client)
+  };
+}
+
+function applyLineworkToGeneration(generation, linework) {
   generation.images = {
     ...generation.images,
     linework: linework.images?.linework
@@ -277,13 +360,7 @@ export async function consumeLineworkCredit(clientId, generationId, linework, st
   generation.lineworkPrompt = linework.prompt;
   generation.updatedAt = nowIso();
 
-  await writeStore(store, storePath);
-  await safePersistLineworkToSupabase(clientId, generation, toQuota(client));
-
-  return {
-    generation: { ...generation },
-    quota: toQuota(client)
-  };
+  return generation;
 }
 
 export async function addPaidCredits(clientId, credits, metadata = {}, storePath = getStorePath()) {

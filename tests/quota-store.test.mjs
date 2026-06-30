@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { access, mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -21,6 +21,15 @@ async function run(name, testBody) {
   } catch (error) {
     console.error(`FAIL ${name}`);
     throw error;
+  }
+}
+
+async function fileExists(path) {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -203,5 +212,59 @@ await run("linework generation is blocked when no credits remain", async () => {
 
     const record = await getGeneration("client-a", first.generation.id, storePath);
     assert.equal(record.images.linework, "/assets/hero-linework.png");
+  });
+});
+await run("Supabase-backed generation does not write local store when quota row is missing", async () => {
+  await withTempStore(async (storePath) => {
+    const originalFetch = globalThis.fetch;
+    const originalEnv = {
+      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      SUPABASE_STORAGE_BUCKET: process.env.SUPABASE_STORAGE_BUCKET
+    };
+    const calls = [];
+
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
+    process.env.SUPABASE_STORAGE_BUCKET = "inkfirst-designs";
+    globalThis.fetch = async (url, options = {}) => {
+      calls.push({ url: String(url), method: options.method ?? "GET" });
+
+      if (String(url).includes("/anonymous_clients?") && (options.method ?? "GET") === "GET") {
+        return new Response("[]", { status: 200 });
+      }
+
+      if (String(url).includes("/generations?select=id")) {
+        return Response.json([{ id: "00000000-0000-4000-8000-000000000001" }]);
+      }
+
+      return new Response("null", { status: 200 });
+    };
+
+    try {
+      const localAssetGeneration = {
+        ...generation,
+        images: {
+          concept: "/assets/hero-concept.png",
+          linework: "/assets/hero-linework.png",
+          placement: "/assets/hero-placement.png"
+        }
+      };
+      const result = await consumeGenerationCredit("client-supabase", input, localAssetGeneration, storePath);
+
+      assert.equal(result.quota.freeRemaining, 2);
+      assert.equal(await fileExists(storePath), false);
+      assert.equal(calls.some((call) => call.url.includes("/generations?select=id")), true);
+      assert.equal(calls.some((call) => call.url.includes("/storage/v1/object/inkfirst-designs/")), true);
+    } finally {
+      globalThis.fetch = originalFetch;
+      for (const [key, value] of Object.entries(originalEnv)) {
+        if (value === undefined) {
+          delete process.env[key];
+        } else {
+          process.env[key] = value;
+        }
+      }
+    }
   });
 });

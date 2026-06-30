@@ -13,16 +13,17 @@ function json(body, status, session) {
 }
 
 export async function POST(request) {
-  const session = getClientSession(request.headers.get("cookie") ?? "");
-  const body = await request.json();
+  try {
+    const session = getClientSession(request.headers.get("cookie") ?? "");
+    const body = await request.json();
 
-  if (!body.idea?.trim()) {
+    if (!body.idea?.trim()) {
     return json({ error: "Tattoo idea is required." }, 400, session);
   }
 
-  const quota = await getQuotaState(session.ownerId);
+    const quota = await getQuotaState(session.ownerId);
 
-  if (quota.totalRemaining <= 0) {
+    if (quota.totalRemaining <= 0) {
     return json(
       {
         error: "No free generations remaining. Upgrade to continue generating tattoo ideas.",
@@ -33,15 +34,15 @@ export async function POST(request) {
     );
   }
 
-  const generation = await createGeneration({ ...body, idea: body.idea.trim() });
+    const generation = await createGeneration({ ...body, idea: body.idea.trim() });
 
-  if ("error" in generation) {
+    if ("error" in generation) {
     return json(generation, 501, session);
   }
 
-  const saved = await consumeGenerationCredit(session.ownerId, body, generation);
+    const saved = await consumeGenerationCredit(session.ownerId, body, generation);
 
-  return json(
+    return json(
     {
       ...generation,
       savedGenerationId: saved.generation.id,
@@ -49,5 +50,12 @@ export async function POST(request) {
     },
     200,
     session
-  );
+    );
+  } catch (error) {
+    return json(
+      { error: error.message ?? "Could not complete generation. Please try again." },
+      500,
+      typeof session !== "undefined" ? session : null
+    );
+  }
 }

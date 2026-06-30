@@ -14,22 +14,23 @@ function json(body, status, session) {
 }
 
 export async function POST(request) {
-  const session = getClientSession(request.headers.get("cookie") ?? "");
-  const body = await request.json();
+  try {
+    const session = getClientSession(request.headers.get("cookie") ?? "");
+    const body = await request.json();
 
-  if (!body.generationId) {
+    if (!body.generationId) {
     return json({ error: "Saved generation id is required." }, 400, session);
   }
 
-  const savedGeneration = await getGeneration(session.ownerId, body.generationId);
+    const savedGeneration = await getGeneration(session.ownerId, body.generationId);
 
-  if (!savedGeneration) {
+    if (!savedGeneration) {
     return json({ error: "Saved generation was not found." }, 404, session);
   }
 
-  const quota = await getQuotaState(session.ownerId);
+    const quota = await getQuotaState(session.ownerId);
 
-  if (quota.totalRemaining <= 0) {
+    if (quota.totalRemaining <= 0) {
     return json(
       {
         error: "No generation credits remaining. Upgrade to create linework.",
@@ -40,15 +41,15 @@ export async function POST(request) {
     );
   }
 
-  const linework = await createLineworkGeneration(savedGeneration);
+    const linework = await createLineworkGeneration(savedGeneration);
 
-  if ("error" in linework) {
+    if ("error" in linework) {
     return json(linework, 501, session);
   }
 
-  const updated = await consumeLineworkCredit(session.ownerId, body.generationId, linework);
+    const updated = await consumeLineworkCredit(session.ownerId, body.generationId, linework);
 
-  return json(
+    return json(
     {
       ...linework,
       generation: updated.generation,
@@ -56,5 +57,12 @@ export async function POST(request) {
     },
     200,
     session
-  );
+    );
+  } catch (error) {
+    return json(
+      { error: error.message ?? "Could not complete generation. Please try again." },
+      500,
+      typeof session !== "undefined" ? session : null
+    );
+  }
 }
