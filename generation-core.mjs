@@ -257,7 +257,7 @@ async function createReplicateLineworkGeneration(generation, env = process.env, 
     prompt: buildLineworkPrompt(generation),
     control_image: conceptImage,
     aspect_ratio: "1:1",
-    output_format: "webp",
+    output_format: "png",
     output_quality: 90
   });
 

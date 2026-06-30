@@ -121,6 +121,7 @@ await run("replicate linework generation uses the saved concept image", async ()
 
   assert.equal(calls[0].url, "https://api.replicate.com/v1/models/black-forest-labs/flux-canny-pro/predictions");
   assert.equal(body.input.control_image, "https://replicate.delivery/concept.webp");
+  assert.equal(body.input.output_format, "png");
   assert.match(body.input.prompt, /clean black tattoo stencil linework/);
   assert.match(body.input.prompt, /black ink only/);
   assert.match(body.input.prompt, /no grey/);
