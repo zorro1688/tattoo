@@ -125,6 +125,8 @@ await run("replicate linework generation uses the saved concept image", async ()
   assert.match(body.input.prompt, /clean black tattoo stencil linework/);
   assert.match(body.input.prompt, /black ink only/);
   assert.match(body.input.prompt, /no grey/);
+  assert.match(body.input.prompt, /no background rectangle/);
+  assert.match(body.input.prompt, /remove all lighting, shadows, paper texture/);
   assert.match(body.input.prompt, /preserve the original subject and composition/);
   assert.match(body.input.prompt, /do not add new symbols/);
   assert.equal(linework.images.linework, "https://replicate.delivery/linework.webp");

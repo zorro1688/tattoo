@@ -1107,25 +1107,54 @@ textarea {
 }
 
 .design-preview-frame.placement {
-  background: #d5b093;
+  background: #f7f2ee;
+}
+
+#detailLineworkImage {
+  background: #fff;
+  filter: grayscale(1) contrast(1.72) brightness(1.14);
 }
 
 .detail-placement-mockup {
   position: absolute;
   inset: 0;
   overflow: hidden;
+  background:
+    radial-gradient(circle at 62% 28%, rgba(255, 255, 255, 0.92) 0 12%, transparent 28%),
+    linear-gradient(135deg, #f8f3ef, #ead3c3);
 }
 
-.detail-placement-skin,
+.detail-placement-skin {
+  display: none;
+}
+
+.detail-placement-mockup::before,
+.detail-placement-mockup::after,
 .detail-placement-tattoo {
   position: absolute;
 }
 
-.detail-placement-skin {
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.detail-placement-mockup::before {
+  content: "";
+  left: 50%;
+  top: -3%;
+  width: 34%;
+  height: 106%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #dca77f 0%, #f7c9a8 44%, #ffd8bd 58%, #c9916f 100%);
+  box-shadow: 18px 28px 54px rgba(92, 58, 38, 0.18);
+  transform: translateX(-50%) rotate(8deg);
+}
+
+.detail-placement-mockup::after {
+  content: "";
+  left: 51%;
+  top: 7%;
+  width: 6%;
+  height: 82%;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(8deg);
 }
 
 .detail-placement-tattoo {
@@ -1148,6 +1177,50 @@ textarea {
 .detail-placement-mockup[data-size="large"] .detail-placement-tattoo {
   width: 164px;
   height: 164px;
+}
+
+.detail-placement-mockup[data-placement="upper-arm"]::before {
+  width: 42%;
+  height: 112%;
+  top: -6%;
+  transform: translateX(-50%) rotate(-6deg);
+}
+
+.detail-placement-mockup[data-placement="wrist"]::before,
+.detail-placement-mockup[data-placement="ankle"]::before {
+  left: 43%;
+  width: 24%;
+  height: 120%;
+  top: -9%;
+  transform: translateX(-50%) rotate(4deg);
+}
+
+.detail-placement-mockup[data-placement="shoulder"]::before {
+  left: 54%;
+  top: 12%;
+  width: 78%;
+  height: 78%;
+  border-radius: 48% 52% 44% 50%;
+  transform: translateX(-50%) rotate(-16deg);
+}
+
+.detail-placement-mockup[data-placement="chest"]::before,
+.detail-placement-mockup[data-placement="back"]::before {
+  left: 50%;
+  top: 12%;
+  width: 78%;
+  height: 88%;
+  border-radius: 34% 34% 18% 18%;
+  transform: translateX(-50%);
+}
+
+.detail-placement-mockup[data-placement="rib"]::before {
+  left: 56%;
+  top: -5%;
+  width: 52%;
+  height: 114%;
+  border-radius: 999px;
+  transform: translateX(-50%) rotate(10deg);
 }
 
 .detail-placement-mockup[data-placement="wrist"] .detail-placement-tattoo,
@@ -2372,15 +2445,46 @@ textarea {
 }
 
 .hero-placement-mockup {
-  background: #d5b093;
+  background:
+    radial-gradient(circle at 62% 28%, rgba(255, 255, 255, 0.92) 0 12%, transparent 28%),
+    linear-gradient(135deg, #f8f3ef, #ead3c3);
 }
 
 .hero-placement-skin {
+  display: none;
+}
+
+.hero-placement-mockup::before,
+.hero-placement-mockup::after,
+.hero-placement-tattoo {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+}
+
+.hero-placement-mockup::before {
+  content: "";
+  left: 50%;
+  top: -3%;
+  width: 34%;
+  height: 106%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #dca77f 0%, #f7c9a8 44%, #ffd8bd 58%, #c9916f 100%);
+  box-shadow: 18px 28px 54px rgba(92, 58, 38, 0.18);
+  transform: translateX(-50%) rotate(8deg);
+}
+
+.hero-placement-mockup::after {
+  content: "";
+  left: 51%;
+  top: 7%;
+  width: 6%;
+  height: 82%;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(8deg);
+}
+
+.hero-preview-image-linework {
+  filter: grayscale(1) contrast(1.72) brightness(1.14);
 }
 
 .hero-placement-tattoo {
@@ -2409,6 +2513,50 @@ textarea {
 .hero-placement-mockup[data-size="large"] .hero-placement-tattoo {
   width: 164px;
   height: 164px;
+}
+
+.hero-placement-mockup[data-placement="upper-arm"]::before {
+  width: 42%;
+  height: 112%;
+  top: -6%;
+  transform: translateX(-50%) rotate(-6deg);
+}
+
+.hero-placement-mockup[data-placement="wrist"]::before,
+.hero-placement-mockup[data-placement="ankle"]::before {
+  left: 43%;
+  width: 24%;
+  height: 120%;
+  top: -9%;
+  transform: translateX(-50%) rotate(4deg);
+}
+
+.hero-placement-mockup[data-placement="shoulder"]::before {
+  left: 54%;
+  top: 12%;
+  width: 78%;
+  height: 78%;
+  border-radius: 48% 52% 44% 50%;
+  transform: translateX(-50%) rotate(-16deg);
+}
+
+.hero-placement-mockup[data-placement="chest"]::before,
+.hero-placement-mockup[data-placement="back"]::before {
+  left: 50%;
+  top: 12%;
+  width: 78%;
+  height: 88%;
+  border-radius: 34% 34% 18% 18%;
+  transform: translateX(-50%);
+}
+
+.hero-placement-mockup[data-placement="rib"]::before {
+  left: 56%;
+  top: -5%;
+  width: 52%;
+  height: 114%;
+  border-radius: 999px;
+  transform: translateX(-50%) rotate(10deg);
 }
 
 .hero-placement-mockup[data-placement="forearm"] .hero-placement-tattoo,

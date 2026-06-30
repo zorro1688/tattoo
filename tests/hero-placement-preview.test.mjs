@@ -25,6 +25,16 @@ await run("homepage script drives placement overlay from generated images", asyn
   assert.match(script, /heroPlacementMockup/);
   assert.match(script, /heroPlacementTattoo/);
   assert.match(script, /updatePlacementPreview/);
+  assert.match(script, /drawPlacementSkinMockup/);
   assert.match(script, /getGeneratedImage\("linework"\) \|\| getConceptPreviewImage\(\)/);
+  assert.doesNotMatch(script, /loadDrawableImage\(skinUrl\)/);
 });
 
+
+await run("homepage placement mockup changes body shapes by placement", async () => {
+  const styles = await readFile("styles.css", "utf8");
+
+  assert.ok(styles.includes("hero-placement-skin {\n  display: none;"));
+  assert.ok(styles.includes('.hero-placement-mockup[data-placement="chest"]::before'));
+  assert.ok(styles.includes('.hero-placement-mockup[data-placement="wrist"]::before'));
+});

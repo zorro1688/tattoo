@@ -209,8 +209,9 @@ function buildLineworkPrompt(generation) {
   return [
     `Create clean black tattoo stencil linework from this ${style.toLowerCase()} ${size.toLowerCase()} tattoo concept of ${idea}.`,
     `preserve the original subject and composition for ${placement.toLowerCase()} placement.`,
-    "black ink only, white background, crisp thin outlines, tattoo flash stencil style.",
-    "no shading, no grey, no gradients, no color, no skin, no mockup, no text.",
+    "black ink only, pure white background, crisp thin outlines, tattoo flash stencil style.",
+    "only black vector-like contour lines; remove all lighting, shadows, paper texture, and tonal background.",
+    "no shading, no grey, no gradients, no color, no skin, no mockup, no text, no background rectangle.",
     "do not add new symbols, do not change the subject, do not add extra decorative elements.",
     "keep it readable as a tattoo artist reference and stencil draft."
   ].join(" ");

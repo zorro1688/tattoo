@@ -205,6 +205,91 @@ function loadDrawableImage(url) {
   });
 }
 
+
+function drawRoundedRect(context, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  context.beginPath();
+  context.moveTo(x + r, y);
+  context.lineTo(x + width - r, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + r);
+  context.lineTo(x + width, y + height - r);
+  context.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+  context.lineTo(x + r, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - r);
+  context.lineTo(x, y + r);
+  context.quadraticCurveTo(x, y, x + r, y);
+  context.closePath();
+}
+
+function getPlacementSkinLayout(canvasSize, selectedPlacement) {
+  const base = {
+    x: canvasSize * 0.5,
+    y: canvasSize * 0.5,
+    width: canvasSize * 0.34,
+    height: canvasSize * 1.02,
+    rotation: 8,
+    radius: canvasSize * 0.17,
+    kind: "limb"
+  };
+  const layouts = {
+    forearm: base,
+    "upper-arm": { ...base, width: canvasSize * 0.42, height: canvasSize * 1.08, rotation: -6, radius: canvasSize * 0.2 },
+    wrist: { ...base, width: canvasSize * 0.24, height: canvasSize * 1.18, x: canvasSize * 0.43, rotation: 4, radius: canvasSize * 0.12 },
+    ankle: { ...base, width: canvasSize * 0.28, height: canvasSize * 1.22, x: canvasSize * 0.44, rotation: -3, radius: canvasSize * 0.14 },
+    shoulder: { x: canvasSize * 0.54, y: canvasSize * 0.5, width: canvasSize * 0.78, height: canvasSize * 0.78, rotation: -16, radius: canvasSize * 0.36, kind: "shoulder" },
+    chest: { x: canvasSize * 0.5, y: canvasSize * 0.54, width: canvasSize * 0.76, height: canvasSize * 0.86, rotation: 0, radius: canvasSize * 0.16, kind: "torso" },
+    back: { x: canvasSize * 0.5, y: canvasSize * 0.54, width: canvasSize * 0.82, height: canvasSize * 0.9, rotation: 0, radius: canvasSize * 0.18, kind: "torso" },
+    rib: { x: canvasSize * 0.56, y: canvasSize * 0.52, width: canvasSize * 0.52, height: canvasSize * 1.12, rotation: 10, radius: canvasSize * 0.24, kind: "rib" }
+  };
+
+  return layouts[selectedPlacement] ?? base;
+}
+
+function drawPlacementSkinMockup(context, canvasSize, selectedPlacement) {
+  context.fillStyle = "#f7f2ee";
+  context.fillRect(0, 0, canvasSize, canvasSize);
+
+  const softShadow = context.createRadialGradient(
+    canvasSize * 0.62,
+    canvasSize * 0.35,
+    canvasSize * 0.08,
+    canvasSize * 0.55,
+    canvasSize * 0.52,
+    canvasSize * 0.62
+  );
+  softShadow.addColorStop(0, "rgba(255, 255, 255, 0.9)");
+  softShadow.addColorStop(1, "rgba(215, 178, 152, 0.26)");
+  context.fillStyle = softShadow;
+  context.fillRect(0, 0, canvasSize, canvasSize);
+
+  const layout = getPlacementSkinLayout(canvasSize, selectedPlacement);
+  context.save();
+  context.translate(layout.x, layout.y);
+  context.rotate((layout.rotation * Math.PI) / 180);
+
+  const skin = context.createLinearGradient(-layout.width / 2, 0, layout.width / 2, 0);
+  skin.addColorStop(0, "#e7b994");
+  skin.addColorStop(0.42, "#f4c7a5");
+  skin.addColorStop(0.58, "#ffd8bd");
+  skin.addColorStop(1, "#cf9875");
+
+  context.shadowColor = "rgba(92, 58, 38, 0.18)";
+  context.shadowBlur = canvasSize * 0.04;
+  context.shadowOffsetX = canvasSize * 0.02;
+  context.shadowOffsetY = canvasSize * 0.03;
+  context.fillStyle = skin;
+
+  if (layout.kind === "shoulder") {
+    context.beginPath();
+    context.ellipse(0, 0, layout.width / 2, layout.height / 2, 0, 0, Math.PI * 2);
+    context.fill();
+  } else {
+    drawRoundedRect(context, -layout.width / 2, -layout.height / 2, layout.width, layout.height, layout.radius);
+    context.fill();
+  }
+  context.restore();
+}
+
 function getPlacementTattooBox(canvasSize) {
   const sizeScale = {
     small: 0.18,
@@ -243,18 +328,13 @@ async function downloadPlacementPreview() {
     : currentDesign.images?.concept || "assets/hero-concept.png";
 
   try {
-    const [skinImage, tattooImage] = await Promise.all([
-      loadDrawableImage("assets/hero-forearm-clean.png"),
-      loadDrawableImage(tattooUrl)
-    ]);
+    const tattooImage = await loadDrawableImage(tattooUrl);
     const canvas = document.createElement("canvas");
     canvas.width = downloadAccess.highResolution ? 1200 : 900;
     canvas.height = downloadAccess.highResolution ? 1200 : 900;
     const context = canvas.getContext("2d");
-    const cropSize = Math.min(skinImage.naturalWidth, skinImage.naturalHeight);
-    const cropX = (skinImage.naturalWidth - cropSize) / 2;
-    const cropY = (skinImage.naturalHeight - cropSize) / 2;
-    context.drawImage(skinImage, cropX, cropY, cropSize, cropSize, 0, 0, canvas.width, canvas.height);
+    const selectedPlacement = normalizeDataValue(currentDesign?.input?.placement ?? "Forearm");
+    drawPlacementSkinMockup(context, canvas.width, selectedPlacement);
 
     const tattooBox = getPlacementTattooBox(canvas.width);
     context.save();

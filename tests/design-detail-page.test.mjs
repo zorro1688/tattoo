@@ -33,6 +33,7 @@ await run("design detail script loads one saved generation and supports linework
   assert.match(script, /\/api\/generation\?id=/);
   assert.match(script, /\/api\/generate\/linework/);
   assert.match(script, /downloadPlacementPreview/);
+  assert.match(script, /drawPlacementSkinMockup/);
   assert.match(script, /renderDesign/);
   assert.match(script, /renderDownloadAccessActions/);
   assert.match(script, /Download high-res/);
@@ -93,4 +94,19 @@ await run("design detail does not show concept art as generated linework", async
     assert.match(source, /detailLineworkEmpty\.hidden = lineworkReady/);
     assert.doesNotMatch(source, /lineworkReady \? design\.images\?\.linework : conceptImage/);
   }
+});
+await run("design detail placement preview does not depend on the fixed forearm photo", async () => {
+  const script = await readFile("design.js", "utf8");
+  const publicScript = await readFile("public/design.js", "utf8");
+  const styles = await readFile("styles.css", "utf8");
+
+  for (const source of [script, publicScript]) {
+    assert.match(source, /drawPlacementSkinMockup/);
+    assert.ok(!source.includes('loadDrawableImage("assets/hero-forearm-clean.png")'));
+  }
+
+  assert.match(styles, /#detailLineworkImage/);
+  assert.ok(styles.includes("detail-placement-skin {\n  display: none;"));
+  assert.ok(styles.includes('.detail-placement-mockup[data-placement="chest"]::before'));
+  assert.ok(styles.includes('.detail-placement-mockup[data-placement="rib"]::before'));
 });
