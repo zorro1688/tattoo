@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>My Designs | InkFirst</title>
+    <meta name="description" content="View your saved InkFirst tattoo designs, prompts, placement notes, and generated tattoo references." />
+    <link rel="canonical" href="/my-designs" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="InkFirst home">
+        <span class="brand-mark">InkFirst</span>
+      </a>
+      <nav class="topnav" aria-label="My Designs navigation">
+        <a href="/#generator">Generator</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/my-designs" aria-current="page">My Designs</a>
+      </nav>
+      <a class="nav-cta" href="/#generator">Generate</a>
+    </header>
+
+    <main>
+      <section class="my-designs-page">
+        <div class="section-heading center">
+          <span>My designs</span>
+          <h1>Your Tattoo Designs</h1>
+          <p>Review saved concepts, prompts, style choices, and placement notes from this browser.</p>
+          <p class="account-note" data-auth-account-note>Sign in to keep designs across devices.</p>
+        </div>
+
+        <div class="my-designs-toolbar">
+          <a class="primary-button" href="/#generator">Generate a new tattoo idea</a>
+          <p id="designsStatus" role="status" aria-live="polite">Linework uses 1 credit. Loading your saved designs...</p>
+        </div>
+
+        <div class="my-designs-grid" id="myDesignsGrid">
+          <article class="my-designs-empty">
+            <h3>No saved designs yet</h3>
+            <p>No saved designs yet. Generate your first tattoo idea to see it here.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <script src="auth.js"></script>
+    <script src="my-designs.js"></script>
+  </body>
+</html>

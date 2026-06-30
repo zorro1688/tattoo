@@ -1,0 +1,89 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>InkFirst Full Flow QA</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/">InkFirst</a>
+      <nav class="nav-links" aria-label="QA navigation">
+        <a href="/#generator">Generator</a>
+        <a href="/my-designs">My Designs</a>
+        <a href="/billing">Billing</a>
+      </nav>
+      <a class="nav-cta" href="/">Generate</a>
+    </header>
+
+    <main class="qa-page">
+      <section class="page-hero compact">
+        <span>Release QA</span>
+        <h1>InkFirst Full Flow QA</h1>
+        <p>Run this checklist before shipping changes to login, image generation, Creem payment, downloads, Billing, or Supabase Storage.</p>
+      </section>
+
+      <section class="qa-checklist-grid" aria-label="Full flow checklist">
+        <article class="qa-card">
+          <h2>Pre-flight</h2>
+          <ul>
+            <li>Run <code>npm run check:full-flow</code>.</li>
+            <li>Confirm ngrok and <code>NEXT_PUBLIC_APP_URL</code> match.</li>
+            <li>Confirm Creem webhook points to the current public URL.</li>
+          </ul>
+        </article>
+
+        <article class="qa-card">
+          <h2>Google login</h2>
+          <ul>
+            <li>Sign in with Google.</li>
+            <li>Confirm the top-right control becomes Account.</li>
+            <li>Confirm Account menu shows the email.</li>
+          </ul>
+        </article>
+
+        <article class="qa-card">
+          <h2>Generate and save</h2>
+          <ul>
+            <li>Generate a recognizable concept.</li>
+            <li>Confirm Hero updates to the new image.</li>
+            <li>Confirm the design appears in My Designs.</li>
+          </ul>
+        </article>
+
+        <article class="qa-card">
+          <h2>Design detail</h2>
+          <ul>
+            <li>Concept shows the generated image.</li>
+            <li>Linework shows an empty state until generated.</li>
+            <li>Placement uses the current design.</li>
+          </ul>
+        </article>
+
+        <article class="qa-card">
+          <h2>Payment and download</h2>
+          <ul>
+            <li>Before purchase, downloads are watermarked.</li>
+            <li>Complete Creem checkout.</li>
+            <li>After purchase, available files say Download high-res.</li>
+          </ul>
+        </article>
+
+        <article class="qa-card">
+          <h2>Billing verification</h2>
+          <ul>
+            <li>Billing shows account email.</li>
+            <li>Plan and paid credits are correct.</li>
+            <li>Payment history shows provider, credits, and event ID.</li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="qa-doc-link">
+        <h2>Detailed checklist</h2>
+        <p>The full checklist is in <code>docs/full-flow-manual-checklist.md</code>.</p>
+      </section>
+    </main>
+  </body>
+</html>

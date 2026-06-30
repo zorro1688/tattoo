@@ -1,0 +1,549 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Tattoo Generator - Design Your First Tattoo Online | InkFirst</title>
+    <meta
+      name="description"
+      content="Create custom tattoo ideas with InkFirst's AI tattoo generator. Choose a style, preview placement, generate linework, and download an artist-ready tattoo reference."
+    />
+    <link rel="canonical" href="/" />
+    <meta property="og:title" content="AI Tattoo Generator - Design Your First Tattoo Online | InkFirst" />
+    <meta
+      property="og:description"
+      content="Create custom tattoo ideas with InkFirst's AI tattoo generator. Choose a style, preview placement, generate linework, and download an artist-ready tattoo reference."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="/" />
+    <link rel="stylesheet" href="styles.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "InkFirst",
+        "applicationCategory": "DesignApplication",
+        "operatingSystem": "Web",
+        "description": "InkFirst is an AI tattoo generator for first tattoo ideas, placement preview, linework, and artist-ready tattoo references.",
+        "offers": [
+          { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "USD" },
+          { "@type": "Offer", "name": "Creator Pack", "price": "9.99", "priceCurrency": "USD" },
+          { "@type": "Offer", "name": "Pro Monthly", "price": "12.99", "priceCurrency": "USD" },
+          { "@type": "Offer", "name": "Pro Yearly", "price": "69", "priceCurrency": "USD" }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#generator" aria-label="InkFirst home">
+        <span class="brand-mark">InkFirst</span>
+      </a>
+      <nav class="topnav" aria-label="Main navigation">
+        <a href="#generator">Generator</a>
+        <a href="#gallery">Gallery</a>
+        <a href="#styles">Styles</a>
+        <a href="#pricing">Pricing</a>
+        <a href="/my-designs">My Designs</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <a class="nav-cta" href="#generator">Generate</a>
+    </header>
+
+    <main>
+      <section class="hero tool-hero" id="generator">
+        <div class="hero-copy-block">
+          <p class="eyebrow">AI tattoo planning for first-time ink</p>
+          <h1>AI Tattoo Generator for First Tattoo Ideas</h1>
+          <p class="hero-copy">
+            Type an idea, choose a style, then switch between concept, linework, and
+            placement preview before you talk to your artist.
+          </p>
+
+          <form class="generator-panel" id="generatorForm">
+            <p class="quota-copy" id="quotaLabel">3 free generations today</p>
+            <label class="idea-field" for="idea">
+              <span>Describe your tattoo idea</span>
+              <textarea id="idea">small rose with moon</textarea>
+            </label>
+
+            <div class="fields">
+              <label>
+                <span>Style</span>
+                <select id="style">
+                  <option>Fine line</option>
+                  <option>Minimalist</option>
+                  <option>Blackwork</option>
+                  <option>Geometric</option>
+                  <option>Japanese</option>
+                  <option>Traditional</option>
+                  <option>Lettering</option>
+                  <option>Dotwork</option>
+                </select>
+              </label>
+              <label>
+                <span>Placement</span>
+                <select id="placement">
+                  <option>Forearm</option>
+                  <option>Wrist</option>
+                  <option>Upper arm</option>
+                  <option>Chest</option>
+                  <option>Back</option>
+                  <option>Ankle</option>
+                  <option>Shoulder</option>
+                  <option>Rib</option>
+                </select>
+              </label>
+              <label>
+                <span>Size</span>
+                <select id="size">
+                  <option>Small</option>
+                  <option>Medium</option>
+                  <option>Large</option>
+                </select>
+              </label>
+              <label>
+                <span>Complexity</span>
+                <select id="complexity">
+                  <option>Beginner friendly</option>
+                  <option>Balanced detail</option>
+                  <option>Detailed</option>
+                </select>
+              </label>
+            </div>
+
+            <details class="advanced-prompt">
+              <summary>Advanced prompt</summary>
+              <div class="prompt" id="promptPreview"></div>
+            </details>
+
+            <button class="primary-button" id="generateButton" type="submit">Generate Tattoo Ideas</button>
+          </form>
+        </div>
+
+        <aside class="hero-preview-panel mode-concept" id="heroPreviewPanel" aria-label="Generated tattoo preview">
+          <div class="hero-preview-header">
+            <div>
+              <span id="heroModeLabel">Concept</span>
+              <p class="hero-preview-title" id="heroPreviewTitle">Generated tattoo concept</p>
+            </div>
+            <div class="hero-mode-controls" aria-label="Preview mode">
+              <button class="hero-mode-button active" type="button" data-mode="concept">Concept</button>
+              <button class="hero-mode-button" type="button" data-mode="linework">Linework</button>
+              <button class="hero-mode-button" type="button" data-mode="placement">Placement</button>
+            </div>
+          </div>
+
+          <div class="hero-preview-stage">
+            <div class="hero-preview-art">
+              <img
+                class="hero-preview-image hero-preview-image-concept"
+                src="assets/hero-concept.png"
+                alt="Fine line rose and crescent moon tattoo concept generated by InkFirst"
+                fetchpriority="high"
+              >
+              <img
+                class="hero-preview-image hero-preview-image-linework"
+                src="assets/hero-linework.png"
+                alt="Clean stencil linework version of the rose and crescent moon tattoo"
+                loading="lazy"
+              >
+              <div
+                class="hero-preview-image hero-preview-image-placement hero-placement-mockup"
+                id="heroPlacementMockup"
+                data-placement="forearm"
+                data-size="small"
+                aria-label="Tattoo placement preview on skin"
+              >
+                <img
+                  class="hero-placement-skin"
+                  src="assets/hero-forearm-clean.png"
+                  alt=""
+                  loading="lazy"
+                  aria-hidden="true"
+                >
+                <img
+                  class="hero-placement-tattoo"
+                  id="heroPlacementTattoo"
+                  src="assets/hero-concept.png"
+                  alt="Generated tattoo overlaid on placement preview"
+                  loading="lazy"
+                >
+              </div>
+            </div>
+          </div>
+
+          <p id="heroPreviewCopy">
+            A first direction for your idea. Generate once, then switch views to inspect linework or placement.
+          </p>
+
+          <div class="hero-result-meta" id="heroResultMeta">
+            <p class="hero-result-summary" id="heroResultSummary">Fine line &middot; Forearm &middot; Small</p>
+            <p class="hero-placement-note" id="heroPlacementNote">
+              Placement note: Generate a concept to see placement guidance for your tattoo idea.
+            </p>
+          </div>
+
+          <div class="hero-result-actions" aria-label="Generated result actions">
+            <button class="result-action primary" id="downloadConceptButton" type="button" disabled>Download concept</button>
+            <button class="result-action" id="heroLineworkAction" type="button" disabled>Generate linework</button>
+            <button class="result-action" id="downloadPlacementButton" type="button" disabled>Download placement</button>
+            <a class="result-action" href="/my-designs">View in My Designs</a>
+            <button class="result-action" id="generateAnotherButton" type="button">Generate another</button>
+          </div>
+
+          <details class="hero-result-details" id="heroDetails">
+            <summary>Details</summary>
+            <dl id="heroDetailsGrid">
+              <div><dt>Idea</dt><dd>small rose with moon</dd></div>
+              <div><dt>Style</dt><dd>Fine line</dd></div>
+              <div><dt>Placement</dt><dd>Forearm</dd></div>
+              <div><dt>Size</dt><dd>Small</dd></div>
+              <div><dt>Complexity</dt><dd>Beginner friendly</dd></div>
+            </dl>
+            <p id="heroPromptText">Prompt appears here after generation.</p>
+          </details>
+        </aside>
+      </section>
+
+      <section class="gallery-section" id="gallery">
+        <div class="section-heading center">
+          <span>Gallery</span>
+          <h2>AI Tattoo Generator Gallery</h2>
+          <p>See how simple ideas can become clear tattoo references before you commit to a style, size, or placement.</p>
+        </div>
+
+        <div class="gallery-grid">
+          <article class="gallery-card">
+            <div class="gallery-image-wrap">
+              <img src="assets/gallery-mountain-wave.png" alt="Minimalist mountain and wave tattoo concept generated by InkFirst" loading="lazy">
+            </div>
+            <div class="gallery-copy">
+              <span>Prompt</span>
+              <p>mountain and ocean wave</p>
+              <h3>Minimalist travel memory</h3>
+              <small>Concept / Ankle / Small tattoo</small>
+            </div>
+          </article>
+
+          <article class="gallery-card">
+            <div class="gallery-image-wrap">
+              <img src="assets/gallery-compass.png" alt="Geometric compass and stars tattoo concept generated by InkFirst" loading="lazy">
+            </div>
+            <div class="gallery-copy">
+              <span>Prompt</span>
+              <p>compass with tiny stars</p>
+              <h3>Geometric compass direction</h3>
+              <small>Concept / Upper arm / Balanced detail</small>
+            </div>
+          </article>
+
+          <article class="gallery-card">
+            <div class="gallery-image-wrap">
+              <img src="assets/gallery-butterfly.png" alt="Fine line butterfly and floral tattoo concept generated by InkFirst" loading="lazy">
+            </div>
+            <div class="gallery-copy">
+              <span>Prompt</span>
+              <p>butterfly with flowers</p>
+              <h3>Delicate butterfly floral</h3>
+              <small>Concept / Wrist / Beginner friendly</small>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="how-steps" id="how-it-works">
+        <div class="section-heading center">
+          <span>How it works</span>
+          <h2>How the AI Tattoo Generator Works</h2>
+          <p>Move from a rough tattoo idea to a clearer artist-ready reference in three steps.</p>
+        </div>
+        <div class="steps-row">
+          <article class="step-item">
+            <strong>1</strong>
+            <h3>Describe your idea</h3>
+            <p>Start with a symbol, phrase, memory, flower, animal, or mood.</p>
+          </article>
+          <article class="step-item">
+            <strong>2</strong>
+            <h3>Choose style and placement</h3>
+            <p>Pick a tattoo style, body location, size, and detail level.</p>
+          </article>
+          <article class="step-item">
+            <strong>3</strong>
+            <h3>Preview concept, linework, and placement</h3>
+            <p>Switch views in the Hero preview before downloading a reference.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="mid-cta" aria-labelledby="midCtaTitle">
+        <div>
+          <span>Ready to plan your first tattoo?</span>
+          <h2 id="midCtaTitle">Generate a tattoo idea before you commit.</h2>
+          <p>Start with a simple phrase, then compare concept art, linework, and placement preview in one flow.</p>
+        </div>
+        <div class="mid-cta-actions">
+          <a class="primary-button" href="#generator">Generate your tattoo idea</a>
+          <a class="secondary-button" href="#gallery">View examples</a>
+        </div>
+      </section>
+
+      <section class="use-cases-section" id="use-cases">
+        <div class="section-heading center">
+          <span>Use cases</span>
+          <h2>Who This AI Tattoo Generator Is For</h2>
+          <p>InkFirst helps different tattoo decisions feel clearer before you save a reference or visit a studio.</p>
+        </div>
+        <div class="use-cases-grid">
+          <article class="use-case-card">
+            <span>01</span>
+            <h3>First-time tattoo planning</h3>
+            <p>Turn a rough idea into a beginner-friendly concept with size, style, and placement guidance.</p>
+          </article>
+          <article class="use-case-card">
+            <span>02</span>
+            <h3>Comparing design directions</h3>
+            <p>Try different symbols, styles, and levels of detail before choosing the direction you want to keep.</p>
+          </article>
+          <article class="use-case-card">
+            <span>03</span>
+            <h3>Small tattoo and placement preview</h3>
+            <p>Check whether a design still reads clearly on wrist, forearm, ankle, shoulder, or rib placement.</p>
+          </article>
+          <article class="use-case-card">
+            <span>04</span>
+            <h3>Artist-ready tattoo reference</h3>
+            <p>Bring a clearer brief, concept view, and linework direction to your tattoo artist conversation.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section-block" id="styles">
+        <div class="section-heading center">
+          <span>Tattoo styles</span>
+          <h2>Choose Your Tattoo Generator Style</h2>
+          <p>Each style changes the design direction before you create the final reference.</p>
+        </div>
+        <div class="style-grid">
+          <button type="button" class="style-card" data-style="Fine line"><strong>Fine Line</strong><span>Clean, delicate linework for subtle ideas.</span></button>
+          <button type="button" class="style-card" data-style="Minimalist"><strong>Minimalist</strong><span>Simple symbols and low-detail first tattoos.</span></button>
+          <button type="button" class="style-card" data-style="Blackwork"><strong>Blackwork</strong><span>Bold black shapes with strong contrast.</span></button>
+          <button type="button" class="style-card" data-style="Geometric"><strong>Geometric</strong><span>Symmetry, pattern, and crisp structure.</span></button>
+          <button type="button" class="style-card" data-style="Japanese"><strong>Japanese</strong><span>Classic motifs with larger composition planning.</span></button>
+          <button type="button" class="style-card" data-style="Lettering"><strong>Lettering</strong><span>Phrase and wordmark ideas for body placement.</span></button>
+        </div>
+      </section>
+
+      <section class="why-section" id="why-inkfirst">
+        <div class="section-heading center">
+          <span>Why InkFirst</span>
+          <h2>Why Use InkFirst Instead of a Generic AI Image Tool?</h2>
+          <p>InkFirst is built around tattoo decisions, not just making a nice picture.</p>
+        </div>
+        <div class="comparison-table-wrap">
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th scope="col">What matters</th>
+                <th scope="col">InkFirst</th>
+                <th scope="col">Directly asking a tattoo artist</th>
+                <th scope="col">Generic AI image generator</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">First idea exploration</th>
+                <td>Fast concept directions before you commit.</td>
+                <td>Useful, but usually after you already book or message.</td>
+                <td>Fast, but often too broad for tattoo planning.</td>
+              </tr>
+              <tr>
+                <th scope="row">Tattoo placement preview</th>
+                <td>Built around body location, size, and readability.</td>
+                <td>Best for final professional advice.</td>
+                <td>Usually creates art, not practical placement guidance.</td>
+              </tr>
+              <tr>
+                <th scope="row">Linework / stencil direction</th>
+                <td>Switch from concept to cleaner linework references.</td>
+                <td>Best for final stencil preparation.</td>
+                <td>May include shading, texture, or details that do not tattoo well.</td>
+              </tr>
+              <tr>
+                <th scope="row">Artist conversation</th>
+                <td>Creates a clearer brief you can bring to the studio.</td>
+                <td>Still essential for final design and safety decisions.</td>
+                <td>Often needs extra explanation before an artist can use it.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="artist-workflow-section" id="artist-workflow">
+        <div class="section-heading center">
+          <span>Artist workflow</span>
+          <h2>How to Work With Your Tattoo Artist</h2>
+          <p>Tattoo artists work with reference images every day. InkFirst gives you a clearer starting point than a Pinterest screenshot.</p>
+        </div>
+        <div class="artist-workflow-grid">
+          <article class="artist-step">
+            <span>Step 1</span>
+            <h3>Generate and download your reference</h3>
+            <p>Save both the high-resolution concept image and the cleaner linework version.</p>
+          </article>
+          <article class="artist-step">
+            <span>Step 2</span>
+            <h3>Bring it when you book or consult</h3>
+            <p>Tell your tattoo artist, “I want this direction. Please adjust the details for my skin and placement.”</p>
+          </article>
+          <article class="artist-step">
+            <span>Step 3</span>
+            <h3>Let your artist create the final tattoo</h3>
+            <p>The AI reference is the starting point. The final artwork should be refined and completed by your tattoo artist.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section-block" id="pricing">
+        <div class="section-heading center">
+          <span>Pricing</span>
+          <h2>AI Tattoo Generator Pricing</h2>
+          <p>Generate first, then pay for more generations, private designs, linework exports, and high-resolution downloads.</p>
+        </div>
+        <div class="pricing-grid">
+          <article class="price-card" data-plan="free">
+            <h3>Free</h3>
+            <strong>$0</strong>
+            <small class="price-term">forever</small>
+            <p>Try tattoo ideas before you commit.</p>
+            <ul>
+              <li>3 generations per day</li>
+              <li>2-4 concepts per generation</li>
+              <li>Basic placement guidance</li>
+              <li>Watermarked downloads</li>
+            </ul>
+            <a href="#generator" class="price-button secondary">Start free</a>
+          </article>
+          <article class="price-card selected" data-plan="creator-pack" data-badge="Recommended">
+            <h3>Creator Pack</h3>
+            <strong>$9.99</strong>
+            <small class="price-term">one-time</small>
+            <p>Best for one tattoo idea.</p>
+            <ul>
+              <li>20 credits</li>
+              <li>High-resolution downloads</li>
+              <li>Linework / stencil export</li>
+              <li>Artist-ready brief</li>
+              <li>No subscription</li>
+            </ul>
+            <button class="price-button" id="creatorPackButton" type="button" data-plan="creator-pack">Buy Creator Pack</button>
+          </article>
+          <article class="price-card" data-plan="pro-monthly">
+            <h3>Pro</h3>
+            <strong>$12.99</strong>
+            <small class="price-term">per month</small>
+            <p>Best for serious tattoo planning.</p>
+            <ul>
+              <li>50 generations per day</li>
+              <li>Private designs</li>
+              <li>All tattoo styles</li>
+              <li>Priority generation</li>
+            </ul>
+            <button class="price-button" id="upgradeButton" type="button" data-plan="pro-monthly">Upgrade monthly</button>
+          </article>
+          <article class="price-card" data-plan="pro-yearly">
+            <h3>Pro Yearly</h3>
+            <strong>$69</strong>
+            <small class="price-term">per year</small>
+            <p>Best value for multiple tattoo ideas.</p>
+            <ul>
+              <li>Includes Pro Monthly benefits</li>
+              <li>Year-round planning</li>
+              <li>Long-term saved designs</li>
+              <li>Best value pricing</li>
+            </ul>
+            <button class="price-button" id="yearlyButton" type="button" data-plan="pro-yearly">Choose yearly</button>
+          </article>
+        </div>
+        <p class="pricing-notice" id="billingNotice">Creator Pack is selected. Best for one tattoo idea.</p>
+      </section>
+
+      <section class="section-block faq" id="faq">
+        <div class="section-heading center">
+          <span>FAQ</span>
+          <h2>AI Tattoo Generator FAQ</h2>
+        </div>
+        <div class="faq-grid">
+          <article><h3>Is this a real tattoo design or just AI art?</h3><p>InkFirst creates references for tattoo planning. A professional tattoo artist should still refine the final design for your skin, size, and placement.</p></article>
+          <article><h3>Can I bring the design to a tattoo artist?</h3><p>Yes. The artist brief and linework view are meant to make your studio conversation clearer.</p></article>
+          <article><h3>Can I use this AI tattoo generator for my first tattoo?</h3><p>Yes. The product is designed around first tattoo decisions like idea choice, placement, size, and complexity.</p></article>
+          <article><h3>What is linework or stencil export?</h3><p>Linework is a cleaner outline-style reference that is easier to discuss than a full AI concept image.</p></article>
+          <article><h3>Can I preview placement?</h3><p>Yes. The placement preview helps you understand how body location affects scale and composition.</p></article>
+          <article><h3>Do I need a subscription?</h3><p>No. The Creator Pack is a one-time option for one tattoo idea.</p></article>
+        </div>
+      </section>
+
+      <section class="lead-magnet-section" id="tattoo-inspiration">
+        <div class="lead-magnet-copy">
+          <span>Weekly tattoo inspiration</span>
+          <h2>Get first tattoo ideas in your inbox.</h2>
+          <p>Join the InkFirst list for beginner-friendly tattoo prompts, placement tips, and new style examples.</p>
+        </div>
+        <form class="lead-form" id="leadForm">
+          <label for="leadEmail">Email address</label>
+          <div class="lead-form-row">
+            <input id="leadEmail" type="email" name="email" placeholder="you@example.com" autocomplete="email" required>
+            <button class="primary-button" type="submit">Send me ideas</button>
+          </div>
+          <p class="lead-note">No spam. Just tattoo planning ideas and product updates.</p>
+          <p class="lead-status" id="leadStatus" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-brand">
+        <strong>InkFirst</strong>
+        <p>Turn tattoo ideas into artist-ready references before you commit.</p>
+      </div>
+      <nav aria-label="Product">
+        <h3>Product</h3>
+        <a href="#generator">AI Tattoo Generator</a>
+        <a href="#gallery">Tattoo Gallery</a>
+        <a href="#use-cases">Use Cases</a>
+        <a href="#why-inkfirst">Why InkFirst</a>
+        <a href="#artist-workflow">Artist Workflow</a>
+        <a href="#generator">Placement Preview</a>
+        <a href="#generator">Linework Generator</a>
+        <a href="#generator">Artist Brief</a>
+      </nav>
+      <nav aria-label="Tattoo Ideas">
+        <h3>Tattoo Ideas</h3>
+        <a href="#generator">First Tattoo Ideas</a>
+        <a href="#generator">Small Tattoo Ideas</a>
+        <a href="#styles">Fine Line Tattoos</a>
+        <a href="#styles">Minimalist Tattoos</a>
+      </nav>
+      <nav aria-label="Resources">
+        <h3>Resources</h3>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+        <a href="#tattoo-inspiration">Weekly Inspiration</a>
+        <a href="#styles">Tattoo Styles</a>
+        <a href="mailto:hello@inkfirst.ai">Contact</a>
+      </nav>
+      <nav aria-label="Legal">
+        <h3>Legal</h3>
+        <a href="#faq">Privacy Policy</a>
+        <a href="#faq">Terms of Service</a>
+      </nav>
+      <div class="footer-bottom">© 2026 InkFirst. All rights reserved.</div>
+    </footer>
+
+    <script src="auth.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
+

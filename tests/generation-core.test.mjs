@@ -1,0 +1,185 @@
+import assert from "node:assert/strict";
+import {
+  createGeneration,
+  createLineworkGeneration,
+  extractFirstImageUrl,
+  resolveGenerationModel
+} from "../generation-core.mjs";
+
+async function run(name, testBody) {
+  try {
+    await testBody();
+    console.log(`PASS ${name}`);
+  } catch (error) {
+    console.error(`FAIL ${name}`);
+    throw error;
+  }
+}
+
+await run("replicate provider requires an API token", async () => {
+  const generation = await createGeneration(
+    { idea: "small rose with moon", style: "Fine line", placement: "Forearm" },
+    { GENERATION_PROVIDER: "replicate" },
+    async () => {
+      throw new Error("fetch should not be called without a token");
+    }
+  );
+
+  assert.equal(generation.status, "not_configured");
+  assert.match(generation.error, /REPLICATE_API_TOKEN/);
+});
+
+await run("replicate provider returns the generated concept image URL", async () => {
+  const calls = [];
+  const generation = await createGeneration(
+    {
+      idea: "small rose with moon",
+      style: "Fine line",
+      placement: "Forearm",
+      size: "Small",
+      complexity: "Beginner friendly"
+    },
+    {
+      GENERATION_PROVIDER: "replicate",
+      REPLICATE_API_TOKEN: "r8_test",
+      GENERATION_MODEL: "black-forest-labs/flux-schnell"
+    },
+    async (url, init) => {
+      calls.push({ url, init });
+      return {
+        ok: true,
+        json: async () => ({
+          id: "abc123",
+          status: "succeeded",
+          output: ["https://replicate.delivery/pbxt/example.webp"]
+        })
+      };
+    }
+  );
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions");
+  assert.equal(calls[0].init.headers.Authorization, "Bearer r8_test");
+  assert.equal(calls[0].init.headers.Prefer, "wait=60");
+  assert.equal(JSON.parse(calls[0].init.body).version, undefined);
+  assert.equal(generation.provider, "replicate");
+  assert.equal(generation.model, "black-forest-labs/flux-schnell");
+  assert.equal(generation.images.concept, "https://replicate.delivery/pbxt/example.webp");
+  assert.equal(generation.images.linework, undefined);
+  assert.equal(generation.images.placement, undefined);
+  assert.match(generation.prompt, /fine line small tattoo design/);
+});
+
+await run("extractFirstImageUrl handles nested Replicate outputs", () => {
+  assert.equal(
+    extractFirstImageUrl({ images: [{ url: "https://example.com/tattoo.png" }] }),
+    "https://example.com/tattoo.png"
+  );
+});
+
+await run("replicate provider uses a real default model", () => {
+  assert.equal(resolveGenerationModel({ GENERATION_PROVIDER: "replicate" }), "black-forest-labs/flux-schnell");
+  assert.equal(
+    resolveGenerationModel({ GENERATION_PROVIDER: "replicate", GENERATION_MODEL: "mock-static-assets" }),
+    "black-forest-labs/flux-schnell"
+  );
+});
+
+await run("replicate linework generation uses the saved concept image", async () => {
+  const calls = [];
+  const linework = await createLineworkGeneration(
+    {
+      id: "gen_123",
+      images: {
+        concept: "https://replicate.delivery/concept.webp"
+      },
+      input: {
+        idea: "small rose with moon",
+        style: "Fine line",
+        placement: "Forearm",
+        size: "Small"
+      }
+    },
+    {
+      GENERATION_PROVIDER: "replicate",
+      REPLICATE_API_TOKEN: "r8_test"
+    },
+    async (url, init) => {
+      calls.push({ url, init });
+      return {
+        ok: true,
+        json: async () => ({
+          id: "linework_123",
+          status: "succeeded",
+          output: ["https://replicate.delivery/linework.webp"]
+        })
+      };
+    }
+  );
+
+  const body = JSON.parse(calls[0].init.body);
+
+  assert.equal(calls[0].url, "https://api.replicate.com/v1/models/black-forest-labs/flux-canny-pro/predictions");
+  assert.equal(body.input.control_image, "https://replicate.delivery/concept.webp");
+  assert.match(body.input.prompt, /clean black tattoo stencil linework/);
+  assert.match(body.input.prompt, /black ink only/);
+  assert.match(body.input.prompt, /no grey/);
+  assert.match(body.input.prompt, /preserve the original subject and composition/);
+  assert.match(body.input.prompt, /do not add new symbols/);
+  assert.equal(linework.images.linework, "https://replicate.delivery/linework.webp");
+  assert.equal(linework.provider, "replicate");
+});
+
+await run("mock linework generation returns a downloadable linework asset", async () => {
+  const linework = await createLineworkGeneration(
+    {
+      id: "gen_mock",
+      images: {
+        concept: "/assets/hero-concept.png"
+      },
+      input: {
+        idea: "small rose with moon",
+        style: "Fine line",
+        placement: "Forearm",
+        size: "Small"
+      }
+    },
+    {
+      GENERATION_PROVIDER: "mock"
+    }
+  );
+
+  assert.equal(linework.provider, "mock");
+  assert.equal(linework.images.linework, "/assets/mock-linework.svg");
+});
+
+await run("replicate linework failures are clear and do not consume credit", async () => {
+  const linework = await createLineworkGeneration(
+    {
+      id: "gen_failed_linework",
+      images: {
+        concept: "https://replicate.delivery/concept.webp"
+      },
+      input: {
+        idea: "small cat",
+        style: "Fine line",
+        placement: "Forearm",
+        size: "Small"
+      }
+    },
+    {
+      GENERATION_PROVIDER: "replicate",
+      REPLICATE_API_TOKEN: "r8_test"
+    },
+    async () => ({
+      ok: false,
+      json: async () => ({ detail: "model overloaded" })
+    })
+  );
+
+  assert.equal(linework.status, "failed");
+  assert.equal(linework.creditUsed, false);
+  assert.match(linework.error, /Could not create linework/);
+  assert.match(linework.error, /credit was not used/);
+  assert.match(linework.providerError, /model overloaded/);
+});

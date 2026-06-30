@@ -1,0 +1,37 @@
+{
+  "name": "tattoo-mvp",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:static": "node server.mjs",
+    "dev": "node ./node_modules/next/dist/bin/next dev",
+    "build": "node ./node_modules/next/dist/bin/next build",
+    "start": "node ./node_modules/next/dist/bin/next start",
+    "lint": "node ./node_modules/next/dist/bin/next lint",
+    "test:billing": "node tests/billing-core.test.mjs",
+    "test:generate": "node tests/generation-core.test.mjs",
+    "test:quota": "node tests/quota-store.test.mjs",
+    "test:supabase": "node tests/supabase-schema.test.mjs && node tests/supabase-store.test.mjs",
+    "check:billing": "node scripts/check-billing-setup.mjs",
+    "migrate:storage-paths": "node scripts/migrate-storage-paths.mjs",
+    "test:regression": "node scripts/regression-check.mjs",
+    "check:prod": "node scripts/check-production-setup.mjs",
+    "verify:supabase": "node scripts/verify-supabase-cloud.mjs",
+    "check:full-flow": "node scripts/full-flow-check.mjs"
+  },
+  "dependencies": {
+    "lucide-react": "0.468.0",
+    "next": "15.3.4",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "@types/react": "19.0.1",
+    "@types/react-dom": "19.0.2",
+    "eslint": "9.17.0",
+    "eslint-config-next": "15.3.4",
+    "supabase": "^2.106.0",
+    "typescript": "5.7.2"
+  }
+}

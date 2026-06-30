@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Billing & Credits | InkFirst</title>
+    <meta name="description" content="Review your InkFirst plan, credits, download access, and payment history." />
+    <link rel="canonical" href="/billing" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="InkFirst home">
+        <span class="brand-mark">InkFirst</span>
+      </a>
+      <nav class="topnav" aria-label="Billing navigation">
+        <a href="/#generator">Generator</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/my-designs">My Designs</a>
+        <a href="/billing" aria-current="page">Billing</a>
+      </nav>
+      <a class="nav-cta" href="/#pricing">Pricing</a>
+    </header>
+
+    <main>
+      <section class="billing-page">
+        <div class="section-heading center">
+          <span>Account</span>
+          <h1>Billing & Credits</h1>
+          <p>Review your plan, paid credits, download access, and payment history for this account.</p>
+          <p class="account-note" data-auth-account-note>Sign in to keep billing and designs across devices.</p>
+        </div>
+
+        <div class="billing-toolbar">
+          <a class="secondary-button" href="/my-designs">Back to My Designs</a>
+          <a class="primary-button" href="/#pricing">View pricing</a>
+        </div>
+
+        <p class="billing-status" id="billingStatus" role="status" aria-live="polite">Loading billing history...</p>
+
+        <div class="billing-summary-grid" aria-label="Billing summary">
+          <article class="billing-summary-card">
+            <span>Current plan</span>
+            <strong id="billingPlan">-</strong>
+          </article>
+          <article class="billing-summary-card">
+            <span>Free credits</span>
+            <strong id="billingFreeCredits">-</strong>
+          </article>
+          <article class="billing-summary-card">
+            <span>Paid credits</span>
+            <strong id="billingCredits">-</strong>
+          </article>
+          <article class="billing-summary-card">
+            <span>Total credits</span>
+            <strong id="billingTotalCredits">-</strong>
+          </article>
+          <article class="billing-summary-card">
+            <span>Download access</span>
+            <strong id="billingDownloadAccess">-</strong>
+          </article>
+          <article class="billing-summary-card">
+            <span>Last payment</span>
+            <strong id="billingLastPayment">-</strong>
+            <small id="billingPaymentSource">-</small>
+          </article>
+        </div>
+
+        <section class="billing-history-section" aria-labelledby="billingHistoryTitle">
+          <div class="billing-history-heading">
+            <h2 id="billingHistoryTitle">Payment history</h2>
+            <p>Use this list when checking whether a payment unlocked credits and high-resolution downloads.</p>
+          </div>
+          <div class="billing-history-table" id="billingHistory">
+            <p class="billing-empty">Loading billing history...</p>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="auth.js"></script>
+    <script src="billing.js"></script>
+  </body>
+</html>

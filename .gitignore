@@ -1,0 +1,14 @@
+.next
+node_modules
+.npm-cache
+.supabase
+out
+data/*.json
+.env
+.env.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.vercel
+*.tsbuildinfo

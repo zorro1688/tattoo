@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Payment received | InkFirst</title>
+    <meta name="description" content="Your InkFirst payment was received and download access is being confirmed." />
+    <link rel="canonical" href="/success" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="InkFirst home">
+        <span class="brand-mark">InkFirst</span>
+      </a>
+      <nav class="topnav" aria-label="Success navigation">
+        <a href="/#generator">Generator</a>
+        <a href="/my-designs">My Designs</a>
+        <a href="/#pricing">Pricing</a>
+      </nav>
+      <a class="nav-cta" href="/billing">Billing</a>
+    </header>
+
+    <main>
+      <section class="success-page" aria-labelledby="successTitle">
+        <span class="eyebrow">Payment successful</span>
+        <h1 id="successTitle">Payment received</h1>
+        <p id="successStatus" role="status" aria-live="polite">
+          Your paid download access is being confirmed. You can find your saved tattoo designs in My Designs.
+        </p>
+        <div class="success-actions">
+          <button class="secondary-button" id="successCheckAgain" type="button">Check again</button>
+          <a class="nav-cta" id="successReturnLink" href="/my-designs">Back to My Designs</a>
+          <a class="secondary-button" href="/billing">View Billing</a>
+        </div>
+      </section>
+    </main>
+
+    <script src="success.js"></script>
+  </body>
+</html>

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Saved Tattoo Design | InkFirst</title>
+    <meta name="description" content="Review a saved InkFirst tattoo concept, linework, placement preview, prompt, and artist-ready details." />
+    <link rel="canonical" href="/design" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="InkFirst home">
+        <span class="brand-mark">InkFirst</span>
+      </a>
+      <nav class="topnav" aria-label="Design detail navigation">
+        <a href="/#generator">Generator</a>
+        <a href="/my-designs">My Designs</a>
+        <a href="/#pricing">Pricing</a>
+      </nav>
+      <a class="nav-cta" href="/#generator">Generate</a>
+    </header>
+
+    <main>
+      <section class="design-detail-page" id="designDetail">
+        <div class="design-detail-header">
+          <a class="secondary-button" href="/my-designs">Back to My Designs</a>
+          <p id="designStatus" role="status" aria-live="polite">Loading saved tattoo design...</p>
+        </div>
+
+        <div class="design-detail-grid">
+          <article class="design-preview-card">
+            <span>Concept</span>
+            <div class="design-preview-frame">
+              <img id="detailConceptImage" src="assets/hero-concept.png" alt="Saved tattoo concept" loading="lazy">
+            </div>
+            <div class="design-download-actions">
+              <button class="result-action primary" id="detailDownloadConcept" type="button" disabled>Download concept</button>
+              <a class="result-action upgrade" id="detailUpgradeConcept" href="/#pricing" hidden>Upgrade</a>
+            </div>
+          </article>
+
+          <article class="design-preview-card">
+            <span>Linework</span>
+            <div class="design-preview-frame">
+              <img id="detailLineworkImage" src="assets/hero-linework.png" alt="Saved tattoo linework" loading="lazy">
+              <p class="design-preview-empty" id="detailLineworkEmpty" hidden>Linework has not been generated yet.</p>
+            </div>
+            <div class="design-download-actions">
+              <button class="result-action" id="detailLineworkButton" type="button" disabled>Generate linework</button>
+              <a class="result-action upgrade" id="detailUpgradeLinework" href="/#pricing" hidden>Upgrade</a>
+            </div>
+          </article>
+
+          <article class="design-preview-card">
+            <span>Placement</span>
+            <div class="design-preview-frame placement">
+              <div class="detail-placement-mockup" id="detailPlacementMockup" data-placement="forearm" data-size="small">
+                <img class="detail-placement-skin" src="assets/hero-forearm-clean.png" alt="" aria-hidden="true" loading="lazy">
+                <img class="detail-placement-tattoo" id="detailPlacementTattoo" src="assets/hero-concept.png" alt="Saved tattoo placement preview" loading="lazy">
+              </div>
+            </div>
+            <div class="design-download-actions">
+              <button class="result-action" id="detailDownloadPlacement" type="button" disabled>Download placement</button>
+              <a class="result-action upgrade" id="detailUpgradePlacement" href="/#pricing" hidden>Upgrade</a>
+            </div>
+          </article>
+        </div>
+
+        <aside class="design-brief-card">
+          <div>
+            <span id="detailCreatedAt">Saved design</span>
+            <h1 id="detailTitle">Saved Tattoo Design</h1>
+            <p id="detailPlacementNote">Placement note will appear here.</p>
+          </div>
+
+          <dl id="detailMeta">
+            <div><dt>Idea</dt><dd>Loading</dd></div>
+            <div><dt>Style</dt><dd>Loading</dd></div>
+            <div><dt>Placement</dt><dd>Loading</dd></div>
+            <div><dt>Size</dt><dd>Loading</dd></div>
+            <div><dt>Complexity</dt><dd>Loading</dd></div>
+          </dl>
+
+          <div class="design-prompt-block">
+            <h2>Prompt</h2>
+            <p id="detailPrompt">Prompt appears here after the design loads.</p>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <script src="auth.js"></script>
+    <script src="design.js"></script>
+  </body>
+</html>

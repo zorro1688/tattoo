@@ -1,0 +1,2 @@
+-- Local development seed file.
+-- Keep this file so Supabase CLI does not warn about a missing seed path.
