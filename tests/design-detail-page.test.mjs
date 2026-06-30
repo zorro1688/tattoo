@@ -33,7 +33,7 @@ await run("design detail script loads one saved generation and supports linework
   assert.match(script, /\/api\/generation\?id=/);
   assert.match(script, /\/api\/generate\/linework/);
   assert.match(script, /downloadPlacementPreview/);
-  assert.match(script, /drawPlacementSkinMockup/);
+  assert.match(script, /getPlacementSkinAsset/);
   assert.match(script, /renderDesign/);
   assert.match(script, /renderDownloadAccessActions/);
   assert.match(script, /Download high-res/);
@@ -101,12 +101,22 @@ await run("design detail placement preview does not depend on the fixed forearm 
   const styles = await readFile("styles.css", "utf8");
 
   for (const source of [script, publicScript]) {
-    assert.match(source, /drawPlacementSkinMockup/);
+    assert.match(source, /getPlacementSkinAsset/);
     assert.ok(!source.includes('loadDrawableImage("assets/hero-forearm-clean.png")'));
   }
 
   assert.match(styles, /#detailLineworkImage/);
-  assert.ok(styles.includes("detail-placement-skin {\n  display: none;"));
-  assert.ok(styles.includes('.detail-placement-mockup[data-placement="chest"]::before'));
-  assert.ok(styles.includes('.detail-placement-mockup[data-placement="rib"]::before'));
+  assert.ok(styles.includes(`detail-placement-skin {\n  position: absolute;`));
+  assert.ok(styles.includes(`detail-placement-mockup::before,\n.detail-placement-mockup::after {\n  display: none;`));
+});
+
+await run("design detail placement preview uses placement-specific skin assets", async () => {
+  const script = await readFile("design.js", "utf8");
+  const html = await readFile("design.html", "utf8");
+
+  assert.match(html, /id="detailPlacementSkin"/);
+  assert.match(script, /placementSkinAssets/);
+  assert.match(script, /detailPlacementSkin.src = getPlacementSkinAsset/);
+  assert.match(script, /createTransparentTattooUrl/);
+  assert.match(script, /applyTransparentTattooOverlay/);
 });

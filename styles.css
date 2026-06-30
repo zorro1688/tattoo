@@ -1135,11 +1135,21 @@ textarea {
 }
 
 .detail-placement-skin {
-  display: none;
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .detail-placement-mockup::before,
 .detail-placement-mockup::after,
+.detail-placement-mockup::before,
+.detail-placement-mockup::after {
+  display: none;
+}
+
 .detail-placement-tattoo {
   position: absolute;
 }
@@ -1175,7 +1185,7 @@ textarea {
   object-fit: contain;
   mix-blend-mode: multiply;
   filter: grayscale(1) contrast(1.18);
-  opacity: 0.82;
+  opacity: 0.92;
   transform: translate(-50%, -50%) rotate(-8deg);
 }
 
@@ -2461,7 +2471,12 @@ textarea {
 }
 
 .hero-placement-skin {
-  display: none;
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .hero-placement-mockup::before,
@@ -2497,6 +2512,11 @@ textarea {
   filter: grayscale(1) contrast(1.72) brightness(1.14);
 }
 
+.hero-placement-mockup::before,
+.hero-placement-mockup::after {
+  display: none;
+}
+
 .hero-placement-tattoo {
   position: absolute;
   left: 50%;
@@ -2506,7 +2526,7 @@ textarea {
   object-fit: contain;
   mix-blend-mode: multiply;
   filter: grayscale(1) contrast(1.18);
-  opacity: 0.82;
+  opacity: 0.92;
   transform: translate(-50%, -50%) rotate(-8deg);
 }
 

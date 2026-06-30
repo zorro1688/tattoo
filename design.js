@@ -5,6 +5,7 @@ const detailConceptImage = document.querySelector("#detailConceptImage");
 const detailLineworkImage = document.querySelector("#detailLineworkImage");
 const detailLineworkEmpty = document.querySelector("#detailLineworkEmpty");
 const detailPlacementMockup = document.querySelector("#detailPlacementMockup");
+const detailPlacementSkin = document.querySelector("#detailPlacementSkin");
 const detailPlacementTattoo = document.querySelector("#detailPlacementTattoo");
 const detailPlacementNote = document.querySelector("#detailPlacementNote");
 const detailMeta = document.querySelector("#detailMeta");
@@ -15,6 +16,91 @@ const detailDownloadPlacement = document.querySelector("#detailDownloadPlacement
 const detailUpgradeConcept = document.querySelector("#detailUpgradeConcept");
 const detailUpgradeLinework = document.querySelector("#detailUpgradeLinework");
 const detailUpgradePlacement = document.querySelector("#detailUpgradePlacement");
+
+
+const placementSkinAssets = {
+  forearm: "assets/placement-forearm.svg",
+  wrist: "assets/placement-wrist.svg",
+  "upper-arm": "assets/placement-upper-arm.svg",
+  chest: "assets/placement-chest.svg",
+  back: "assets/placement-back.svg",
+  ankle: "assets/placement-ankle.svg",
+  shoulder: "assets/placement-shoulder.svg",
+  rib: "assets/placement-rib.svg"
+};
+const transparentTattooCache = new Map();
+
+function getPlacementSkinAsset(value = "Forearm") {
+  const key = normalizeDataValue(value);
+  return placementSkinAssets[key] ?? placementSkinAssets.forearm;
+}
+
+function isBackgroundPixel(red, green, blue, alpha) {
+  if (alpha < 18) {
+    return true;
+  }
+
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  const brightness = (red + green + blue) / 3;
+  const chroma = max - min;
+
+  return brightness > 206 && chroma < 38;
+}
+
+function createTransparentTattooUrl(url) {
+  if (!url) {
+    return Promise.resolve(url);
+  }
+
+  if (transparentTattooCache.has(url)) {
+    return transparentTattooCache.get(url);
+  }
+
+  const promise = loadDrawableImage(url)
+    .then((image) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, image.naturalWidth || image.width);
+      canvas.height = Math.max(1, image.naturalHeight || image.height);
+      const context = canvas.getContext("2d");
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+
+      for (let index = 0; index < data.length; index += 4) {
+        if (isBackgroundPixel(data[index], data[index + 1], data[index + 2], data[index + 3])) {
+          data[index + 3] = 0;
+          continue;
+        }
+
+        const brightness = (data[index] + data[index + 1] + data[index + 2]) / 3;
+        if (brightness > 170) {
+          data[index + 3] = Math.min(data[index + 3], Math.max(28, Math.round((235 - brightness) * 3.2)));
+        }
+      }
+
+      context.putImageData(imageData, 0, 0);
+      return canvas.toDataURL("image/png");
+    })
+    .catch(() => url);
+
+  transparentTattooCache.set(url, promise);
+  return promise;
+}
+
+function applyTransparentTattooOverlay(imageElement, url) {
+  if (!imageElement || !url) {
+    return;
+  }
+
+  imageElement.dataset.source = url;
+  imageElement.src = url;
+  createTransparentTattooUrl(url).then((transparentUrl) => {
+    if (imageElement.dataset.source === url) {
+      imageElement.src = transparentUrl;
+    }
+  });
+}
 
 let currentDesign = null;
 let downloadAccess = {
@@ -206,90 +292,6 @@ function loadDrawableImage(url) {
 }
 
 
-function drawRoundedRect(context, x, y, width, height, radius) {
-  const r = Math.min(radius, width / 2, height / 2);
-  context.beginPath();
-  context.moveTo(x + r, y);
-  context.lineTo(x + width - r, y);
-  context.quadraticCurveTo(x + width, y, x + width, y + r);
-  context.lineTo(x + width, y + height - r);
-  context.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
-  context.lineTo(x + r, y + height);
-  context.quadraticCurveTo(x, y + height, x, y + height - r);
-  context.lineTo(x, y + r);
-  context.quadraticCurveTo(x, y, x + r, y);
-  context.closePath();
-}
-
-function getPlacementSkinLayout(canvasSize, selectedPlacement) {
-  const base = {
-    x: canvasSize * 0.5,
-    y: canvasSize * 0.5,
-    width: canvasSize * 0.34,
-    height: canvasSize * 1.02,
-    rotation: 8,
-    radius: canvasSize * 0.17,
-    kind: "limb"
-  };
-  const layouts = {
-    forearm: base,
-    "upper-arm": { ...base, width: canvasSize * 0.42, height: canvasSize * 1.08, rotation: -6, radius: canvasSize * 0.2 },
-    wrist: { ...base, width: canvasSize * 0.24, height: canvasSize * 1.18, x: canvasSize * 0.43, rotation: 4, radius: canvasSize * 0.12 },
-    ankle: { ...base, width: canvasSize * 0.28, height: canvasSize * 1.22, x: canvasSize * 0.44, rotation: -3, radius: canvasSize * 0.14 },
-    shoulder: { x: canvasSize * 0.54, y: canvasSize * 0.5, width: canvasSize * 0.78, height: canvasSize * 0.78, rotation: -16, radius: canvasSize * 0.36, kind: "shoulder" },
-    chest: { x: canvasSize * 0.5, y: canvasSize * 0.54, width: canvasSize * 0.76, height: canvasSize * 0.86, rotation: 0, radius: canvasSize * 0.16, kind: "torso" },
-    back: { x: canvasSize * 0.5, y: canvasSize * 0.54, width: canvasSize * 0.82, height: canvasSize * 0.9, rotation: 0, radius: canvasSize * 0.18, kind: "torso" },
-    rib: { x: canvasSize * 0.56, y: canvasSize * 0.52, width: canvasSize * 0.52, height: canvasSize * 1.12, rotation: 10, radius: canvasSize * 0.24, kind: "rib" }
-  };
-
-  return layouts[selectedPlacement] ?? base;
-}
-
-function drawPlacementSkinMockup(context, canvasSize, selectedPlacement) {
-  context.fillStyle = "#f7f2ee";
-  context.fillRect(0, 0, canvasSize, canvasSize);
-
-  const softShadow = context.createRadialGradient(
-    canvasSize * 0.62,
-    canvasSize * 0.35,
-    canvasSize * 0.08,
-    canvasSize * 0.55,
-    canvasSize * 0.52,
-    canvasSize * 0.62
-  );
-  softShadow.addColorStop(0, "rgba(255, 255, 255, 0.9)");
-  softShadow.addColorStop(1, "rgba(215, 178, 152, 0.26)");
-  context.fillStyle = softShadow;
-  context.fillRect(0, 0, canvasSize, canvasSize);
-
-  const layout = getPlacementSkinLayout(canvasSize, selectedPlacement);
-  context.save();
-  context.translate(layout.x, layout.y);
-  context.rotate((layout.rotation * Math.PI) / 180);
-
-  const skin = context.createLinearGradient(-layout.width / 2, 0, layout.width / 2, 0);
-  skin.addColorStop(0, "#e7b994");
-  skin.addColorStop(0.42, "#f4c7a5");
-  skin.addColorStop(0.58, "#ffd8bd");
-  skin.addColorStop(1, "#cf9875");
-
-  context.shadowColor = "rgba(92, 58, 38, 0.18)";
-  context.shadowBlur = canvasSize * 0.04;
-  context.shadowOffsetX = canvasSize * 0.02;
-  context.shadowOffsetY = canvasSize * 0.03;
-  context.fillStyle = skin;
-
-  if (layout.kind === "shoulder") {
-    context.beginPath();
-    context.ellipse(0, 0, layout.width / 2, layout.height / 2, 0, 0, Math.PI * 2);
-    context.fill();
-  } else {
-    drawRoundedRect(context, -layout.width / 2, -layout.height / 2, layout.width, layout.height, layout.radius);
-    context.fill();
-  }
-  context.restore();
-}
-
 function getPlacementTattooBox(canvasSize) {
   const sizeScale = {
     small: 0.18,
@@ -334,7 +336,8 @@ async function downloadPlacementPreview() {
     canvas.height = downloadAccess.highResolution ? 1200 : 900;
     const context = canvas.getContext("2d");
     const selectedPlacement = normalizeDataValue(currentDesign?.input?.placement ?? "Forearm");
-    drawPlacementSkinMockup(context, canvas.width, selectedPlacement);
+    const skinImage = await loadDrawableImage(getPlacementSkinAsset(selectedPlacement));
+    context.drawImage(skinImage, 0, 0, canvas.width, canvas.height);
 
     const tattooBox = getPlacementTattooBox(canvas.width);
     context.save();
@@ -343,7 +346,9 @@ async function downloadPlacementPreview() {
     context.rotate((tattooBox.rotation * Math.PI) / 180);
     context.filter = "grayscale(1) contrast(1.18)";
     context.globalCompositeOperation = "multiply";
-    context.drawImage(tattooImage, -tattooBox.width / 2, -tattooBox.height / 2, tattooBox.width, tattooBox.height);
+    const transparentTattooUrl = await createTransparentTattooUrl(tattooUrl);
+    const transparentTattooImage = await loadDrawableImage(transparentTattooUrl);
+    context.drawImage(transparentTattooImage, -tattooBox.width / 2, -tattooBox.height / 2, tattooBox.width, tattooBox.height);
     context.restore();
     if (!downloadAccess.highResolution) {
       drawWatermark(context, canvas.width, canvas.height);
@@ -426,10 +431,14 @@ function renderDesign(design) {
     detailLineworkEmpty.hidden = lineworkReady;
   }
   detailLineworkImage.alt = lineworkReady ? `${title} linework` : "Linework not generated yet";
-  detailPlacementTattoo.src = tattooImage;
   detailPlacementTattoo.alt = `${title} placement preview`;
-  detailPlacementMockup.dataset.placement = normalizeDataValue(design.input?.placement ?? "Forearm");
+  const selectedPlacement = normalizeDataValue(design.input?.placement ?? "Forearm");
+  detailPlacementMockup.dataset.placement = selectedPlacement;
   detailPlacementMockup.dataset.size = normalizeDataValue(design.input?.size ?? "Small");
+  if (detailPlacementSkin) {
+    detailPlacementSkin.src = getPlacementSkinAsset(selectedPlacement);
+  }
+  applyTransparentTattooOverlay(detailPlacementTattoo, tattooImage);
   detailPlacementNote.textContent = design.placementNote ?? "Placement guidance is not available for this design.";
   detailPrompt.textContent = design.prompt ?? "Prompt is not available for this design.";
   detailMeta.innerHTML = `

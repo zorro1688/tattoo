@@ -16,7 +16,7 @@ await run("homepage hero placement preview has a clean skin mockup and tattoo ov
 
   assert.match(html, /heroPlacementMockup/);
   assert.match(html, /heroPlacementTattoo/);
-  assert.match(html, /assets\/hero-forearm-clean\.png/);
+  assert.match(html, /assets\/placement-forearm\.svg/);
 });
 
 await run("homepage script drives placement overlay from generated images", async () => {
@@ -25,16 +25,27 @@ await run("homepage script drives placement overlay from generated images", asyn
   assert.match(script, /heroPlacementMockup/);
   assert.match(script, /heroPlacementTattoo/);
   assert.match(script, /updatePlacementPreview/);
-  assert.match(script, /drawPlacementSkinMockup/);
+  assert.match(script, /getPlacementSkinAsset/);
   assert.match(script, /getGeneratedImage\("linework"\) \|\| getConceptPreviewImage\(\)/);
   assert.doesNotMatch(script, /loadDrawableImage\(skinUrl\)/);
 });
 
 
-await run("homepage placement mockup changes body shapes by placement", async () => {
+await run("homepage placement mockup shows skin image assets instead of CSS-only body shapes", async () => {
   const styles = await readFile("styles.css", "utf8");
 
-  assert.ok(styles.includes("hero-placement-skin {\n  display: none;"));
-  assert.ok(styles.includes('.hero-placement-mockup[data-placement="chest"]::before'));
-  assert.ok(styles.includes('.hero-placement-mockup[data-placement="wrist"]::before'));
+  assert.ok(styles.includes(`hero-placement-skin {\n  position: absolute;`));
+  assert.ok(styles.includes("object-fit: cover;"));
+  assert.ok(styles.includes(`hero-placement-mockup::before,\n.hero-placement-mockup::after {\n  display: none;`));
+});
+
+await run("homepage placement preview uses placement-specific skin assets", async () => {
+  const script = await readFile("script.js", "utf8");
+  const html = await readFile("index.html", "utf8");
+
+  assert.match(html, /id="heroPlacementSkin"/);
+  assert.match(script, /placementSkinAssets/);
+  assert.match(script, /heroPlacementSkin.src = getPlacementSkinAsset/);
+  assert.match(script, /createTransparentTattooUrl/);
+  assert.match(script, /applyTransparentTattooOverlay/);
 });
