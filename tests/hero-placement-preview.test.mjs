@@ -34,9 +34,9 @@ await run("homepage script drives placement overlay from generated images", asyn
 await run("homepage placement mockup shows skin image assets instead of CSS-only body shapes", async () => {
   const styles = await readFile("styles.css", "utf8");
 
-  assert.ok(styles.includes(`hero-placement-skin {\n  position: absolute;`));
+  assert.match(styles, /hero-placement-skin \{\s+position: absolute;/);
   assert.ok(styles.includes("object-fit: cover;"));
-  assert.ok(styles.includes(`hero-placement-mockup::before,\n.hero-placement-mockup::after {\n  display: none;`));
+  assert.match(styles, /hero-placement-mockup::before,\s*\.hero-placement-mockup::after \{\s+display: none;/);
 });
 
 await run("homepage placement preview uses placement-specific skin assets", async () => {
@@ -83,4 +83,15 @@ await run("homepage placement overlay removes edge-colored image backgrounds", a
   assert.match(script, /const background = estimateTattooBackgroundColor/);
   assert.match(script, /data\[index \+ 3\] = 0/);
   assert.doesNotMatch(script, /Math\.max\(28, Math\.round\(\(235 - brightness\) \* 3\.2\)\)/);
+});
+await run("homepage placement preview uses clearer size scale for larger body areas", async () => {
+  const script = await readFile("script.js", "utf8");
+  const styles = await readFile("styles.css", "utf8");
+
+  assert.match(script, /shoulder:\s*\{ x: 0\.58, y: 0\.34, rotation: -8, scale: 0\.92, squash: 0\.9 \}/);
+  assert.match(script, /small:\s*0\.22/);
+  assert.match(script, /medium:\s*0\.31/);
+  assert.match(script, /large:\s*0\.42/);
+  assert.match(styles, /width: 150px/);
+  assert.match(styles, /width: 208px/);
 });

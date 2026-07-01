@@ -106,8 +106,8 @@ await run("design detail placement preview does not depend on the fixed forearm 
   }
 
   assert.match(styles, /#detailLineworkImage/);
-  assert.ok(styles.includes(`detail-placement-skin {\n  position: absolute;`));
-  assert.ok(styles.includes(`detail-placement-mockup::before,\n.detail-placement-mockup::after {\n  display: none;`));
+  assert.match(styles, /detail-placement-skin \{\s+position: absolute;/);
+  assert.match(styles, /detail-placement-mockup::before,\s*\.detail-placement-mockup::after \{\s+display: none;/);
 });
 
 await run("design detail placement preview uses placement-specific skin assets", async () => {
@@ -154,4 +154,16 @@ await run("design detail placement overlay removes edge-colored image background
   assert.match(script, /const background = estimateTattooBackgroundColor/);
   assert.match(script, /data\[index \+ 3\] = 0/);
   assert.doesNotMatch(script, /Math\.max\(28, Math\.round\(\(235 - brightness\) \* 3\.2\)\)/);
+});
+await run("design detail placement preview uses clearer size scale for larger body areas", async () => {
+  const script = await readFile("design.js", "utf8");
+  const styles = await readFile("styles.css", "utf8");
+
+  assert.match(script, /shoulder:\s*\{ x: 0\.58, y: 0\.34, rotation: -8, scale: 0\.92, squash: 0\.9 \}/);
+  assert.match(script, /small:\s*0\.22/);
+  assert.match(script, /medium:\s*0\.31/);
+  assert.match(script, /large:\s*0\.42/);
+  assert.match(styles, /\.detail-placement-mockup\[data-size="small"\]/);
+  assert.match(styles, /width: 150px/);
+  assert.match(styles, /width: 208px/);
 });

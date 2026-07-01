@@ -1180,8 +1180,8 @@ textarea {
 .detail-placement-tattoo {
   left: 54%;
   top: 53%;
-  width: 86px;
-  height: 86px;
+  width: 104px;
+  height: 104px;
   object-fit: contain;
   mix-blend-mode: multiply;
   filter: grayscale(1) contrast(0.92) brightness(0.72) blur(0.35px);
@@ -1190,14 +1190,19 @@ textarea {
   transform: translate(-50%, -50%) rotate(-8deg) scaleX(0.9) skewX(-2deg);
 }
 
+.detail-placement-mockup[data-size="small"] .detail-placement-tattoo {
+  width: 104px;
+  height: 104px;
+}
+
 .detail-placement-mockup[data-size="medium"] .detail-placement-tattoo {
-  width: 124px;
-  height: 124px;
+  width: 150px;
+  height: 150px;
 }
 
 .detail-placement-mockup[data-size="large"] .detail-placement-tattoo {
-  width: 164px;
-  height: 164px;
+  width: 208px;
+  height: 208px;
 }
 
 .detail-placement-mockup[data-placement="upper-arm"]::before {
@@ -2533,18 +2538,18 @@ textarea {
 }
 
 .hero-placement-mockup[data-size="small"] .hero-placement-tattoo {
-  width: 86px;
-  height: 86px;
+  width: 104px;
+  height: 104px;
 }
 
 .hero-placement-mockup[data-size="medium"] .hero-placement-tattoo {
-  width: 124px;
-  height: 124px;
+  width: 150px;
+  height: 150px;
 }
 
 .hero-placement-mockup[data-size="large"] .hero-placement-tattoo {
-  width: 164px;
-  height: 164px;
+  width: 208px;
+  height: 208px;
 }
 
 .hero-placement-mockup[data-placement="upper-arm"]::before {

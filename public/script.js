@@ -102,7 +102,7 @@ const placementTattooFits = {
   chest: { x: 0.5, y: 0.34, rotation: 0, scale: 0.68, squash: 0.95 },
   back: { x: 0.5, y: 0.43, rotation: 0, scale: 0.9, squash: 0.95 },
   ankle: { x: 0.5, y: 0.58, rotation: -3, scale: 0.58, squash: 0.86 },
-  shoulder: { x: 0.58, y: 0.34, rotation: -8, scale: 0.72, squash: 0.9 },
+  shoulder: { x: 0.58, y: 0.34, rotation: -8, scale: 0.92, squash: 0.9 },
   rib: { x: 0.57, y: 0.5, rotation: 5, scale: 0.62, squash: 0.86 }
 };
 
@@ -552,9 +552,9 @@ function loadDrawableImage(url) {
 
 function getPlacementTattooBox(canvasSize) {
   const sizeScale = {
-    small: 0.18,
-    medium: 0.25,
-    large: 0.33
+    small: 0.22,
+    medium: 0.31,
+    large: 0.42
   };
   const selectedPlacement = normalizeDataValue(placement.value);
   const selectedSize = normalizeDataValue(size.value);
