@@ -86,14 +86,14 @@ let pricingEntitlement = {
 };
 
 const placementSkinAssets = {
-  forearm: "assets/placement-forearm.svg",
-  wrist: "assets/placement-wrist.svg",
-  "upper-arm": "assets/placement-upper-arm.svg",
-  chest: "assets/placement-chest.svg",
-  back: "assets/placement-back.svg",
-  ankle: "assets/placement-ankle.svg",
-  shoulder: "assets/placement-shoulder.svg",
-  rib: "assets/placement-rib.svg"
+  forearm: "assets/placement-forearm.jpg",
+  wrist: "assets/placement-wrist.jpg",
+  "upper-arm": "assets/placement-upper-arm.jpg",
+  chest: "assets/placement-chest.jpg",
+  back: "assets/placement-back.jpg",
+  ankle: "assets/placement-ankle.jpg",
+  shoulder: "assets/placement-shoulder.jpg",
+  rib: "assets/placement-rib.jpg"
 };
 const transparentTattooCache = new Map();
 

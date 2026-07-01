@@ -16,7 +16,7 @@ await run("homepage hero placement preview has a clean skin mockup and tattoo ov
 
   assert.match(html, /heroPlacementMockup/);
   assert.match(html, /heroPlacementTattoo/);
-  assert.match(html, /assets\/placement-forearm\.svg/);
+  assert.match(html, /assets\/placement-forearm\.jpg/);
 });
 
 await run("homepage script drives placement overlay from generated images", async () => {
