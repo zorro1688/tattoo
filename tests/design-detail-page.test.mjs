@@ -120,3 +120,17 @@ await run("design detail placement preview uses placement-specific skin assets",
   assert.match(script, /createTransparentTattooUrl/);
   assert.match(script, /applyTransparentTattooOverlay/);
 });
+
+await run("design detail placement overlay uses skin-embedded ink treatment", async () => {
+  const styles = await readFile("styles.css", "utf8");
+  const script = await readFile("design.js", "utf8");
+
+  assert.match(styles, /mix-blend-mode: multiply/);
+  assert.match(styles, /blur\(0\.35px\)/);
+  assert.match(styles, /opacity: 0\.72/);
+  assert.match(styles, /scaleX\(0\.9\)/);
+  assert.match(script, /function drawSkinEmbeddedTattoo/);
+  assert.match(script, /globalAlpha = 0\.58/);
+  assert.match(script, /blur\(0\.8px\)/);
+  assert.doesNotMatch(script, /globalAlpha = 0\.82/);
+});

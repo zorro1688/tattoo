@@ -1174,9 +1174,10 @@ textarea {
   height: 86px;
   object-fit: contain;
   mix-blend-mode: multiply;
-  filter: grayscale(1) contrast(1.18);
-  opacity: 0.92;
-  transform: translate(-50%, -50%) rotate(-8deg);
+  filter: grayscale(1) contrast(0.92) brightness(0.72) blur(0.35px);
+  opacity: 0.72;
+  transform-origin: center;
+  transform: translate(-50%, -50%) rotate(-8deg) scaleX(0.9) skewX(-2deg);
 }
 
 .detail-placement-mockup[data-size="medium"] .detail-placement-tattoo {
@@ -1237,7 +1238,7 @@ textarea {
 .detail-placement-mockup[data-placement="ankle"] .detail-placement-tattoo {
   left: 42%;
   top: 76%;
-  transform: translate(-50%, -50%) rotate(-8deg) scale(0.78);
+  transform: translate(-50%, -50%) rotate(-8deg) scale(0.78) scaleX(0.88) skewX(-2deg);
 }
 
 .detail-placement-mockup[data-placement="shoulder"] .detail-placement-tattoo,
@@ -1246,7 +1247,7 @@ textarea {
 .detail-placement-mockup[data-placement="rib"] .detail-placement-tattoo {
   left: 56%;
   top: 43%;
-  transform: translate(-50%, -50%) rotate(-6deg) scale(1.18);
+  transform: translate(-50%, -50%) rotate(-6deg) scale(1.18) scaleX(0.9) skewX(-2deg);
 }
 
 .design-brief-card {
@@ -2515,9 +2516,10 @@ textarea {
   height: 112px;
   object-fit: contain;
   mix-blend-mode: multiply;
-  filter: grayscale(1) contrast(1.18);
-  opacity: 0.92;
-  transform: translate(-50%, -50%) rotate(-8deg);
+  filter: grayscale(1) contrast(0.92) brightness(0.72) blur(0.35px);
+  opacity: 0.72;
+  transform-origin: center;
+  transform: translate(-50%, -50%) rotate(-8deg) scaleX(0.9) skewX(-2deg);
 }
 
 .hero-placement-mockup[data-size="small"] .hero-placement-tattoo {
@@ -2583,14 +2585,14 @@ textarea {
 .hero-placement-mockup[data-placement="upper-arm"] .hero-placement-tattoo {
   left: 54%;
   top: 53%;
-  transform: translate(-50%, -50%) rotate(-8deg);
+  transform: translate(-50%, -50%) rotate(-8deg) scaleX(0.9) skewX(-2deg);
 }
 
 .hero-placement-mockup[data-placement="wrist"] .hero-placement-tattoo,
 .hero-placement-mockup[data-placement="ankle"] .hero-placement-tattoo {
   left: 42%;
   top: 76%;
-  transform: translate(-50%, -50%) rotate(-8deg) scale(0.78);
+  transform: translate(-50%, -50%) rotate(-8deg) scale(0.78) scaleX(0.88) skewX(-2deg);
 }
 
 .hero-placement-mockup[data-placement="shoulder"] .hero-placement-tattoo,
@@ -2599,7 +2601,7 @@ textarea {
 .hero-placement-mockup[data-placement="rib"] .hero-placement-tattoo {
   left: 56%;
   top: 43%;
-  transform: translate(-50%, -50%) rotate(-6deg) scale(1.18);
+  transform: translate(-50%, -50%) rotate(-6deg) scale(1.18) scaleX(0.9) skewX(-2deg);
 }
 
 .mode-placement .hero-preview-stage {

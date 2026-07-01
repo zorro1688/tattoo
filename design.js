@@ -320,6 +320,22 @@ function getPlacementTattooBox(canvasSize) {
   };
 }
 
+function drawSkinEmbeddedTattoo(context, tattooImage, tattooBox) {
+  context.save();
+  context.translate(context.canvas.width * tattooBox.x, context.canvas.height * tattooBox.y);
+  context.rotate((tattooBox.rotation * Math.PI) / 180);
+  context.scale(0.9, 1);
+  context.globalCompositeOperation = "multiply";
+
+  context.globalAlpha = 0.18;
+  context.filter = "grayscale(1) contrast(0.86) brightness(0.74) blur(0.8px)";
+  context.drawImage(tattooImage, -tattooBox.width / 2, -tattooBox.height / 2, tattooBox.width, tattooBox.height);
+
+  context.globalAlpha = 0.58;
+  context.filter = "grayscale(1) contrast(0.92) brightness(0.72) blur(0.18px)";
+  context.drawImage(tattooImage, -tattooBox.width / 2, -tattooBox.height / 2, tattooBox.width, tattooBox.height);
+  context.restore();
+}
 async function downloadPlacementPreview() {
   if (!currentDesign) {
     return;
@@ -340,16 +356,9 @@ async function downloadPlacementPreview() {
     context.drawImage(skinImage, 0, 0, canvas.width, canvas.height);
 
     const tattooBox = getPlacementTattooBox(canvas.width);
-    context.save();
-    context.globalAlpha = 0.82;
-    context.translate(canvas.width * tattooBox.x, canvas.height * tattooBox.y);
-    context.rotate((tattooBox.rotation * Math.PI) / 180);
-    context.filter = "grayscale(1) contrast(1.18)";
-    context.globalCompositeOperation = "multiply";
     const transparentTattooUrl = await createTransparentTattooUrl(tattooUrl);
     const transparentTattooImage = await loadDrawableImage(transparentTattooUrl);
-    context.drawImage(transparentTattooImage, -tattooBox.width / 2, -tattooBox.height / 2, tattooBox.width, tattooBox.height);
-    context.restore();
+    drawSkinEmbeddedTattoo(context, transparentTattooImage, tattooBox);
     if (!downloadAccess.highResolution) {
       drawWatermark(context, canvas.width, canvas.height);
       designStatus.textContent = downloadAccess.message;
