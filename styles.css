@@ -2850,3 +2850,10 @@ textarea {
     text-transform: uppercase;
   }
 }
+
+.hero-placement-mockup .hero-placement-tattoo,
+.detail-placement-mockup .detail-placement-tattoo {
+  left: var(--tattoo-x, 54%);
+  top: var(--tattoo-y, 55%);
+  transform: translate(-50%, -50%) rotate(var(--tattoo-rotation, -7deg)) scale(var(--tattoo-fit-scale, 0.82)) scaleX(var(--tattoo-squash, 0.9)) skewX(-2deg) !important;
+}

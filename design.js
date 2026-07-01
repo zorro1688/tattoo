@@ -28,6 +28,34 @@ const placementSkinAssets = {
   shoulder: "assets/placement-shoulder.jpg",
   rib: "assets/placement-rib.jpg"
 };
+const placementTattooFits = {
+  forearm: { x: 0.54, y: 0.55, rotation: -7, scale: 0.82, squash: 0.9 },
+  wrist: { x: 0.48, y: 0.58, rotation: -4, scale: 0.56, squash: 0.86 },
+  "upper-arm": { x: 0.53, y: 0.46, rotation: -5, scale: 0.82, squash: 0.9 },
+  chest: { x: 0.5, y: 0.34, rotation: 0, scale: 0.68, squash: 0.95 },
+  back: { x: 0.5, y: 0.43, rotation: 0, scale: 0.9, squash: 0.95 },
+  ankle: { x: 0.5, y: 0.58, rotation: -3, scale: 0.58, squash: 0.86 },
+  shoulder: { x: 0.58, y: 0.34, rotation: -8, scale: 0.72, squash: 0.9 },
+  rib: { x: 0.57, y: 0.5, rotation: 5, scale: 0.62, squash: 0.86 }
+};
+
+function getPlacementTattooFit(value = "Forearm") {
+  const key = normalizeDataValue(value);
+  return placementTattooFits[key] ?? placementTattooFits.forearm;
+}
+
+function applyPlacementTattooFit(mockupElement, placementValue = "Forearm") {
+  if (!mockupElement) {
+    return;
+  }
+
+  const fit = getPlacementTattooFit(placementValue);
+  mockupElement.style.setProperty("--tattoo-x", `${Math.round(fit.x * 100)}%`);
+  mockupElement.style.setProperty("--tattoo-y", `${Math.round(fit.y * 100)}%`);
+  mockupElement.style.setProperty("--tattoo-rotation", `${fit.rotation}deg`);
+  mockupElement.style.setProperty("--tattoo-fit-scale", String(fit.scale));
+  mockupElement.style.setProperty("--tattoo-squash", String(fit.squash));
+}
 const transparentTattooCache = new Map();
 
 function getPlacementSkinAsset(value = "Forearm") {
@@ -298,23 +326,13 @@ function getPlacementTattooBox(canvasSize) {
     medium: 0.25,
     large: 0.33
   };
-  const placementMap = {
-    wrist: { x: 0.42, y: 0.76, rotation: -8, scale: 0.78 },
-    ankle: { x: 0.42, y: 0.76, rotation: -8, scale: 0.78 },
-    shoulder: { x: 0.56, y: 0.43, rotation: -6, scale: 1.18 },
-    chest: { x: 0.56, y: 0.43, rotation: -6, scale: 1.18 },
-    back: { x: 0.56, y: 0.43, rotation: -6, scale: 1.18 },
-    rib: { x: 0.56, y: 0.43, rotation: -6, scale: 1.18 },
-    forearm: { x: 0.54, y: 0.53, rotation: -8, scale: 1 },
-    "upper-arm": { x: 0.54, y: 0.53, rotation: -8, scale: 1 }
-  };
   const selectedPlacement = normalizeDataValue(currentDesign?.input?.placement ?? "Forearm");
   const selectedSize = normalizeDataValue(currentDesign?.input?.size ?? "Small");
-  const box = placementMap[selectedPlacement] ?? placementMap.forearm;
-  const width = canvasSize * (sizeScale[selectedSize] ?? sizeScale.small) * box.scale;
+  const fit = getPlacementTattooFit(selectedPlacement);
+  const width = canvasSize * (sizeScale[selectedSize] ?? sizeScale.small) * fit.scale;
 
   return {
-    ...box,
+    ...fit,
     width,
     height: width
   };
@@ -324,7 +342,7 @@ function drawSkinEmbeddedTattoo(context, tattooImage, tattooBox) {
   context.save();
   context.translate(context.canvas.width * tattooBox.x, context.canvas.height * tattooBox.y);
   context.rotate((tattooBox.rotation * Math.PI) / 180);
-  context.scale(0.9, 1);
+  context.scale(tattooBox.squash ?? 0.9, 1);
   context.globalCompositeOperation = "multiply";
 
   context.globalAlpha = 0.18;
@@ -444,6 +462,7 @@ function renderDesign(design) {
   const selectedPlacement = normalizeDataValue(design.input?.placement ?? "Forearm");
   detailPlacementMockup.dataset.placement = selectedPlacement;
   detailPlacementMockup.dataset.size = normalizeDataValue(design.input?.size ?? "Small");
+  applyPlacementTattooFit(detailPlacementMockup, selectedPlacement);
   if (detailPlacementSkin) {
     detailPlacementSkin.src = getPlacementSkinAsset(selectedPlacement);
   }

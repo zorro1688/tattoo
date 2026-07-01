@@ -134,3 +134,14 @@ await run("design detail placement overlay uses skin-embedded ink treatment", as
   assert.match(script, /blur\(0\.8px\)/);
   assert.doesNotMatch(script, /globalAlpha = 0\.82/);
 });
+await run("design detail placement preview uses body-part-specific fit points", async () => {
+  const styles = await readFile("styles.css", "utf8");
+  const script = await readFile("design.js", "utf8");
+
+  assert.match(script, /placementTattooFits/);
+  assert.match(script, /chest:\s*\{ x: 0\.5, y: 0\.34, rotation: 0, scale: 0\.68, squash: 0\.95 \}/);
+  assert.match(script, /rib:\s*\{ x: 0\.57, y: 0\.5, rotation: 5, scale: 0\.62, squash: 0\.86 \}/);
+  assert.match(script, /applyPlacementTattooFit\(detailPlacementMockup, selectedPlacement\)/);
+  assert.match(styles, /--tattoo-x/);
+  assert.match(styles, /--tattoo-fit-scale/);
+});
