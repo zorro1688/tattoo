@@ -74,3 +74,13 @@ await run("homepage placement preview uses body-part-specific fit points", async
   assert.match(styles, /--tattoo-x/);
   assert.match(styles, /--tattoo-fit-scale/);
 });
+await run("homepage placement overlay removes edge-colored image backgrounds", async () => {
+  const script = await readFile("script.js", "utf8");
+
+  assert.match(script, /estimateTattooBackgroundColor/);
+  assert.match(script, /isNearTattooBackground/);
+  assert.match(script, /backgroundDistance/);
+  assert.match(script, /const background = estimateTattooBackgroundColor/);
+  assert.match(script, /data\[index \+ 3\] = 0/);
+  assert.doesNotMatch(script, /Math\.max\(28, Math\.round\(\(235 - brightness\) \* 3\.2\)\)/);
+});

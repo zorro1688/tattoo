@@ -130,7 +130,51 @@ function getPlacementSkinAsset(value = "Forearm") {
   return placementSkinAssets[key] ?? placementSkinAssets.forearm;
 }
 
-function isBackgroundPixel(red, green, blue, alpha) {
+function backgroundDistance(red, green, blue, background) {
+  return Math.abs(red - background.red) + Math.abs(green - background.green) + Math.abs(blue - background.blue);
+}
+
+function estimateTattooBackgroundColor(data, width, height) {
+  const samplePoints = [
+    [0, 0],
+    [width - 1, 0],
+    [0, height - 1],
+    [width - 1, height - 1],
+    [Math.floor(width / 2), 0],
+    [Math.floor(width / 2), height - 1],
+    [0, Math.floor(height / 2)],
+    [width - 1, Math.floor(height / 2)]
+  ];
+  const samples = [];
+
+  samplePoints.forEach(([x, y]) => {
+    const safeX = Math.max(0, Math.min(width - 1, x));
+    const safeY = Math.max(0, Math.min(height - 1, y));
+    const index = (safeY * width + safeX) * 4;
+    if (data[index + 3] >= 18) {
+      samples.push({
+        red: data[index],
+        green: data[index + 1],
+        blue: data[index + 2]
+      });
+    }
+  });
+
+  if (!samples.length) {
+    return { red: 255, green: 255, blue: 255 };
+  }
+
+  return samples.reduce(
+    (color, sample) => ({
+      red: color.red + sample.red / samples.length,
+      green: color.green + sample.green / samples.length,
+      blue: color.blue + sample.blue / samples.length
+    }),
+    { red: 0, green: 0, blue: 0 }
+  );
+}
+
+function isNearTattooBackground(red, green, blue, alpha, background) {
   if (alpha < 18) {
     return true;
   }
@@ -140,7 +184,7 @@ function isBackgroundPixel(red, green, blue, alpha) {
   const brightness = (red + green + blue) / 3;
   const chroma = max - min;
 
-  return brightness > 206 && chroma < 38;
+  return backgroundDistance(red, green, blue, background) < 84 || (brightness > 210 && chroma < 44);
 }
 
 function createTransparentTattooUrl(url) {
@@ -161,16 +205,30 @@ function createTransparentTattooUrl(url) {
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
       const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
+      const background = estimateTattooBackgroundColor(data, canvas.width, canvas.height);
 
       for (let index = 0; index < data.length; index += 4) {
-        if (isBackgroundPixel(data[index], data[index + 1], data[index + 2], data[index + 3])) {
+        const red = data[index];
+        const green = data[index + 1];
+        const blue = data[index + 2];
+        const alpha = data[index + 3];
+
+        if (isNearTattooBackground(red, green, blue, alpha, background)) {
           data[index + 3] = 0;
           continue;
         }
 
-        const brightness = (data[index] + data[index + 1] + data[index + 2]) / 3;
-        if (brightness > 170) {
-          data[index + 3] = Math.min(data[index + 3], Math.max(28, Math.round((235 - brightness) * 3.2)));
+        const max = Math.max(red, green, blue);
+        const min = Math.min(red, green, blue);
+        const brightness = (red + green + blue) / 3;
+        const chroma = max - min;
+
+        if (brightness > 185 && chroma < 70) {
+          data[index + 3] = Math.min(data[index + 3], Math.max(0, Math.round((230 - brightness) * 2.2)));
+        }
+
+        if (data[index + 3] < 16) {
+          data[index + 3] = 0;
         }
       }
 
