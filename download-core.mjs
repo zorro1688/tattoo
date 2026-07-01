@@ -141,14 +141,40 @@ export function renderWatermarkedSvg({
 function renderPlacementSvg(generation, access, imageUrl) {
   const input = generation.input ?? {};
   const title = `${input.style ?? "Tattoo"} placement preview`;
+  const width = access.highResolution ? 1200 : 900;
+  const height = access.highResolution ? 1200 : 900;
+  const adjustment = generation.placementAdjustment;
 
-  return renderWatermarkedSvg({
-    imageUrl,
-    title,
-    watermarked: access.watermarked,
-    width: access.highResolution ? 1200 : 900,
-    height: access.highResolution ? 1200 : 900
-  });
+  if (!adjustment) {
+    return renderWatermarkedSvg({
+      imageUrl,
+      title,
+      watermarked: access.watermarked,
+      width,
+      height
+    });
+  }
+
+  const safeUrl = escapeXml(normalizeImageUrl(imageUrl));
+  const safeTitle = escapeXml(title);
+  const x = Math.round(Number(adjustment.x) * width);
+  const y = Math.round(Number(adjustment.y) * height);
+  const scale = Number(adjustment.scale);
+  const rotation = Number(adjustment.rotation);
+  const adjustmentData = `${adjustment.x},${adjustment.y},${adjustment.scale},${adjustment.rotation}`;
+  const watermark = access.watermarked
+    ? `<g opacity="0.22" transform="rotate(-24 ${width / 2} ${height / 2})">
+        <text x="${width / 2}" y="${height / 2}" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="${Math.round(width * 0.12)}" font-weight="800" fill="#1d1d1f">InkFirst</text>
+      </g>`
+    : "";
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${safeTitle}" data-placement-adjustment="${escapeXml(adjustmentData)}">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g transform="translate(${x} ${y}) rotate(${rotation}) scale(${scale})">
+    <image href="${safeUrl}" x="${-width / 2}" y="${-height / 2}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet"/>
+  </g>
+  ${watermark}
+</svg>`;
 }
 
 export async function resolveDownloadFile({

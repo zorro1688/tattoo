@@ -16,6 +16,10 @@ const detailDownloadPlacement = document.querySelector("#detailDownloadPlacement
 const detailUpgradeConcept = document.querySelector("#detailUpgradeConcept");
 const detailUpgradeLinework = document.querySelector("#detailUpgradeLinework");
 const detailUpgradePlacement = document.querySelector("#detailUpgradePlacement");
+const placementScaleControl = document.querySelector("#placementScaleControl");
+const placementRotateControl = document.querySelector("#placementRotateControl");
+const savePlacementButton = document.querySelector("#savePlacementButton");
+const resetPlacementButton = document.querySelector("#resetPlacementButton");
 
 
 const placementSkinAssets = {
@@ -189,6 +193,9 @@ function applyTransparentTattooOverlay(imageElement, url) {
 }
 
 let currentDesign = null;
+let currentPlacementAdjustment = null;
+let placementDragActive = false;
+let placementPointerId = null;
 let downloadAccess = {
   highResolution: false,
   watermarked: true,
@@ -378,6 +385,147 @@ function loadDrawableImage(url) {
 }
 
 
+function clampNumber(value, min, max) {
+  return Math.min(max, Math.max(min, Number(value)));
+}
+
+function normalizePlacementAdjustment(adjustment, fallback) {
+  if (!adjustment) {
+    return { ...fallback };
+  }
+
+  return {
+    x: clampNumber(adjustment.x, 0, 1),
+    y: clampNumber(adjustment.y, 0, 1),
+    scale: clampNumber(adjustment.scale, 0.35, 2.4),
+    rotation: clampNumber(adjustment.rotation, -45, 45)
+  };
+}
+
+function getDefaultPlacementAdjustment(design = currentDesign) {
+  const fit = getPlacementTattooFit(design?.input?.placement ?? "Forearm");
+  return {
+    x: fit.x,
+    y: fit.y,
+    scale: fit.scale,
+    rotation: fit.rotation
+  };
+}
+
+function syncPlacementControls(adjustment) {
+  if (placementScaleControl) {
+    placementScaleControl.value = String(adjustment.scale);
+  }
+  if (placementRotateControl) {
+    placementRotateControl.value = String(adjustment.rotation);
+  }
+}
+
+function applyPlacementAdjustment(adjustment, options = {}) {
+  if (!detailPlacementMockup) {
+    return;
+  }
+
+  currentPlacementAdjustment = normalizePlacementAdjustment(
+    adjustment,
+    getDefaultPlacementAdjustment(currentDesign)
+  );
+  detailPlacementMockup.style.setProperty("--tattoo-x", `${Math.round(currentPlacementAdjustment.x * 1000) / 10}%`);
+  detailPlacementMockup.style.setProperty("--tattoo-y", `${Math.round(currentPlacementAdjustment.y * 1000) / 10}%`);
+  detailPlacementMockup.style.setProperty("--tattoo-fit-scale", String(currentPlacementAdjustment.scale));
+  detailPlacementMockup.style.setProperty("--tattoo-rotation", `${currentPlacementAdjustment.rotation}deg`);
+  detailPlacementMockup.classList.add("is-adjustable");
+
+  if (!options.skipControls) {
+    syncPlacementControls(currentPlacementAdjustment);
+  }
+}
+
+function updatePlacementFromPointer(event) {
+  if (!detailPlacementMockup || !placementDragActive) {
+    return;
+  }
+
+  const rect = detailPlacementMockup.getBoundingClientRect();
+  const next = {
+    ...(currentPlacementAdjustment ?? getDefaultPlacementAdjustment(currentDesign)),
+    x: clampNumber((event.clientX - rect.left) / rect.width, 0, 1),
+    y: clampNumber((event.clientY - rect.top) / rect.height, 0, 1)
+  };
+  applyPlacementAdjustment(next, { skipControls: true });
+}
+
+async function savePlacementAdjustment(adjustment = currentPlacementAdjustment) {
+  if (!currentDesign?.id || !adjustment) {
+    return;
+  }
+
+  savePlacementButton.disabled = true;
+  designStatus.textContent = "Saving placement...";
+
+  try {
+    const response = await fetch("/api/generation", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        generationId: currentDesign.id,
+        placementAdjustment: adjustment
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.error ?? "Could not save placement.");
+    }
+
+    currentDesign = data.generation;
+    applyPlacementAdjustment(currentDesign.placementAdjustment ?? getDefaultPlacementAdjustment(currentDesign));
+    designStatus.textContent = "Placement saved.";
+  } catch (error) {
+    designStatus.textContent = error.message ?? "Could not save placement.";
+  } finally {
+    savePlacementButton.disabled = !currentDesign;
+  }
+}
+
+async function resetPlacementAdjustment() {
+  if (!currentDesign?.id) {
+    return;
+  }
+
+  const fallback = getDefaultPlacementAdjustment(currentDesign);
+  applyPlacementAdjustment(fallback);
+  savePlacementButton.disabled = true;
+  resetPlacementButton.disabled = true;
+  designStatus.textContent = "Resetting placement...";
+
+  try {
+    const response = await fetch("/api/generation", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        generationId: currentDesign.id,
+        placementAdjustment: null
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.error ?? "Could not reset placement.");
+    }
+
+    currentDesign = data.generation;
+    currentDesign.placementAdjustment = null;
+    applyPlacementAdjustment(fallback);
+    designStatus.textContent = "Placement reset.";
+  } catch (error) {
+    designStatus.textContent = error.message ?? "Could not reset placement.";
+  } finally {
+    savePlacementButton.disabled = !currentDesign;
+    resetPlacementButton.disabled = !currentDesign;
+  }
+}
+
 function getPlacementTattooBox(canvasSize) {
   const sizeScale = {
     small: 0.22,
@@ -387,10 +535,17 @@ function getPlacementTattooBox(canvasSize) {
   const selectedPlacement = normalizeDataValue(currentDesign?.input?.placement ?? "Forearm");
   const selectedSize = normalizeDataValue(currentDesign?.input?.size ?? "Small");
   const fit = getPlacementTattooFit(selectedPlacement);
-  const width = canvasSize * (sizeScale[selectedSize] ?? sizeScale.small) * fit.scale;
+  const adjustment = normalizePlacementAdjustment(currentDesign?.placementAdjustment, {
+    x: fit.x,
+    y: fit.y,
+    scale: fit.scale,
+    rotation: fit.rotation
+  });
+  const width = canvasSize * (sizeScale[selectedSize] ?? sizeScale.small) * adjustment.scale;
 
   return {
     ...fit,
+    ...adjustment,
     width,
     height: width
   };
@@ -521,6 +676,7 @@ function renderDesign(design) {
   detailPlacementMockup.dataset.placement = selectedPlacement;
   detailPlacementMockup.dataset.size = normalizeDataValue(design.input?.size ?? "Small");
   applyPlacementTattooFit(detailPlacementMockup, selectedPlacement);
+  applyPlacementAdjustment(design.placementAdjustment ?? getDefaultPlacementAdjustment(design));
   if (detailPlacementSkin) {
     detailPlacementSkin.src = getPlacementSkinAsset(selectedPlacement);
   }
@@ -538,6 +694,12 @@ function renderDesign(design) {
   detailDownloadConcept.disabled = !design.images?.concept;
   detailDownloadPlacement.disabled = false;
   detailLineworkButton.disabled = false;
+  if (savePlacementButton) {
+    savePlacementButton.disabled = false;
+  }
+  if (resetPlacementButton) {
+    resetPlacementButton.disabled = false;
+  }
   renderDownloadAccessActions(lineworkReady);
   designStatus.textContent = "Saved design loaded.";
 }
@@ -683,6 +845,53 @@ async function generateLinework() {
     designStatus.textContent = error.message ?? "Could not create linework.";
   }
 }
+
+
+if (detailPlacementMockup) {
+  detailPlacementMockup.addEventListener("pointerdown", (event) => {
+    if (!currentDesign) {
+      return;
+    }
+    placementDragActive = true;
+    placementPointerId = event.pointerId;
+    detailPlacementMockup.classList.add("is-dragging");
+    detailPlacementMockup.setPointerCapture?.(event.pointerId);
+    updatePlacementFromPointer(event);
+  });
+  detailPlacementMockup.addEventListener("pointermove", updatePlacementFromPointer);
+  detailPlacementMockup.addEventListener("pointerup", () => {
+    placementDragActive = false;
+    placementPointerId = null;
+    detailPlacementMockup.classList.remove("is-dragging");
+  });
+  detailPlacementMockup.addEventListener("pointercancel", () => {
+    placementDragActive = false;
+    placementPointerId = null;
+    detailPlacementMockup.classList.remove("is-dragging");
+  });
+}
+
+placementScaleControl?.addEventListener("input", () => {
+  applyPlacementAdjustment({
+    ...(currentPlacementAdjustment ?? getDefaultPlacementAdjustment(currentDesign)),
+    scale: placementScaleControl.value
+  }, { skipControls: true });
+});
+
+placementRotateControl?.addEventListener("input", () => {
+  applyPlacementAdjustment({
+    ...(currentPlacementAdjustment ?? getDefaultPlacementAdjustment(currentDesign)),
+    rotation: placementRotateControl.value
+  }, { skipControls: true });
+});
+
+savePlacementButton?.addEventListener("click", () => {
+  savePlacementAdjustment();
+});
+
+resetPlacementButton?.addEventListener("click", () => {
+  resetPlacementAdjustment();
+});
 
 detailDownloadConcept.addEventListener("click", () => {
   downloadGenerationFile("concept");

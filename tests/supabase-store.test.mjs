@@ -6,7 +6,8 @@ import {
   listGenerationsFromSupabase,
   persistCreditEventToSupabase,
   persistGenerationToSupabase,
-  persistLineworkToSupabase
+  persistLineworkToSupabase,
+  persistPlacementAdjustmentToSupabase
 } from "../supabase-store.mjs";
 
 async function run(name, testBody) {
@@ -34,6 +35,7 @@ const savedGeneration = {
   status: "succeeded",
   prompt: "fine line tattoo design",
   placementNote: "Forearm guidance",
+  placementAdjustment: { x: 0.61, y: 0.37, scale: 1.24, rotation: -14 },
   images: {
     concept: "https://replicate.delivery/concept.webp",
     placement: "/assets/hero-placement.png"
@@ -109,6 +111,7 @@ function createReadFetchMock() {
     status: "succeeded",
     prompt: "fine line tattoo design",
     placement_note: "Forearm guidance",
+    placement_adjustment: { x: 0.61, y: 0.37, scale: 1.24, rotation: -14 },
     input_idea: "small rose with moon",
     input_style: "Fine line",
     input_placement: "Forearm",
@@ -194,6 +197,7 @@ await run("Supabase generation persistence writes client, generation, and assets
   assert.equal(generationBody.local_generation_id, "gen_local_123");
   assert.equal(generationBody.anonymous_client_id, "anon_client");
   assert.equal(generationBody.input_idea, "small rose with moon");
+  assert.deepEqual(generationBody.placement_adjustment, { x: 0.61, y: 0.37, scale: 1.24, rotation: -14 });
 
   const assetsBody = JSON.parse(serviceCalls[4].options.body);
   assert.equal(assetsBody.length, 2);
@@ -257,6 +261,26 @@ await run("Supabase linework persistence updates the saved generation asset", as
   assert.equal(assetsBody[0].storage_path, "anonymous/anon_client/gen_local_123/linework.webp");
 });
 
+
+await run("Supabase placement adjustment persistence patches the saved generation", async () => {
+  const { calls, fetchMock } = createFetchMock();
+  const result = await persistPlacementAdjustmentToSupabase(
+    "anon_client",
+    "gen_local_123",
+    { x: 0.52, y: 0.44, scale: 1.12, rotation: 6 },
+    env,
+    fetchMock
+  );
+
+  assert.equal(result.skipped, false);
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].url, /\/generations\?/);
+  assert.match(calls[0].url, /local_generation_id=eq\.gen_local_123/);
+  assert.equal(calls[0].options.method, "PATCH");
+  const body = JSON.parse(calls[0].options.body);
+  assert.deepEqual(body.placement_adjustment, { x: 0.52, y: 0.44, scale: 1.12, rotation: 6 });
+});
+
 await run("Supabase credit persistence writes entitlement state and event", async () => {
   const { calls, fetchMock } = createFetchMock();
   const result = await persistCreditEventToSupabase(
@@ -301,6 +325,7 @@ await run("Supabase generation list maps database rows to saved design shape", a
   assert.equal(design.images.concept, "https://replicate.delivery/concept.webp");
   assert.equal(design.images.linework, "https://replicate.delivery/linework.webp");
   assert.equal(design.assets.concept.storagePath, "anonymous/anon_client/gen_local_123/concept.webp");
+  assert.deepEqual(design.placementAdjustment, { x: 0.61, y: 0.37, scale: 1.24, rotation: -14 });
 });
 
 await run("Supabase generation detail reads one saved design by local id", async () => {

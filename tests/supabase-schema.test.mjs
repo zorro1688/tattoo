@@ -84,6 +84,7 @@ await run("Supabase migration contains the reviewed schema", async () => {
 
   assert.match(migration, /create table if not exists public\.generations/);
   assert.match(schema, /local_generation_id text/);
+  assert.match(schema, /placement_adjustment jsonb/);
   assert.match(migration, /alter table public\.generations enable row level security;/);
   assert.match(migration, /insert into storage\.buckets/);
 });

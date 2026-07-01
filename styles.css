@@ -2862,3 +2862,40 @@ textarea {
   top: var(--tattoo-y, 55%);
   transform: translate(-50%, -50%) rotate(var(--tattoo-rotation, -7deg)) scale(var(--tattoo-fit-scale, 0.82)) scaleX(var(--tattoo-squash, 0.9)) skewX(-2deg) !important;
 }
+.placement-adjustment-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 18px;
+  background: #f5f5f7;
+}
+
+.placement-adjustment-panel label {
+  display: grid;
+  gap: 7px;
+  color: #6e6e73;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.placement-adjustment-panel input[type="range"] {
+  width: 100%;
+  accent-color: #0071e3;
+}
+
+.placement-adjustment-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.detail-placement-mockup.is-adjustable {
+  cursor: grab;
+  touch-action: none;
+}
+
+.detail-placement-mockup.is-dragging {
+  cursor: grabbing;
+}

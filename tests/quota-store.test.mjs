@@ -8,6 +8,7 @@ import {
   consumeLineworkCredit,
   consumeGenerationCredit,
   getGeneration,
+  updateGenerationPlacementAdjustment,
   getClientSession,
   getQuotaState,
   listGenerations,
@@ -266,5 +267,40 @@ await run("Supabase-backed generation does not write local store when quota row 
         }
       }
     }
+  });
+});
+
+
+await run("generation placement adjustment can be saved and reloaded", async () => {
+  await withTempStore(async (storePath) => {
+    const saved = await consumeGenerationCredit("client-placement", input, generation, storePath);
+    const adjustment = { x: 0.62, y: 0.41, scale: 1.28, rotation: -11 };
+
+    const updated = await updateGenerationPlacementAdjustment(
+      "client-placement",
+      saved.generation.id,
+      adjustment,
+      storePath
+    );
+    const reloaded = await getGeneration("client-placement", saved.generation.id, storePath);
+
+    assert.deepEqual(updated.generation.placementAdjustment, adjustment);
+    assert.deepEqual(reloaded.placementAdjustment, adjustment);
+  });
+});
+
+await run("generation placement adjustment rejects unsafe values", async () => {
+  await withTempStore(async (storePath) => {
+    const saved = await consumeGenerationCredit("client-placement", input, generation, storePath);
+
+    await assert.rejects(
+      () => updateGenerationPlacementAdjustment(
+        "client-placement",
+        saved.generation.id,
+        { x: 3, y: 0.5, scale: 99, rotation: 400 },
+        storePath
+      ),
+      /Invalid placement adjustment/
+    );
   });
 });

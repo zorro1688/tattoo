@@ -84,6 +84,7 @@ create table if not exists public.generations (
   status public.generation_status not null default 'queued',
   prompt text not null,
   placement_note text,
+  placement_adjustment jsonb,
   input_idea text not null,
   input_style text not null,
   input_placement text not null,

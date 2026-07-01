@@ -9,6 +9,7 @@ import {
   safePersistCreditEventToSupabase,
   safePersistGenerationToSupabase,
   safePersistLineworkToSupabase,
+  safePersistPlacementAdjustmentToSupabase,
   safeGetGenerationFromSupabase,
   safeListGenerationsFromSupabase,
   safeGetQuotaFromSupabase,
@@ -246,6 +247,7 @@ function buildSavedGeneration(clientId, input, generation) {
     status: generation.status,
     prompt: generation.prompt,
     placementNote: generation.placementNote,
+    placementAdjustment: generation.placementAdjustment ?? null,
     images: generation.images,
     input: {
       idea: input.idea,
@@ -271,6 +273,83 @@ export async function getGeneration(clientId, generationId, storePath = getStore
   );
 
   return generation ? { ...generation } : null;
+}
+
+
+function normalizePlacementAdjustment(adjustment) {
+  if (adjustment === null) {
+    return null;
+  }
+
+  const source = adjustment ?? {};
+  const normalized = {
+    x: Number(source.x),
+    y: Number(source.y),
+    scale: Number(source.scale),
+    rotation: Number(source.rotation)
+  };
+
+  const valid =
+    Number.isFinite(normalized.x) &&
+    Number.isFinite(normalized.y) &&
+    Number.isFinite(normalized.scale) &&
+    Number.isFinite(normalized.rotation) &&
+    normalized.x >= 0 &&
+    normalized.x <= 1 &&
+    normalized.y >= 0 &&
+    normalized.y <= 1 &&
+    normalized.scale >= 0.35 &&
+    normalized.scale <= 2.4 &&
+    normalized.rotation >= -45 &&
+    normalized.rotation <= 45;
+
+  if (!valid) {
+    throw new Error("Invalid placement adjustment");
+  }
+
+  return {
+    x: Math.round(normalized.x * 1000) / 1000,
+    y: Math.round(normalized.y * 1000) / 1000,
+    scale: Math.round(normalized.scale * 1000) / 1000,
+    rotation: Math.round(normalized.rotation * 10) / 10
+  };
+}
+
+export async function updateGenerationPlacementAdjustment(clientId, generationId, adjustment, storePath = getStorePath()) {
+  const placementAdjustment = normalizePlacementAdjustment(adjustment);
+
+  if (hasSupabaseStore()) {
+    const generation = await getGeneration(clientId, generationId);
+
+    if (!generation) {
+      throw new Error("Saved generation was not found");
+    }
+
+    const updatedGeneration = {
+      ...generation,
+      placementAdjustment,
+      updatedAt: nowIso()
+    };
+    await safePersistPlacementAdjustmentToSupabase(clientId, generationId, placementAdjustment);
+
+    return { generation: updatedGeneration };
+  }
+
+  const store = await readStore(storePath);
+  const generation = store.generations.find(
+    (item) => item.id === generationId && item.clientId === clientId
+  );
+
+  if (!generation) {
+    throw new Error("Saved generation was not found");
+  }
+
+  generation.placementAdjustment = placementAdjustment;
+  generation.updatedAt = nowIso();
+  await writeStore(store, storePath);
+  await safePersistPlacementAdjustmentToSupabase(clientId, generationId, placementAdjustment);
+
+  return { generation: { ...generation } };
 }
 
 export async function consumeLineworkCredit(clientId, generationId, linework, storePath = getStorePath()) {

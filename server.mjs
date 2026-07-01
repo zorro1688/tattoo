@@ -25,6 +25,7 @@ import {
   getDownloadAccess,
   getBillingHistory,
   getGeneration,
+  updateGenerationPlacementAdjustment,
   getQuotaState,
   listGenerations,
   mergeLocalAnonymousClientIntoUser,
@@ -243,6 +244,30 @@ const server = createServer(async (request, response) => {
     });
 
     writeJson(response, 200, { generations }, headers);
+    return;
+  }
+
+  if (url.pathname === "/api/generation" && request.method === "PATCH") {
+    const session = getClientSession(request.headers.cookie);
+    const headers = session.isNew ? { "Set-Cookie": buildClientCookie(session.clientId) } : {};
+    const body = await readJson(request);
+
+    if (!body.generationId) {
+      writeJson(response, 400, { error: "Saved generation id is required." }, headers);
+      return;
+    }
+
+    try {
+      const updated = await updateGenerationPlacementAdjustment(
+        session.ownerId,
+        body.generationId,
+        body.placementAdjustment ?? null
+      );
+      writeJson(response, 200, { generation: updated.generation }, headers);
+    } catch (error) {
+      const message = error.message ?? "Could not save placement adjustment.";
+      writeJson(response, message === "Saved generation was not found" ? 404 : 400, { error: message }, headers);
+    }
     return;
   }
 

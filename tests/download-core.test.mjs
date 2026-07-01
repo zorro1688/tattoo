@@ -214,3 +214,31 @@ await run("watermarked SVG escapes user-controlled text", () => {
   assert.match(svg, /https:\/\/example\.com\/&lt;image&gt;\.webp/);
   assert.doesNotMatch(svg, /<script>/);
 });
+
+
+await run("placement downloads include saved placement adjustment transform", async () => {
+  await withTempStore(async (storePath) => {
+    const saved = await consumeGenerationCredit("client-placement-adjusted", input, generation, storePath);
+    const store = JSON.parse(await readFile(storePath, "utf8"));
+    store.generations[0].placementAdjustment = { x: 0.61, y: 0.37, scale: 1.24, rotation: -14 };
+    await writeFile(storePath, `${JSON.stringify(store, null, 2)}\n`, "utf8");
+
+    const file = await resolveDownloadFile({
+      clientId: "client-placement-adjusted",
+      generationId: saved.generation.id,
+      type: "placement",
+      fetchImage: async (url) => ({
+        ok: true,
+        contentType: "image/webp",
+        body: Buffer.from(`original:${url}`)
+      }),
+      storePath
+    });
+
+    const body = file.body.toString("utf8");
+
+    assert.equal(file.status, 200);
+    assert.match(body, /data-placement-adjustment="0\.61,0\.37,1\.24,-14"/);
+    assert.match(body, /transform="translate\(549 333\) rotate\(-14\) scale\(1\.24\)"/);
+  });
+});

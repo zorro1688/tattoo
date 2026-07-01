@@ -167,3 +167,19 @@ await run("design detail placement preview uses clearer size scale for larger bo
   assert.match(styles, /width: 150px/);
   assert.match(styles, /width: 208px/);
 });
+
+
+await run("design detail placement preview has manual adjustment controls", async () => {
+  const html = await readFile("design.html", "utf8");
+  const script = await readFile("design.js", "utf8");
+
+  assert.match(html, /id="placementScaleControl"/);
+  assert.match(html, /id="placementRotateControl"/);
+  assert.match(html, /id="savePlacementButton"/);
+  assert.match(html, /id="resetPlacementButton"/);
+  assert.match(script, /applyPlacementAdjustment/);
+  assert.match(script, /savePlacementAdjustment/);
+  assert.match(script, /pointerdown/);
+  assert.match(script, /\/api\/generation/);
+  assert.match(script, /method: "PATCH"/);
+});

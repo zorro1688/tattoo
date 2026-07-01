@@ -121,6 +121,7 @@ function mapSupabaseGeneration(row) {
     status: row.status,
     prompt: row.prompt,
     placementNote: row.placement_note,
+    placementAdjustment: row.placement_adjustment ?? null,
     images,
     assets: mappedAssets,
     input: {
@@ -377,6 +378,7 @@ export async function persistGenerationToSupabase(clientId, savedGeneration, quo
     status: toSupabaseStatus(savedGeneration.status),
     prompt: savedGeneration.prompt,
     placement_note: savedGeneration.placementNote,
+    placement_adjustment: savedGeneration.placementAdjustment ?? null,
     input_idea: savedGeneration.input.idea,
     input_style: savedGeneration.input.style,
     input_placement: savedGeneration.input.placement,
@@ -404,6 +406,33 @@ export async function persistGenerationToSupabase(clientId, savedGeneration, quo
   }
 
   return { skipped: false, generationId: supabaseGeneration?.id };
+}
+
+export async function persistPlacementAdjustmentToSupabase(clientId, generationId, placementAdjustment, env = process.env, fetchImpl = fetch) {
+  const config = getSupabaseConfig(env);
+  const ownerFilter = ownerQueryParam(clientId);
+
+  if (!config) {
+    return { skipped: true };
+  }
+
+  await requestSupabase(
+    `/generations?local_generation_id=eq.${encodeURIComponent(generationId)}&${ownerFilter.key}=eq.${encodeURIComponent(ownerFilter.value)}`,
+    {
+      method: "PATCH",
+      headers: {
+        Prefer: "return=minimal"
+      },
+      body: JSON.stringify({
+        placement_adjustment: placementAdjustment,
+        updated_at: new Date().toISOString()
+      })
+    },
+    env,
+    fetchImpl
+  );
+
+  return { skipped: false };
 }
 
 export async function persistLineworkToSupabase(clientId, generation, quota, env = process.env, fetchImpl = fetch) {
@@ -816,6 +845,15 @@ export async function safePersistGenerationToSupabase(...args) {
     return await persistGenerationToSupabase(...args);
   } catch (error) {
     console.warn(`Supabase generation sync failed: ${error.message}`);
+    return { skipped: true, error: error.message };
+  }
+}
+
+export async function safePersistPlacementAdjustmentToSupabase(...args) {
+  try {
+    return await persistPlacementAdjustmentToSupabase(...args);
+  } catch (error) {
+    console.warn(`Supabase placement adjustment sync failed: ${error.message}`);
     return { skipped: true, error: error.message };
   }
 }
