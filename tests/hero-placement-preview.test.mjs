@@ -99,6 +99,22 @@ await run("homepage placement preview uses darker cleaner ink treatment", async 
   assert.match(styles, /opacity: 0\.82;/);
 });
 
+
+await run("homepage placement overlay crops transparent artwork padding", async () => {
+  const script = await readFile("script.js", "utf8");
+
+  assert.match(script, /function findTattooContentBounds/);
+  assert.match(script, /function cropTransparentTattooCanvas/);
+  assert.match(script, /const croppedCanvas = cropTransparentTattooCanvas\(canvas, imageData\)/);
+  assert.match(script, /return croppedCanvas\.toDataURL\("image\/png"\)/);
+});
+
+await run("homepage result summary follows current form selection before generation", async () => {
+  const script = await readFile("script.js", "utf8");
+
+  assert.match(script, /heroResultSummary\.textContent = getResultSummary\(\);/);
+  assert.doesNotMatch(script, /Fine line .* Forearm .* Small/);
+});
 await run("homepage placement overlay removes edge-colored image backgrounds", async () => {
   const script = await readFile("script.js", "utf8");
 

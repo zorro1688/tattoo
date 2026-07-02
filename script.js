@@ -188,6 +188,63 @@ function isNearTattooBackground(red, green, blue, alpha, background) {
   return backgroundDistance(red, green, blue, background) < 84 || (brightness > 210 && chroma < 44);
 }
 
+
+function findTattooContentBounds(imageData) {
+  const { data, width, height } = imageData;
+  let left = width;
+  let right = -1;
+  let top = height;
+  let bottom = -1;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const alpha = data[(y * width + x) * 4 + 3];
+      if (alpha > 20) {
+        left = Math.min(left, x);
+        right = Math.max(right, x);
+        top = Math.min(top, y);
+        bottom = Math.max(bottom, y);
+      }
+    }
+  }
+
+  if (right < left || bottom < top) {
+    return null;
+  }
+
+  const padding = Math.max(8, Math.round(Math.max(right - left, bottom - top) * 0.08));
+  return {
+    left: Math.max(0, left - padding),
+    top: Math.max(0, top - padding),
+    right: Math.min(width - 1, right + padding),
+    bottom: Math.min(height - 1, bottom + padding)
+  };
+}
+
+function cropTransparentTattooCanvas(canvas, imageData) {
+  const bounds = findTattooContentBounds(imageData);
+  if (!bounds) {
+    return canvas;
+  }
+
+  const width = Math.max(1, bounds.right - bounds.left + 1);
+  const height = Math.max(1, bounds.bottom - bounds.top + 1);
+  const croppedCanvas = document.createElement("canvas");
+  croppedCanvas.width = width;
+  croppedCanvas.height = height;
+  const croppedContext = croppedCanvas.getContext("2d");
+  croppedContext.putImageData(
+    imageData,
+    -bounds.left,
+    -bounds.top,
+    bounds.left,
+    bounds.top,
+    width,
+    height
+  );
+  return croppedCanvas;
+}
+
 function createTransparentTattooUrl(url) {
   if (!url) {
     return Promise.resolve(url);
@@ -234,7 +291,8 @@ function createTransparentTattooUrl(url) {
       }
 
       context.putImageData(imageData, 0, 0);
-      return canvas.toDataURL("image/png");
+      const croppedCanvas = cropTransparentTattooCanvas(canvas, imageData);
+      return croppedCanvas.toDataURL("image/png");
     })
     .catch(() => url);
 
@@ -805,7 +863,7 @@ function renderHeroPreview() {
   });
 
   if (heroResultSummary) {
-    heroResultSummary.textContent = generated || isGenerating ? getResultSummary() : "Fine line · Forearm · Small";
+    heroResultSummary.textContent = getResultSummary();
   }
 
   if (heroPlacementNote) {
