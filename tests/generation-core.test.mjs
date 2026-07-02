@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {
+  buildTattooPrompt,
   createGeneration,
   createLineworkGeneration,
   extractFirstImageUrl,
@@ -15,6 +16,24 @@ async function run(name, testBody) {
     throw error;
   }
 }
+
+
+await run("tattoo prompt avoids body and placement mockup language", () => {
+  const prompt = buildTattooPrompt({
+    idea: "small rose with moon",
+    style: "Fine line",
+    placement: "Forearm",
+    size: "Medium",
+    complexity: "Beginner friendly",
+    advancedPrompt: "make the rose more delicate"
+  });
+
+  assert.match(prompt, /isolated fine line tattoo design reference/);
+  assert.match(prompt, /do not show the placement itself/i);
+  assert.match(prompt, /No person, no model, no hand, no arm, no forearm, no wrist, no skin/i);
+  assert.match(prompt, /Additional user instructions: make the rose more delicate\./);
+  assert.doesNotMatch(prompt, /suitable for forearm placement/i);
+});
 
 await run("replicate provider requires an API token", async () => {
   const generation = await createGeneration(
@@ -67,7 +86,8 @@ await run("replicate provider returns the generated concept image URL", async ()
   assert.equal(generation.images.concept, "https://replicate.delivery/pbxt/example.webp");
   assert.equal(generation.images.linework, undefined);
   assert.equal(generation.images.placement, undefined);
-  assert.match(generation.prompt, /fine line small tattoo design/);
+  assert.match(generation.prompt, /isolated fine line tattoo design reference/);
+  assert.match(generation.prompt, /No person, no model, no hand, no arm, no forearm, no wrist, no skin/);
 });
 
 await run("extractFirstImageUrl handles nested Replicate outputs", () => {
@@ -127,7 +147,8 @@ await run("replicate linework generation uses the saved concept image", async ()
   assert.match(body.input.prompt, /no grey/);
   assert.match(body.input.prompt, /no background rectangle/);
   assert.match(body.input.prompt, /remove all lighting, shadows, paper texture/);
-  assert.match(body.input.prompt, /preserve the original subject and composition/);
+  assert.match(body.input.prompt, /preserve only the tattoo subject and composition/);
+  assert.match(body.input.prompt, /no person, no hand, no arm, no forearm, no wrist, no skin/);
   assert.match(body.input.prompt, /do not add new symbols/);
   assert.equal(linework.images.linework, "https://replicate.delivery/linework.webp");
   assert.equal(linework.provider, "replicate");

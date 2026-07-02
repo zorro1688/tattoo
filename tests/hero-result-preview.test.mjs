@@ -39,6 +39,20 @@ await run("homepage script updates result state and supports downloads", async (
   assert.match(script, /classList\.toggle\("is-error", blockingError\)/);
 });
 
+
+await run("homepage advanced prompt is editable and sent with generation requests", async () => {
+  const html = await readFile("index.html", "utf8");
+  const script = await readFile("script.js", "utf8");
+  const publicScript = await readFile("public/script.js", "utf8");
+
+  assert.match(html, /id="advancedPrompt"/);
+  assert.match(html, /Optional extra instructions/);
+  assert.match(script, /const advancedPrompt = document\.querySelector\("#advancedPrompt"\)/);
+  assert.match(script, /advancedPrompt:\s*advancedPrompt\?\.value\.trim\(\) \?\? ""/);
+  assert.match(script, /No person, no model, no hand, no arm, no forearm, no wrist, no skin/);
+  assert.match(publicScript, /advancedPrompt:\s*advancedPrompt\?\.value\.trim\(\) \?\? ""/);
+});
+
 await run("homepage linework state explains credits and clear statuses", async () => {
   const script = await readFile("script.js", "utf8");
 

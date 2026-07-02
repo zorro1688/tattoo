@@ -35,14 +35,31 @@ export function getPlacementGuidance(placement = "Forearm", size = "Small", comp
   return `${notes[placement] ?? notes.Forearm} Recommended direction: ${size.toLowerCase()} size with ${complexity.toLowerCase()} complexity.`;
 }
 
-export function buildTattooPrompt(body) {
-  const idea = body.idea.trim();
-  const style = body.style ?? "Fine line";
-  const placement = body.placement ?? "Forearm";
-  const size = body.size ?? "Small";
-  const complexity = body.complexity ?? "Beginner friendly";
+function normalizePromptText(value = "") {
+  return String(value).replace(/\s+/g, " ").trim();
+}
 
-  return `${style.toLowerCase()} ${size.toLowerCase()} tattoo design of ${idea}, suitable for ${placement.toLowerCase()} placement, ${complexity.toLowerCase()}, clean linework, white background, tattoo-ready composition, no skin, no mockup, no text`;
+export function buildTattooPrompt(body) {
+  const idea = normalizePromptText(body.idea);
+  const style = normalizePromptText(body.style ?? "Fine line");
+  const placement = normalizePromptText(body.placement ?? "Forearm");
+  const size = normalizePromptText(body.size ?? "Small");
+  const complexity = normalizePromptText(body.complexity ?? "Beginner friendly");
+  const advancedPrompt = normalizePromptText(body.advancedPrompt);
+  const parts = [
+    `Create an isolated ${style.toLowerCase()} tattoo design reference of ${idea}.`,
+    `This is only the tattoo artwork for later ${placement.toLowerCase()} placement preview; do not show the placement itself.`,
+    `Design target: ${size.toLowerCase()} size, ${complexity.toLowerCase()} complexity.`,
+    "Clean black ink linework, centered tattoo flash sheet composition, plain pure white background.",
+    "No person, no model, no hand, no arm, no forearm, no wrist, no skin, no body parts, no clothing.",
+    "No photo, no mockup, no placement preview, no shadows, no grey background, no paper texture, no text."
+  ];
+
+  if (advancedPrompt) {
+    parts.push(`Additional user instructions: ${advancedPrompt}.`);
+  }
+
+  return parts.join(" ");
 }
 
 export function extractFirstImageUrl(output) {
@@ -203,15 +220,14 @@ function createReplicatePredictionBody(model, input) {
 function buildLineworkPrompt(generation) {
   const idea = generation.input?.idea ?? "tattoo concept";
   const style = generation.input?.style ?? "fine line";
-  const placement = generation.input?.placement ?? "skin placement";
   const size = generation.input?.size ?? "small";
 
   return [
-    `Create clean black tattoo stencil linework from this ${style.toLowerCase()} ${size.toLowerCase()} tattoo concept of ${idea}.`,
-    `preserve the original subject and composition for ${placement.toLowerCase()} placement.`,
+    `Create clean black tattoo stencil linework from this isolated ${style.toLowerCase()} ${size.toLowerCase()} tattoo concept of ${idea}.`,
+    "preserve only the tattoo subject and composition, not any body or placement context.",
     "black ink only, pure white background, crisp thin outlines, tattoo flash stencil style.",
-    "only black vector-like contour lines; remove all lighting, shadows, paper texture, and tonal background.",
-    "no shading, no grey, no gradients, no color, no skin, no mockup, no text, no background rectangle.",
+    "only black vector-like contour lines; remove all lighting, shadows, paper texture, skin tones, and tonal background.",
+    "no shading, no grey, no gradients, no color, no person, no hand, no arm, no forearm, no wrist, no skin, no body parts, no clothing, no mockup, no text, no background rectangle.",
     "do not add new symbols, do not change the subject, do not add extra decorative elements.",
     "keep it readable as a tattoo artist reference and stencil draft."
   ].join(" ");

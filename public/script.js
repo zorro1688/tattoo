@@ -22,6 +22,7 @@ const style = document.querySelector("#style");
 const placement = document.querySelector("#placement");
 const size = document.querySelector("#size");
 const complexity = document.querySelector("#complexity");
+const advancedPrompt = document.querySelector("#advancedPrompt");
 const promptPreview = document.querySelector("#promptPreview");
 const generateButton = document.querySelector("#generateButton");
 const generatorForm = document.querySelector("#generatorForm");
@@ -261,14 +262,32 @@ const defaultHeroImages = {
   placement: heroPlacementImage?.getAttribute("src") ?? "assets/hero-placement.png"
 };
 
+function normalizePromptText(value = "") {
+  return String(value).replace(/\s+/g, " ").trim();
+}
+
 function buildPrompt() {
-  const userIdea = idea.value.trim();
+  const userIdea = normalizePromptText(idea.value);
 
   if (!userIdea) {
     return "Describe your tattoo idea to generate a tattoo-ready prompt.";
   }
 
-  return `${style.value.toLowerCase()} ${size.value.toLowerCase()} tattoo design of ${userIdea}, suitable for ${placement.value.toLowerCase()} placement, ${complexity.value.toLowerCase()}, clean linework, white background, tattoo-ready composition, no skin, no mockup, no text`;
+  const extraInstructions = normalizePromptText(advancedPrompt?.value ?? "");
+  const parts = [
+    `Create an isolated ${style.value.toLowerCase()} tattoo design reference of ${userIdea}.`,
+    `This is only the tattoo artwork for later ${placement.value.toLowerCase()} placement preview; do not show the placement itself.`,
+    `Design target: ${size.value.toLowerCase()} size, ${complexity.value.toLowerCase()} complexity.`,
+    "Clean black ink linework, centered tattoo flash sheet composition, plain pure white background.",
+    "No person, no model, no hand, no arm, no forearm, no wrist, no skin, no body parts, no clothing.",
+    "No photo, no mockup, no placement preview, no shadows, no grey background, no paper texture, no text."
+  ];
+
+  if (extraInstructions) {
+    parts.push(`Additional user instructions: ${extraInstructions}.`);
+  }
+
+  return parts.join(" ");
 }
 
 function getPlacementGuidance() {
@@ -709,7 +728,7 @@ async function loadDownloadAccess() {
 }
 
 function renderPrompt() {
-  promptPreview.innerHTML = `<strong>Prompt preview:</strong> ${generatedPrompt || buildPrompt()}`;
+  promptPreview.innerHTML = `<strong>Prompt preview:</strong> ${escapeHtml(generatedPrompt || buildPrompt())}`;
   if (placementAdvice) {
     placementAdvice.textContent = generated
       ? generatedPlacementNote || getPlacementGuidance()
@@ -979,7 +998,8 @@ async function generate() {
         style: style.value,
         placement: placement.value,
         size: size.value,
-        complexity: complexity.value
+        complexity: complexity.value,
+        advancedPrompt: advancedPrompt?.value.trim() ?? ""
       })
     });
     const data = await response.json();
@@ -1144,7 +1164,7 @@ function handleCheckoutReturn() {
   return true;
 }
 
-[idea, style, placement, size, complexity].forEach((element) => {
+[idea, style, placement, size, complexity, advancedPrompt].filter(Boolean).forEach((element) => {
   const handleChange = () => {
     resetGeneratedResult();
     renderPrompt();

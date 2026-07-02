@@ -427,6 +427,20 @@ textarea {
   font-weight: 700;
 }
 
+.advanced-prompt-field {
+  padding: 0 16px 14px;
+}
+
+.advanced-prompt-field span {
+  color: #6e6e73;
+  font-size: 13px;
+}
+
+.advanced-prompt-field textarea {
+  min-height: 84px;
+  background: #fff;
+}
+
 .prompt {
   border-top: 1px solid #e8e8ed;
   padding: 14px 16px;
