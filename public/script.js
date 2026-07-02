@@ -100,7 +100,7 @@ const placementTattooFits = {
   forearm: { x: 0.54, y: 0.55, rotation: -7, scale: 1.18, squash: 0.9 },
   wrist: { x: 0.48, y: 0.58, rotation: -4, scale: 1.05, squash: 0.86 },
   "upper-arm": { x: 0.53, y: 0.46, rotation: -5, scale: 1.18, squash: 0.9 },
-  chest: { x: 0.5, y: 0.49, rotation: 0, scale: 1.2, squash: 0.95 },
+  chest: { x: 0.5, y: 0.59, rotation: 0, scale: 1.2, squash: 0.95 },
   back: { x: 0.5, y: 0.43, rotation: 0, scale: 1.28, squash: 0.95 },
   ankle: { x: 0.5, y: 0.58, rotation: -3, scale: 1.05, squash: 0.86 },
   shoulder: { x: 0.58, y: 0.34, rotation: -8, scale: 1.25, squash: 0.9 },
