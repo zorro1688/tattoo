@@ -97,14 +97,14 @@ const placementSkinAssets = {
   rib: "assets/placement-rib.jpg"
 };
 const placementTattooFits = {
-  forearm: { x: 0.54, y: 0.55, rotation: -7, scale: 1, squash: 0.9 },
-  wrist: { x: 0.48, y: 0.58, rotation: -4, scale: 0.9, squash: 0.86 },
-  "upper-arm": { x: 0.53, y: 0.46, rotation: -5, scale: 1, squash: 0.9 },
-  chest: { x: 0.5, y: 0.42, rotation: 0, scale: 0.94, squash: 0.95 },
-  back: { x: 0.5, y: 0.43, rotation: 0, scale: 1.05, squash: 0.95 },
-  ankle: { x: 0.5, y: 0.58, rotation: -3, scale: 0.9, squash: 0.86 },
-  shoulder: { x: 0.58, y: 0.34, rotation: -8, scale: 1.02, squash: 0.9 },
-  rib: { x: 0.57, y: 0.5, rotation: 5, scale: 0.92, squash: 0.86 }
+  forearm: { x: 0.54, y: 0.55, rotation: -7, scale: 1.18, squash: 0.9 },
+  wrist: { x: 0.48, y: 0.58, rotation: -4, scale: 1.05, squash: 0.86 },
+  "upper-arm": { x: 0.53, y: 0.46, rotation: -5, scale: 1.18, squash: 0.9 },
+  chest: { x: 0.5, y: 0.42, rotation: 0, scale: 1.2, squash: 0.95 },
+  back: { x: 0.5, y: 0.43, rotation: 0, scale: 1.28, squash: 0.95 },
+  ankle: { x: 0.5, y: 0.58, rotation: -3, scale: 1.05, squash: 0.86 },
+  shoulder: { x: 0.58, y: 0.34, rotation: -8, scale: 1.25, squash: 0.9 },
+  rib: { x: 0.57, y: 0.5, rotation: 5, scale: 1.12, squash: 0.86 }
 };
 
 function getPlacementTattooFit(value = "Forearm") {
@@ -571,9 +571,9 @@ function loadDrawableImage(url) {
 
 function getPlacementTattooBox(canvasSize) {
   const sizeScale = {
-    small: 0.22,
-    medium: 0.31,
-    large: 0.42
+    small: 0.3,
+    medium: 0.38,
+    large: 0.48
   };
   const selectedPlacement = normalizeDataValue(placement.value);
   const selectedSize = normalizeDataValue(size.value);

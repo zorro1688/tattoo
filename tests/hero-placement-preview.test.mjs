@@ -68,8 +68,8 @@ await run("homepage placement preview uses body-part-specific fit points", async
   const script = await readFile("script.js", "utf8");
 
   assert.match(script, /placementTattooFits/);
-  assert.match(script, /chest:\s*\{ x: 0\.5, y: 0\.42, rotation: 0, scale: 0\.94, squash: 0\.95 \}/);
-  assert.match(script, /rib:\s*\{ x: 0\.57, y: 0\.5, rotation: 5, scale: 0\.92, squash: 0\.86 \}/);
+  assert.match(script, /chest:\s*\{ x: 0\.5, y: 0\.42, rotation: 0, scale: 1\.2, squash: 0\.95 \}/);
+  assert.match(script, /rib:\s*\{ x: 0\.57, y: 0\.5, rotation: 5, scale: 1\.12, squash: 0\.86 \}/);
   assert.match(script, /applyPlacementTattooFit\(heroPlacementMockup, selectedPlacement\)/);
   assert.match(styles, /--tattoo-x/);
   assert.match(styles, /--tattoo-fit-scale/);
@@ -78,7 +78,7 @@ await run("homepage placement preview uses body-part-specific fit points", async
 await run("homepage placement preview uses a lower, larger chest default fit", async () => {
   const script = await readFile("script.js", "utf8");
 
-  assert.match(script, /chest:\s*\{ x: 0\.5, y: 0\.42, rotation: 0, scale: 0\.94/);
+  assert.match(script, /chest:\s*\{ x: 0\.5, y: 0\.42, rotation: 0, scale: 1\.2/);
 });
 
 
@@ -86,10 +86,10 @@ await run("homepage placement preview keeps small tattoos presentation-sized", a
   const styles = await readFile("styles.css", "utf8");
   const script = await readFile("script.js", "utf8");
 
-  assert.match(styles, /hero-placement-mockup\[data-size="small"\] \.hero-placement-tattoo \{\s+width: 156px;/);
-  assert.match(styles, /hero-placement-mockup\[data-size="medium"\] \.hero-placement-tattoo \{\s+width: 176px;/);
-  assert.match(styles, /hero-placement-mockup\[data-size="large"\] \.hero-placement-tattoo \{\s+width: 196px;/);
-  assert.match(script, /forearm:\s*\{ x: 0\.54, y: 0\.55, rotation: -7, scale: 1/);
+  assert.match(styles, /hero-placement-mockup\[data-size="small"\] \.hero-placement-tattoo \{\s+width: 220px;/);
+  assert.match(styles, /hero-placement-mockup\[data-size="medium"\] \.hero-placement-tattoo \{\s+width: 250px;/);
+  assert.match(styles, /hero-placement-mockup\[data-size="large"\] \.hero-placement-tattoo \{\s+width: 280px;/);
+  assert.match(script, /forearm:\s*\{ x: 0\.54, y: 0\.55, rotation: -7, scale: 1\.18/);
 });
 
 await run("homepage placement preview uses darker cleaner ink treatment", async () => {
@@ -113,10 +113,10 @@ await run("homepage placement preview uses clearer size scale for larger body ar
   const script = await readFile("script.js", "utf8");
   const styles = await readFile("styles.css", "utf8");
 
-  assert.match(script, /shoulder:\s*\{ x: 0\.58, y: 0\.34, rotation: -8, scale: 1\.02, squash: 0\.9 \}/);
-  assert.match(script, /small:\s*0\.22/);
-  assert.match(script, /medium:\s*0\.31/);
-  assert.match(script, /large:\s*0\.42/);
-  assert.match(styles, /width: 176px/);
-  assert.match(styles, /width: 196px/);
+  assert.match(script, /shoulder:\s*\{ x: 0\.58, y: 0\.34, rotation: -8, scale: 1\.25, squash: 0\.9 \}/);
+  assert.match(script, /small:\s*0\.3/);
+  assert.match(script, /medium:\s*0\.38/);
+  assert.match(script, /large:\s*0\.48/);
+  assert.match(styles, /width: 250px/);
+  assert.match(styles, /width: 280px/);
 });

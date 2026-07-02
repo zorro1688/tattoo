@@ -2541,8 +2541,8 @@ textarea {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 176px;
-  height: 176px;
+  width: 250px;
+  height: 250px;
   object-fit: contain;
   mix-blend-mode: multiply;
   filter: grayscale(1) contrast(0.98) brightness(0.6) blur(0.22px);
@@ -2552,18 +2552,18 @@ textarea {
 }
 
 .hero-placement-mockup[data-size="small"] .hero-placement-tattoo {
-  width: 156px;
-  height: 156px;
+  width: 220px;
+  height: 220px;
 }
 
 .hero-placement-mockup[data-size="medium"] .hero-placement-tattoo {
-  width: 176px;
-  height: 176px;
+  width: 250px;
+  height: 250px;
 }
 
 .hero-placement-mockup[data-size="large"] .hero-placement-tattoo {
-  width: 196px;
-  height: 196px;
+  width: 280px;
+  height: 280px;
 }
 
 .hero-placement-mockup[data-placement="upper-arm"]::before {
