@@ -2531,29 +2531,29 @@ textarea {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 112px;
-  height: 112px;
+  width: 176px;
+  height: 176px;
   object-fit: contain;
   mix-blend-mode: multiply;
-  filter: grayscale(1) contrast(0.92) brightness(0.72) blur(0.35px);
-  opacity: 0.72;
+  filter: grayscale(1) contrast(0.98) brightness(0.6) blur(0.22px);
+  opacity: 0.82;
   transform-origin: center;
   transform: translate(-50%, -50%) rotate(-8deg) scaleX(0.9) skewX(-2deg);
 }
 
 .hero-placement-mockup[data-size="small"] .hero-placement-tattoo {
-  width: 104px;
-  height: 104px;
+  width: 156px;
+  height: 156px;
 }
 
 .hero-placement-mockup[data-size="medium"] .hero-placement-tattoo {
-  width: 150px;
-  height: 150px;
+  width: 176px;
+  height: 176px;
 }
 
 .hero-placement-mockup[data-size="large"] .hero-placement-tattoo {
-  width: 208px;
-  height: 208px;
+  width: 196px;
+  height: 196px;
 }
 
 .hero-placement-mockup[data-placement="upper-arm"]::before {

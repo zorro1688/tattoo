@@ -68,8 +68,8 @@ await run("homepage placement preview uses body-part-specific fit points", async
   const script = await readFile("script.js", "utf8");
 
   assert.match(script, /placementTattooFits/);
-  assert.match(script, /chest:\s*\{ x: 0\.5, y: 0\.42, rotation: 0, scale: 0\.78, squash: 0\.95 \}/);
-  assert.match(script, /rib:\s*\{ x: 0\.57, y: 0\.5, rotation: 5, scale: 0\.62, squash: 0\.86 \}/);
+  assert.match(script, /chest:\s*\{ x: 0\.5, y: 0\.42, rotation: 0, scale: 0\.94, squash: 0\.95 \}/);
+  assert.match(script, /rib:\s*\{ x: 0\.57, y: 0\.5, rotation: 5, scale: 0\.92, squash: 0\.86 \}/);
   assert.match(script, /applyPlacementTattooFit\(heroPlacementMockup, selectedPlacement\)/);
   assert.match(styles, /--tattoo-x/);
   assert.match(styles, /--tattoo-fit-scale/);
@@ -78,7 +78,25 @@ await run("homepage placement preview uses body-part-specific fit points", async
 await run("homepage placement preview uses a lower, larger chest default fit", async () => {
   const script = await readFile("script.js", "utf8");
 
-  assert.match(script, /chest:\s*\{ x: 0\.5, y: 0\.42, rotation: 0, scale: 0\.78/);
+  assert.match(script, /chest:\s*\{ x: 0\.5, y: 0\.42, rotation: 0, scale: 0\.94/);
+});
+
+
+await run("homepage placement preview keeps small tattoos presentation-sized", async () => {
+  const styles = await readFile("styles.css", "utf8");
+  const script = await readFile("script.js", "utf8");
+
+  assert.match(styles, /hero-placement-mockup\[data-size="small"\] \.hero-placement-tattoo \{\s+width: 156px;/);
+  assert.match(styles, /hero-placement-mockup\[data-size="medium"\] \.hero-placement-tattoo \{\s+width: 176px;/);
+  assert.match(styles, /hero-placement-mockup\[data-size="large"\] \.hero-placement-tattoo \{\s+width: 196px;/);
+  assert.match(script, /forearm:\s*\{ x: 0\.54, y: 0\.55, rotation: -7, scale: 1/);
+});
+
+await run("homepage placement preview uses darker cleaner ink treatment", async () => {
+  const styles = await readFile("styles.css", "utf8");
+
+  assert.match(styles, /filter: grayscale\(1\) contrast\(0\.98\) brightness\(0\.6\) blur\(0\.22px\);/);
+  assert.match(styles, /opacity: 0\.82;/);
 });
 
 await run("homepage placement overlay removes edge-colored image backgrounds", async () => {
@@ -95,10 +113,10 @@ await run("homepage placement preview uses clearer size scale for larger body ar
   const script = await readFile("script.js", "utf8");
   const styles = await readFile("styles.css", "utf8");
 
-  assert.match(script, /shoulder:\s*\{ x: 0\.58, y: 0\.34, rotation: -8, scale: 0\.92, squash: 0\.9 \}/);
+  assert.match(script, /shoulder:\s*\{ x: 0\.58, y: 0\.34, rotation: -8, scale: 1\.02, squash: 0\.9 \}/);
   assert.match(script, /small:\s*0\.22/);
   assert.match(script, /medium:\s*0\.31/);
   assert.match(script, /large:\s*0\.42/);
-  assert.match(styles, /width: 150px/);
-  assert.match(styles, /width: 208px/);
+  assert.match(styles, /width: 176px/);
+  assert.match(styles, /width: 196px/);
 });
