@@ -2906,10 +2906,15 @@ textarea {
 }
 
 .detail-placement-mockup.is-adjustable {
-  cursor: grab;
   touch-action: none;
 }
 
-.detail-placement-mockup.is-dragging {
+.detail-placement-tattoo {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.detail-placement-mockup.is-dragging .detail-placement-tattoo {
   cursor: grabbing;
 }

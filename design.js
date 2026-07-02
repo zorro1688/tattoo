@@ -198,6 +198,7 @@ let currentDesign = null;
 let currentPlacementAdjustment = null;
 let placementDragActive = false;
 let placementPointerId = null;
+let placementDragOffset = { x: 0, y: 0 };
 let downloadAccess = {
   highResolution: false,
   watermarked: true,
@@ -454,13 +455,46 @@ function updatePlacementFromPointer(event) {
     return;
   }
 
+  if (placementPointerId !== null && event.pointerId !== placementPointerId) {
+    return;
+  }
+
   const rect = detailPlacementMockup.getBoundingClientRect();
   const next = {
     ...(currentPlacementAdjustment ?? getDefaultPlacementAdjustment(currentDesign)),
-    x: clampNumber((event.clientX - rect.left) / rect.width, 0, 1),
-    y: clampNumber((event.clientY - rect.top) / rect.height, 0, 1)
+    x: clampNumber((event.clientX - rect.left - placementDragOffset.x) / rect.width, 0, 1),
+    y: clampNumber((event.clientY - rect.top - placementDragOffset.y) / rect.height, 0, 1)
   };
   applyPlacementAdjustment(next);
+}
+
+function startPlacementDrag(event) {
+  if (!currentDesign || !detailPlacementMockup || !detailPlacementTattoo) {
+    return;
+  }
+
+  event.preventDefault();
+  const tattooRect = detailPlacementTattoo.getBoundingClientRect();
+  placementDragOffset = {
+    x: event.clientX - (tattooRect.left + tattooRect.width / 2),
+    y: event.clientY - (tattooRect.top + tattooRect.height / 2)
+  };
+  placementDragActive = true;
+  placementPointerId = event.pointerId;
+  detailPlacementMockup.classList.add("is-dragging");
+  detailPlacementTattoo.setPointerCapture?.(event.pointerId);
+  updatePlacementFromPointer(event);
+}
+
+function stopPlacementDrag(event) {
+  if (placementPointerId !== null && event.pointerId !== placementPointerId) {
+    return;
+  }
+
+  placementDragActive = false;
+  placementPointerId = null;
+  placementDragOffset = { x: 0, y: 0 };
+  detailPlacementMockup?.classList.remove("is-dragging");
 }
 
 async function savePlacementAdjustment(adjustment = currentPlacementAdjustment) {
@@ -855,28 +889,11 @@ async function generateLinework() {
 }
 
 
-if (detailPlacementMockup) {
-  detailPlacementMockup.addEventListener("pointerdown", (event) => {
-    if (!currentDesign) {
-      return;
-    }
-    placementDragActive = true;
-    placementPointerId = event.pointerId;
-    detailPlacementMockup.classList.add("is-dragging");
-    detailPlacementMockup.setPointerCapture?.(event.pointerId);
-    updatePlacementFromPointer(event);
-  });
-  detailPlacementMockup.addEventListener("pointermove", updatePlacementFromPointer);
-  detailPlacementMockup.addEventListener("pointerup", () => {
-    placementDragActive = false;
-    placementPointerId = null;
-    detailPlacementMockup.classList.remove("is-dragging");
-  });
-  detailPlacementMockup.addEventListener("pointercancel", () => {
-    placementDragActive = false;
-    placementPointerId = null;
-    detailPlacementMockup.classList.remove("is-dragging");
-  });
+if (detailPlacementMockup && detailPlacementTattoo) {
+  detailPlacementTattoo.addEventListener("pointerdown", startPlacementDrag);
+  detailPlacementTattoo.addEventListener("pointermove", updatePlacementFromPointer);
+  detailPlacementTattoo.addEventListener("pointerup", stopPlacementDrag);
+  detailPlacementTattoo.addEventListener("pointercancel", stopPlacementDrag);
 }
 
 

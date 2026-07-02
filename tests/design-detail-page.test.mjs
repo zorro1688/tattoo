@@ -197,3 +197,19 @@ await run("design detail placement preview has one complete manual adjustment pa
   assert.match(script, /\/api\/generation/);
   assert.match(script, /method: "PATCH"/);
 });
+
+await run("design detail placement can be dragged directly without jumping to the pointer", async () => {
+  const script = await readFile("design.js", "utf8");
+  const styles = await readFile("styles.css", "utf8");
+
+  assert.match(script, /let placementDragOffset = \{ x: 0, y: 0 \}/);
+  assert.match(script, /function startPlacementDrag\(event\)/);
+  assert.match(script, /detailPlacementTattoo\.getBoundingClientRect\(\)/);
+  assert.match(script, /placementDragOffset = \{/);
+  assert.match(script, /detailPlacementTattoo\.addEventListener\("pointerdown", startPlacementDrag\)/);
+  assert.doesNotMatch(script, /detailPlacementMockup\.addEventListener\("pointerdown"/);
+  assert.match(script, /\(event\.clientX - rect\.left - placementDragOffset\.x\) \/ rect\.width/);
+  assert.match(script, /\(event\.clientY - rect\.top - placementDragOffset\.y\) \/ rect\.height/);
+  assert.match(styles, /\.detail-placement-tattoo \{\s+cursor: grab;/);
+  assert.match(styles, /\.detail-placement-mockup\.is-dragging \.detail-placement-tattoo \{\s+cursor: grabbing;/);
+});
