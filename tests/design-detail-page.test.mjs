@@ -169,6 +169,14 @@ await run("design detail placement preview uses clearer size scale for larger bo
 });
 
 
+
+await run("design detail placement position variables override body-part defaults", async () => {
+  const styles = await readFile("styles.css", "utf8");
+
+  assert.match(styles, /left: var\(--tattoo-x, 54%\) !important;/);
+  assert.match(styles, /top: var\(--tattoo-y, 55%\) !important;/);
+});
+
 await run("design detail placement preview has one complete manual adjustment panel", async () => {
   const html = await readFile("design.html", "utf8");
   const script = await readFile("design.js", "utf8");
