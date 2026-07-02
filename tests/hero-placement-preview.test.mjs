@@ -68,12 +68,19 @@ await run("homepage placement preview uses body-part-specific fit points", async
   const script = await readFile("script.js", "utf8");
 
   assert.match(script, /placementTattooFits/);
-  assert.match(script, /chest:\s*\{ x: 0\.5, y: 0\.34, rotation: 0, scale: 0\.68, squash: 0\.95 \}/);
+  assert.match(script, /chest:\s*\{ x: 0\.5, y: 0\.42, rotation: 0, scale: 0\.78, squash: 0\.95 \}/);
   assert.match(script, /rib:\s*\{ x: 0\.57, y: 0\.5, rotation: 5, scale: 0\.62, squash: 0\.86 \}/);
   assert.match(script, /applyPlacementTattooFit\(heroPlacementMockup, selectedPlacement\)/);
   assert.match(styles, /--tattoo-x/);
   assert.match(styles, /--tattoo-fit-scale/);
 });
+
+await run("homepage placement preview uses a lower, larger chest default fit", async () => {
+  const script = await readFile("script.js", "utf8");
+
+  assert.match(script, /chest:\s*\{ x: 0\.5, y: 0\.42, rotation: 0, scale: 0\.78/);
+});
+
 await run("homepage placement overlay removes edge-colored image backgrounds", async () => {
   const script = await readFile("script.js", "utf8");
 

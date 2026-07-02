@@ -139,7 +139,7 @@ await run("design detail placement preview uses body-part-specific fit points", 
   const script = await readFile("design.js", "utf8");
 
   assert.match(script, /placementTattooFits/);
-  assert.match(script, /chest:\s*\{ x: 0\.5, y: 0\.34, rotation: 0, scale: 0\.68, squash: 0\.95 \}/);
+  assert.match(script, /chest:\s*\{ x: 0\.5, y: 0\.42, rotation: 0, scale: 0\.78, squash: 0\.95 \}/);
   assert.match(script, /rib:\s*\{ x: 0\.57, y: 0\.5, rotation: 5, scale: 0\.62, squash: 0\.86 \}/);
   assert.match(script, /applyPlacementTattooFit\(detailPlacementMockup, selectedPlacement\)/);
   assert.match(styles, /--tattoo-x/);
@@ -169,14 +169,20 @@ await run("design detail placement preview uses clearer size scale for larger bo
 });
 
 
-await run("design detail placement preview has manual adjustment controls", async () => {
+await run("design detail placement preview has one complete manual adjustment panel", async () => {
   const html = await readFile("design.html", "utf8");
   const script = await readFile("design.js", "utf8");
 
-  assert.match(html, /id="placementScaleControl"/);
-  assert.match(html, /id="placementRotateControl"/);
+  assert.equal((html.match(/class="placement-adjustment-panel"/g) ?? []).length, 1);
+  assert.equal((html.match(/id="placementScaleControl"/g) ?? []).length, 1);
+  assert.equal((html.match(/id="placementRotateControl"/g) ?? []).length, 1);
+  assert.match(html, /id="placementXControl"/);
+  assert.match(html, /id="placementYControl"/);
+  assert.match(html, /Drag the tattoo/);
   assert.match(html, /id="savePlacementButton"/);
   assert.match(html, /id="resetPlacementButton"/);
+  assert.match(script, /const placementXControl = document\.querySelector\("#placementXControl"\)/);
+  assert.match(script, /const placementYControl = document\.querySelector\("#placementYControl"\)/);
   assert.match(script, /applyPlacementAdjustment/);
   assert.match(script, /savePlacementAdjustment/);
   assert.match(script, /pointerdown/);

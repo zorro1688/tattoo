@@ -16,6 +16,8 @@ const detailDownloadPlacement = document.querySelector("#detailDownloadPlacement
 const detailUpgradeConcept = document.querySelector("#detailUpgradeConcept");
 const detailUpgradeLinework = document.querySelector("#detailUpgradeLinework");
 const detailUpgradePlacement = document.querySelector("#detailUpgradePlacement");
+const placementXControl = document.querySelector("#placementXControl");
+const placementYControl = document.querySelector("#placementYControl");
 const placementScaleControl = document.querySelector("#placementScaleControl");
 const placementRotateControl = document.querySelector("#placementRotateControl");
 const savePlacementButton = document.querySelector("#savePlacementButton");
@@ -36,7 +38,7 @@ const placementTattooFits = {
   forearm: { x: 0.54, y: 0.55, rotation: -7, scale: 0.82, squash: 0.9 },
   wrist: { x: 0.48, y: 0.58, rotation: -4, scale: 0.56, squash: 0.86 },
   "upper-arm": { x: 0.53, y: 0.46, rotation: -5, scale: 0.82, squash: 0.9 },
-  chest: { x: 0.5, y: 0.34, rotation: 0, scale: 0.68, squash: 0.95 },
+  chest: { x: 0.5, y: 0.42, rotation: 0, scale: 0.78, squash: 0.95 },
   back: { x: 0.5, y: 0.43, rotation: 0, scale: 0.9, squash: 0.95 },
   ankle: { x: 0.5, y: 0.58, rotation: -3, scale: 0.58, squash: 0.86 },
   shoulder: { x: 0.58, y: 0.34, rotation: -8, scale: 0.92, squash: 0.9 },
@@ -413,6 +415,12 @@ function getDefaultPlacementAdjustment(design = currentDesign) {
 }
 
 function syncPlacementControls(adjustment) {
+  if (placementXControl) {
+    placementXControl.value = String(adjustment.x);
+  }
+  if (placementYControl) {
+    placementYControl.value = String(adjustment.y);
+  }
   if (placementScaleControl) {
     placementScaleControl.value = String(adjustment.scale);
   }
@@ -452,7 +460,7 @@ function updatePlacementFromPointer(event) {
     x: clampNumber((event.clientX - rect.left) / rect.width, 0, 1),
     y: clampNumber((event.clientY - rect.top) / rect.height, 0, 1)
   };
-  applyPlacementAdjustment(next, { skipControls: true });
+  applyPlacementAdjustment(next);
 }
 
 async function savePlacementAdjustment(adjustment = currentPlacementAdjustment) {
@@ -870,6 +878,21 @@ if (detailPlacementMockup) {
     detailPlacementMockup.classList.remove("is-dragging");
   });
 }
+
+
+placementXControl?.addEventListener("input", () => {
+  applyPlacementAdjustment({
+    ...(currentPlacementAdjustment ?? getDefaultPlacementAdjustment(currentDesign)),
+    x: placementXControl.value
+  }, { skipControls: true });
+});
+
+placementYControl?.addEventListener("input", () => {
+  applyPlacementAdjustment({
+    ...(currentPlacementAdjustment ?? getDefaultPlacementAdjustment(currentDesign)),
+    y: placementYControl.value
+  }, { skipControls: true });
+});
 
 placementScaleControl?.addEventListener("input", () => {
   applyPlacementAdjustment({
