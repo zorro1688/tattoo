@@ -68,7 +68,7 @@ await run("homepage placement preview uses body-part-specific fit points", async
   const script = await readFile("script.js", "utf8");
 
   assert.match(script, /placementTattooFits/);
-  assert.match(script, /chest:\s*\{ x: 0\.5, y: 0\.42, rotation: 0, scale: 1\.2, squash: 0\.95 \}/);
+  assert.match(script, /chest:\s*\{ x: 0\.5, y: 0\.49, rotation: 0, scale: 1\.2, squash: 0\.95 \}/);
   assert.match(script, /rib:\s*\{ x: 0\.57, y: 0\.5, rotation: 5, scale: 1\.12, squash: 0\.86 \}/);
   assert.match(script, /applyPlacementTattooFit\(heroPlacementMockup, selectedPlacement\)/);
   assert.match(styles, /--tattoo-x/);
@@ -78,7 +78,7 @@ await run("homepage placement preview uses body-part-specific fit points", async
 await run("homepage placement preview uses a lower, larger chest default fit", async () => {
   const script = await readFile("script.js", "utf8");
 
-  assert.match(script, /chest:\s*\{ x: 0\.5, y: 0\.42, rotation: 0, scale: 1\.2/);
+  assert.match(script, /chest:\s*\{ x: 0\.5, y: 0\.49, rotation: 0, scale: 1\.2/);
 });
 
 
