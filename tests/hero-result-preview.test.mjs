@@ -53,6 +53,22 @@ await run("homepage advanced prompt is editable and sent with generation request
   assert.match(publicScript, /advancedPrompt:\s*advancedPrompt\?\.value\.trim\(\) \?\? ""/);
 });
 
+
+
+await run("homepage prompt preview mirrors the professional tattoo prompt template", async () => {
+  const script = await readFile("script.js", "utf8");
+  const publicScript = await readFile("public/script.js", "utf8");
+
+  assert.match(script, /stylePromptPresets/);
+  assert.match(script, /professional tattoo flash reference/);
+  assert.match(script, /single complete tattoo motif/);
+  assert.match(script, /fine line: delicate thin outlines, elegant negative space, minimal shading/);
+  assert.match(script, /avoid poster art, logo design, sticker, clipart, 3d render, photorealism/i);
+  assert.match(script, /No extra background objects, no frame, no border, no watermark, no signature/);
+  assert.match(publicScript, /stylePromptPresets/);
+  assert.match(publicScript, /professional tattoo flash reference/);
+});
+
 await run("homepage linework state explains credits and clear statuses", async () => {
   const script = await readFile("script.js", "utf8");
 

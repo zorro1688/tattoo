@@ -320,8 +320,44 @@ const defaultHeroImages = {
   placement: heroPlacementImage?.getAttribute("src") ?? "assets/hero-placement.png"
 };
 
+const stylePromptPresets = {
+  "fine line": "fine line: delicate thin outlines, elegant negative space, minimal shading, graceful botanical or symbolic detail, refined tattoo flash finish.",
+  minimalist: "minimalist: simple iconic silhouette, very few lines, balanced empty space, instantly readable at small size.",
+  blackwork: "blackwork: solid black shapes, high contrast, controlled negative space, bold tattoo readability, no grey wash.",
+  geometric: "geometric: clean symmetrical geometry, precise line weight, balanced sacred-geometry inspired structure, crisp edges.",
+  japanese: "japanese: bold irezumi-inspired flow, strong readable silhouette, dynamic curves, tattoo-ready traditional composition.",
+  lettering: "lettering: clean custom tattoo lettering, readable letterforms, balanced spacing, no random extra words."
+};
+
 function normalizePromptText(value = "") {
   return String(value).replace(/\s+/g, " ").trim();
+}
+
+function stylePresetFor(selectedStyle = "Fine line") {
+  const key = normalizePromptText(selectedStyle).toLowerCase();
+  return stylePromptPresets[key] ?? `${key}: clean tattoo flash style, readable silhouette, balanced line weight, artist-ready reference.`;
+}
+
+function sizeGuidance(selectedSize = "Small") {
+  const key = normalizePromptText(selectedSize).toLowerCase();
+  if (key === "large") {
+    return "large readable tattoo composition with strong focal point, enough detail for a larger body area, clear silhouette from distance.";
+  }
+  if (key === "medium") {
+    return "medium tattoo composition with readable details, clear focal point, enough spacing between lines.";
+  }
+  return "small tattoo composition with simplified details, clean readable silhouette, avoid tiny fragile details.";
+}
+
+function complexityGuidance(selectedComplexity = "Beginner friendly") {
+  const key = normalizePromptText(selectedComplexity).toLowerCase();
+  if (key.includes("detailed")) {
+    return "controlled detail, still stencil-friendly, avoid visual noise or overly dense micro-lines.";
+  }
+  if (key.includes("moderate")) {
+    return "moderate detail, balanced contrast, clean artist-ready line hierarchy.";
+  }
+  return "beginner friendly complexity, simple enough to explain to a tattoo artist, clean and not overcrowded.";
 }
 
 function buildPrompt() {
@@ -331,14 +367,25 @@ function buildPrompt() {
     return "Describe your tattoo idea to generate a tattoo-ready prompt.";
   }
 
+  const selectedStyle = normalizePromptText(style.value || "Fine line");
+  const selectedPlacement = normalizePromptText(placement.value || "Forearm");
+  const selectedSize = normalizePromptText(size.value || "Small");
+  const selectedComplexity = normalizePromptText(complexity.value || "Beginner friendly");
   const extraInstructions = normalizePromptText(advancedPrompt?.value ?? "");
   const parts = [
-    `Create an isolated ${style.value.toLowerCase()} tattoo design reference of ${userIdea}.`,
-    `This is only the tattoo artwork for later ${placement.value.toLowerCase()} placement preview; do not show the placement itself.`,
-    `Design target: ${size.value.toLowerCase()} size, ${complexity.value.toLowerCase()} complexity.`,
+    `Create an isolated ${selectedStyle.toLowerCase()} tattoo design reference of ${userIdea}.`,
+    "professional tattoo flash reference, single complete tattoo motif, artist-ready design sheet.",
+    stylePresetFor(selectedStyle),
+    sizeGuidance(selectedSize),
+    complexityGuidance(selectedComplexity),
+    `This is only the tattoo artwork for later ${selectedPlacement.toLowerCase()} placement preview; do not show the placement itself.`,
+    `Design target: ${selectedSize.toLowerCase()} size, ${selectedComplexity.toLowerCase()} complexity.`,
     "Clean black ink linework, centered tattoo flash sheet composition, plain pure white background.",
+    "Use clean contour lines and controlled contrast so the design can become a stencil or artist reference.",
+    "Avoid poster art, logo design, sticker, clipart, 3d render, photorealism.",
     "No person, no model, no hand, no arm, no forearm, no wrist, no skin, no body parts, no clothing.",
-    "No photo, no mockup, no placement preview, no shadows, no grey background, no paper texture, no text."
+    "No photo, no mockup, no placement preview, no shadows, no grey background, no paper texture, no text.",
+    "No extra background objects, no frame, no border, no watermark, no signature."
   ];
 
   if (extraInstructions) {

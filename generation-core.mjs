@@ -2,6 +2,55 @@ export const defaultMockModel = "mock-static-assets";
 export const defaultReplicateModel = "black-forest-labs/flux-schnell";
 export const defaultReplicateLineworkModel = "black-forest-labs/flux-canny-pro";
 
+const stylePromptPresets = {
+  "fine line": "fine line: delicate thin outlines, elegant negative space, minimal shading, graceful botanical or symbolic detail, refined tattoo flash finish.",
+  minimalist: "minimalist: simple iconic silhouette, very few lines, balanced empty space, instantly readable at small size.",
+  blackwork: "blackwork: solid black shapes, high contrast, controlled negative space, bold tattoo readability, no grey wash.",
+  geometric: "geometric: clean symmetrical geometry, precise line weight, balanced sacred-geometry inspired structure, crisp edges.",
+  japanese: "japanese: bold irezumi-inspired flow, strong readable silhouette, dynamic curves, tattoo-ready traditional composition.",
+  lettering: "lettering: clean custom tattoo lettering, readable letterforms, balanced spacing, no random extra words."
+};
+
+const negativePrompt = [
+  "person, human, model, hand, arm, forearm, wrist, skin, body parts, clothing",
+  "photo, mockup, placement preview, shadow, grey background, paper texture",
+  "realistic scene, studio photo, product photo, drop shadow, canvas texture, noisy background",
+  "poster art, logo design, sticker, clipart, 3d render, photorealism",
+  "watermark, signature, text, letters, words, typography unless the selected style is lettering",
+  "frame, border, extra background objects, duplicate subjects, cropped design"
+].join(", ");
+
+function stylePresetFor(style = "Fine line") {
+  const key = normalizePromptText(style).toLowerCase();
+  return stylePromptPresets[key] ?? `${key}: clean tattoo flash style, readable silhouette, balanced line weight, artist-ready reference.`;
+}
+
+function sizeGuidance(size = "Small") {
+  const key = normalizePromptText(size).toLowerCase();
+  if (key === "large") {
+    return "large readable tattoo composition with strong focal point, enough detail for a larger body area, clear silhouette from distance.";
+  }
+  if (key === "medium") {
+    return "medium tattoo composition with readable details, clear focal point, enough spacing between lines.";
+  }
+  return "small tattoo composition with simplified details, clean readable silhouette, avoid tiny fragile details.";
+}
+
+function complexityGuidance(complexity = "Beginner friendly") {
+  const key = normalizePromptText(complexity).toLowerCase();
+  if (key.includes("detailed")) {
+    return "controlled detail, still stencil-friendly, avoid visual noise or overly dense micro-lines.";
+  }
+  if (key.includes("moderate")) {
+    return "moderate detail, balanced contrast, clean artist-ready line hierarchy.";
+  }
+  return "beginner friendly complexity, simple enough to explain to a tattoo artist, clean and not overcrowded.";
+}
+
+export function buildNegativePrompt() {
+  return negativePrompt;
+}
+
 export function resolveGenerationModel(env = process.env) {
   if (env.GENERATION_PROVIDER === "replicate") {
     return env.GENERATION_MODEL && env.GENERATION_MODEL !== defaultMockModel
@@ -48,11 +97,18 @@ export function buildTattooPrompt(body) {
   const advancedPrompt = normalizePromptText(body.advancedPrompt);
   const parts = [
     `Create an isolated ${style.toLowerCase()} tattoo design reference of ${idea}.`,
+    "professional tattoo flash reference, single complete tattoo motif, artist-ready design sheet.",
+    stylePresetFor(style),
+    sizeGuidance(size),
+    complexityGuidance(complexity),
     `This is only the tattoo artwork for later ${placement.toLowerCase()} placement preview; do not show the placement itself.`,
     `Design target: ${size.toLowerCase()} size, ${complexity.toLowerCase()} complexity.`,
     "Clean black ink linework, centered tattoo flash sheet composition, plain pure white background.",
+    "Use clean contour lines and controlled contrast so the design can become a stencil or artist reference.",
+    "Avoid poster art, logo design, sticker, clipart, 3d render, photorealism.",
     "No person, no model, no hand, no arm, no forearm, no wrist, no skin, no body parts, no clothing.",
-    "No photo, no mockup, no placement preview, no shadows, no grey background, no paper texture, no text."
+    "No photo, no mockup, no placement preview, no shadows, no grey background, no paper texture, no text.",
+    "No extra background objects, no frame, no border, no watermark, no signature."
   ];
 
   if (advancedPrompt) {
@@ -149,6 +205,7 @@ async function createReplicateGeneration(body, env = process.env, fetchImpl = fe
   const requestBody = {
     input: {
       prompt: base.prompt,
+      negative_prompt: buildNegativePrompt(),
       aspect_ratio: "1:1",
       output_format: "webp",
       output_quality: 90,
@@ -224,11 +281,12 @@ function buildLineworkPrompt(generation) {
 
   return [
     `Create clean black tattoo stencil linework from this isolated ${style.toLowerCase()} ${size.toLowerCase()} tattoo concept of ${idea}.`,
-    "preserve only the tattoo subject and composition, not any body or placement context.",
-    "black ink only, pure white background, crisp thin outlines, tattoo flash stencil style.",
+    "stencil-ready transfer drawing, preserve only the tattoo subject and composition, not any body or placement context.",
+    "black ink only, pure white background, uniform black outlines, crisp thin contours, tattoo flash stencil style.",
+    "closed contours where possible, clean line hierarchy, readable at tattoo scale, no broken messy sketch lines.",
     "only black vector-like contour lines; remove all lighting, shadows, paper texture, skin tones, and tonal background.",
-    "no shading, no grey, no gradients, no color, no person, no hand, no arm, no forearm, no wrist, no skin, no body parts, no clothing, no mockup, no text, no background rectangle.",
-    "do not add new symbols, do not change the subject, do not add extra decorative elements.",
+    "no shading, no grey, no gradients, no color, no filled paper shadows, no person, no hand, no arm, no forearm, no wrist, no skin, no body parts, no clothing, no mockup, no text, no background rectangle.",
+    "do not redraw it as a new illustration, do not add new symbols, do not change the subject, do not add extra decorative elements.",
     "keep it readable as a tattoo artist reference and stencil draft."
   ].join(" ");
 }

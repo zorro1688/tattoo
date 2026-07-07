@@ -35,6 +35,96 @@ await run("tattoo prompt avoids body and placement mockup language", () => {
   assert.doesNotMatch(prompt, /suitable for forearm placement/i);
 });
 
+
+
+await run("tattoo prompt applies style-specific professional reference templates", () => {
+  const fineLinePrompt = buildTattooPrompt({
+    idea: "small rose with moon",
+    style: "Fine line",
+    placement: "Chest",
+    size: "Small",
+    complexity: "Beginner friendly"
+  });
+  const japanesePrompt = buildTattooPrompt({
+    idea: "tiger head",
+    style: "Japanese",
+    placement: "Back",
+    size: "Large",
+    complexity: "Detailed"
+  });
+
+  assert.match(fineLinePrompt, /professional tattoo flash reference/i);
+  assert.match(fineLinePrompt, /single complete tattoo motif/i);
+  assert.match(fineLinePrompt, /fine line: delicate thin outlines, elegant negative space, minimal shading/i);
+  assert.match(fineLinePrompt, /avoid poster art, logo design, sticker, clipart, 3d render, photorealism/i);
+  assert.match(fineLinePrompt, /no extra background objects, no frame, no border/i);
+  assert.match(japanesePrompt, /japanese: bold irezumi-inspired flow, strong readable silhouette/i);
+  assert.match(japanesePrompt, /large readable tattoo composition with strong focal point/i);
+});
+
+await run("replicate concept requests include negative prompt when the model supports it", async () => {
+  const calls = [];
+
+  await createGeneration(
+    {
+      idea: "wolf head",
+      style: "Blackwork",
+      placement: "Shoulder",
+      size: "Medium",
+      complexity: "Moderate"
+    },
+    {
+      GENERATION_PROVIDER: "replicate",
+      REPLICATE_API_TOKEN: "r8_test",
+      GENERATION_MODEL: "black-forest-labs/flux-schnell"
+    },
+    async (url, init) => {
+      calls.push({ url, init });
+      return {
+        ok: true,
+        json: async () => ({
+          id: "negative_123",
+          status: "succeeded",
+          output: ["https://replicate.delivery/pbxt/wolf.webp"]
+        })
+      };
+    }
+  );
+
+  const body = JSON.parse(calls[0].init.body);
+
+  assert.match(body.input.prompt, /blackwork: solid black shapes, high contrast, controlled negative space/i);
+  assert.match(body.input.negative_prompt, /person, human, model, hand, arm, forearm, wrist, skin/i);
+  assert.match(body.input.negative_prompt, /photo, mockup, placement preview, shadow, grey background, paper texture/i);
+  assert.match(body.input.negative_prompt, /watermark, signature, text, letters, words/i);
+});
+
+await run("linework prompt is stricter about stencil cleanup and stable outlines", async () => {
+  const linework = await createLineworkGeneration(
+    {
+      id: "gen_linework_quality",
+      images: {
+        concept: "/assets/hero-concept.png"
+      },
+      input: {
+        idea: "small rose with moon",
+        style: "Fine line",
+        placement: "Forearm",
+        size: "Small"
+      }
+    },
+    {
+      GENERATION_PROVIDER: "mock"
+    }
+  );
+
+  assert.match(linework.prompt, /stencil-ready transfer drawing/i);
+  assert.match(linework.prompt, /uniform black outlines/i);
+  assert.match(linework.prompt, /closed contours where possible/i);
+  assert.match(linework.prompt, /no filled paper shadows/i);
+  assert.match(linework.prompt, /do not redraw it as a new illustration/i);
+});
+
 await run("replicate provider requires an API token", async () => {
   const generation = await createGeneration(
     { idea: "small rose with moon", style: "Fine line", placement: "Forearm" },
