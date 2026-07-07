@@ -213,3 +213,25 @@ await run("design detail placement can be dragged directly without jumping to th
   assert.match(styles, /\.detail-placement-tattoo \{\s+cursor: grab;/);
   assert.match(styles, /\.detail-placement-mockup\.is-dragging \.detail-placement-tattoo \{\s+cursor: grabbing;/);
 });
+
+
+await run("design detail download buttons show active feedback and protect slow placement downloads", async () => {
+  const script = await readFile("design.js", "utf8");
+  const publicScript = await readFile("public/design.js", "utf8");
+  const styles = await readFile("styles.css", "utf8");
+
+  for (const source of [script, publicScript]) {
+    assert.match(source, /function setDownloadButtonState\(button, isDownloading/);
+    assert.match(source, /button\.classList\.toggle\("is-downloading", isDownloading\)/);
+    assert.match(source, /button\.textContent = isDownloading \? "Preparing download\.\.\."/);
+    assert.match(source, /async function downloadGenerationFile\(type, button\)/);
+    assert.match(source, /finally \{/);
+    assert.match(source, /downloadGenerationFile\("concept", detailDownloadConcept\)/);
+    assert.match(source, /downloadGenerationFile\("linework", detailLineworkButton\)/);
+    assert.match(source, /downloadGenerationFile\("placement", detailDownloadPlacement\)/);
+    assert.match(source, /designStatus\.textContent = `Preparing \$\{type\} download\.\.\.`/);
+  }
+
+  assert.match(styles, /\.design-download-actions \.result-action\.is-downloading/);
+  assert.match(styles, /background: #0071e3/);
+});

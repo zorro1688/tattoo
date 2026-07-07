@@ -46,3 +46,18 @@ await run("My Designs cards render saved placement previews instead of only conc
   assert.match(styles, /\.my-design-placement-preview \{/);
   assert.match(styles, /\.my-design-placement-tattoo \{/);
 });
+
+
+await run("My Designs placement previews remove square artwork backgrounds", async () => {
+  const script = await readFile("my-designs.js", "utf8");
+  const publicScript = await readFile("public/my-designs.js", "utf8");
+
+  for (const source of [script, publicScript]) {
+    assert.match(source, /createTransparentTattooUrl/);
+    assert.match(source, /applyTransparentTattooOverlay/);
+    assert.match(source, /data-placement-tattoo-source/);
+    assert.match(source, /hydratePlacementPreviewTattooImages/);
+    assert.match(source, /estimateTattooBackgroundColor/);
+    assert.match(source, /isNearTattooBackground/);
+  }
+});

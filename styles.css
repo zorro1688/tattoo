@@ -1161,6 +1161,17 @@ textarea {
   min-height: 46px;
 }
 
+.design-download-actions .result-action.is-downloading {
+  background: #0071e3;
+  color: #fff;
+  cursor: progress;
+  opacity: 1;
+}
+
+.design-download-actions .result-action.is-downloading:hover {
+  background: #0071e3;
+}
+
 .design-preview-frame.placement {
   background: #f7f2ee;
 }

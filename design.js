@@ -298,7 +298,25 @@ const downloadTypeParams = {
   placement: "type=placement"
 };
 
-async function downloadGenerationFile(type) {
+function setDownloadButtonState(button, isDownloading) {
+  if (!button) {
+    return;
+  }
+
+  if (isDownloading && !button.dataset.previousText) {
+    button.dataset.previousText = button.textContent;
+  }
+
+  button.disabled = isDownloading;
+  button.classList.toggle("is-downloading", isDownloading);
+  button.textContent = isDownloading ? "Preparing download..." : button.dataset.previousText || button.textContent;
+
+  if (!isDownloading) {
+    delete button.dataset.previousText;
+  }
+}
+
+async function downloadGenerationFile(type, button) {
   if (!currentDesign?.id) {
     return;
   }
@@ -309,27 +327,36 @@ async function downloadGenerationFile(type) {
     return;
   }
 
-  const response = await fetch(
-    `/api/download?generationId=${encodeURIComponent(currentDesign.id)}&${typeParam}`
-  );
+  setDownloadButtonState(button, true);
+  designStatus.textContent = `Preparing ${type} download...`;
 
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    designStatus.textContent = data.error ?? "Could not download this file.";
-    return;
-  }
+  try {
+    const response = await fetch(
+      `/api/download?generationId=${encodeURIComponent(currentDesign.id)}&${typeParam}`
+    );
 
-  const blob = await response.blob();
-  const filename = getFilenameFromDisposition(
-    response.headers.get("content-disposition"),
-    `inkfirst-${type}.png`
-  );
-  const objectUrl = URL.createObjectURL(blob);
-  triggerDownload(objectUrl, filename);
-  URL.revokeObjectURL(objectUrl);
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      designStatus.textContent = data.error ?? "Could not download this file.";
+      return;
+    }
 
-  if (!downloadAccess.highResolution) {
-    designStatus.textContent = downloadAccess.message;
+    const blob = await response.blob();
+    const filename = getFilenameFromDisposition(
+      response.headers.get("content-disposition"),
+      `inkfirst-${type}.png`
+    );
+    const objectUrl = URL.createObjectURL(blob);
+    triggerDownload(objectUrl, filename);
+    URL.revokeObjectURL(objectUrl);
+
+    designStatus.textContent = downloadAccess.highResolution
+      ? `${type.charAt(0).toUpperCase()}${type.slice(1)} download started.`
+      : downloadAccess.message;
+  } catch {
+    designStatus.textContent = "Could not download this file. Try again in a moment.";
+  } finally {
+    setDownloadButtonState(button, false);
   }
 }
 
@@ -857,7 +884,7 @@ async function generateLinework() {
   }
 
   if (hasGeneratedLinework()) {
-    downloadGenerationFile("linework");
+    downloadGenerationFile("linework", detailLineworkButton);
     return;
   }
 
@@ -934,7 +961,7 @@ resetPlacementButton?.addEventListener("click", () => {
 });
 
 detailDownloadConcept.addEventListener("click", () => {
-  downloadGenerationFile("concept");
+  downloadGenerationFile("concept", detailDownloadConcept);
 });
 
 detailLineworkButton.addEventListener("click", () => {
@@ -942,7 +969,7 @@ detailLineworkButton.addEventListener("click", () => {
 });
 
 detailDownloadPlacement.addEventListener("click", () => {
-  downloadGenerationFile("placement");
+  downloadGenerationFile("placement", detailDownloadPlacement);
 });
 
 [

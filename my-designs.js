@@ -38,6 +38,148 @@ function getDefaultPlacementAdjustment(design) {
   return placementTattooFits[key] ?? placementTattooFits.forearm;
 }
 
+const transparentTattooCache = new Map();
+
+function loadDrawableImage(url) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = url;
+  });
+}
+
+function backgroundDistance(red, green, blue, background) {
+  return Math.abs(red - background.red) + Math.abs(green - background.green) + Math.abs(blue - background.blue);
+}
+
+function estimateTattooBackgroundColor(data, width, height) {
+  const samplePoints = [
+    [0, 0],
+    [width - 1, 0],
+    [0, height - 1],
+    [width - 1, height - 1],
+    [Math.floor(width / 2), 0],
+    [Math.floor(width / 2), height - 1],
+    [0, Math.floor(height / 2)],
+    [width - 1, Math.floor(height / 2)]
+  ];
+  const samples = [];
+
+  samplePoints.forEach(([x, y]) => {
+    const safeX = Math.max(0, Math.min(width - 1, x));
+    const safeY = Math.max(0, Math.min(height - 1, y));
+    const index = (safeY * width + safeX) * 4;
+    if (data[index + 3] >= 18) {
+      samples.push({
+        red: data[index],
+        green: data[index + 1],
+        blue: data[index + 2]
+      });
+    }
+  });
+
+  if (!samples.length) {
+    return { red: 255, green: 255, blue: 255 };
+  }
+
+  return samples.reduce(
+    (color, sample) => ({
+      red: color.red + sample.red / samples.length,
+      green: color.green + sample.green / samples.length,
+      blue: color.blue + sample.blue / samples.length
+    }),
+    { red: 0, green: 0, blue: 0 }
+  );
+}
+
+function isNearTattooBackground(red, green, blue, alpha, background) {
+  if (alpha < 18) {
+    return true;
+  }
+
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  const brightness = (red + green + blue) / 3;
+  const chroma = max - min;
+
+  return backgroundDistance(red, green, blue, background) < 84 || (brightness > 210 && chroma < 44);
+}
+
+function createTransparentTattooUrl(url) {
+  if (!url) {
+    return Promise.resolve(url);
+  }
+
+  if (transparentTattooCache.has(url)) {
+    return transparentTattooCache.get(url);
+  }
+
+  const promise = loadDrawableImage(url)
+    .then((image) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, image.naturalWidth || image.width);
+      canvas.height = Math.max(1, image.naturalHeight || image.height);
+      const context = canvas.getContext("2d");
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+      const background = estimateTattooBackgroundColor(data, canvas.width, canvas.height);
+
+      for (let index = 0; index < data.length; index += 4) {
+        const red = data[index];
+        const green = data[index + 1];
+        const blue = data[index + 2];
+        const alpha = data[index + 3];
+
+        if (isNearTattooBackground(red, green, blue, alpha, background)) {
+          data[index + 3] = 0;
+          continue;
+        }
+
+        const max = Math.max(red, green, blue);
+        const min = Math.min(red, green, blue);
+        const brightness = (red + green + blue) / 3;
+        const chroma = max - min;
+
+        if (brightness > 185 && chroma < 70) {
+          data[index + 3] = Math.min(data[index + 3], Math.max(0, Math.round((230 - brightness) * 2.2)));
+        }
+
+        if (data[index + 3] < 16) {
+          data[index + 3] = 0;
+        }
+      }
+
+      context.putImageData(imageData, 0, 0);
+      return canvas.toDataURL("image/png");
+    })
+    .catch(() => url);
+
+  transparentTattooCache.set(url, promise);
+  return promise;
+}
+
+function applyTransparentTattooOverlay(imageElement, url) {
+  if (!imageElement || !url) {
+    return;
+  }
+
+  imageElement.dataset.source = url;
+  createTransparentTattooUrl(url).then((transparentUrl) => {
+    if (imageElement.dataset.source === url) {
+      imageElement.src = transparentUrl;
+    }
+  });
+}
+
+function hydratePlacementPreviewTattooImages() {
+  document.querySelectorAll("[data-placement-tattoo-source]").forEach((imageElement) => {
+    applyTransparentTattooOverlay(imageElement, imageElement.dataset.placementTattooSource);
+  });
+}
+
 function normalizePlacementAdjustment(adjustment, fallback) {
   if (!adjustment) {
     return { ...fallback };
@@ -71,7 +213,7 @@ function renderPlacementPreview(design, title) {
   return `
     <div class="my-design-placement-preview" data-placement="${escapeHtml(normalizePlacementValue(placement))}" style="${escapeHtml(style)}">
       <img class="my-design-placement-skin" src="${escapeHtml(getPlacementSkinAsset(placement))}" alt="" aria-hidden="true" loading="lazy">
-      <img class="my-design-placement-tattoo" src="${escapeHtml(safeTattooImage)}" alt="${escapeHtml(title)} placement preview" loading="lazy">
+      <img class="my-design-placement-tattoo" src="${escapeHtml(safeTattooImage)}" data-placement-tattoo-source="${escapeHtml(safeTattooImage)}" alt="${escapeHtml(title)} placement preview" loading="lazy">
     </div>
   `;
 }
@@ -174,6 +316,7 @@ function renderDesigns(designs = []) {
       `;
     })
     .join("");
+  hydratePlacementPreviewTattooImages();
 }
 
 async function generateLinework(generationId, button) {
