@@ -244,6 +244,39 @@ await run("placement downloads include saved placement adjustment transform", as
 });
 
 
+await run("placement downloads can read bundled local assets without a mocked image fetcher", async () => {
+  await withTempStore(async (storePath) => {
+    const saved = await consumeGenerationCredit(
+      "client-placement-local-assets",
+      input,
+      {
+        ...generation,
+        images: {
+          concept: "/assets/hero-concept.png",
+          linework: "",
+          placement: "/assets/hero-placement.png"
+        }
+      },
+      storePath
+    );
+
+    const file = await resolveDownloadFile({
+      clientId: "client-placement-local-assets",
+      generationId: saved.generation.id,
+      type: "placement",
+      storePath
+    });
+
+    const body = file.body.toString("utf8");
+
+    assert.equal(file.status, 200);
+    assert.equal(file.contentType, "image/svg+xml; charset=utf-8");
+    assert.match(body, /data:image\/png;base64/);
+    assert.match(body, /data:image\/jpeg;base64/);
+  });
+});
+
+
 await run("placement downloads compose the saved tattoo over the selected body photo", async () => {
   await withTempStore(async (storePath) => {
     const saved = await consumeGenerationCredit(

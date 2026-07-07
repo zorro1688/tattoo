@@ -224,12 +224,14 @@ await run("design detail download buttons show active feedback and protect slow 
     assert.match(source, /function setDownloadButtonState\(button, isDownloading/);
     assert.match(source, /button\.classList\.toggle\("is-downloading", isDownloading\)/);
     assert.match(source, /button\.textContent = isDownloading \? "Preparing download\.\.\."/);
-    assert.match(source, /async function downloadGenerationFile\(type, button\)/);
-    assert.match(source, /finally \{/);
-    assert.match(source, /downloadGenerationFile\("concept", detailDownloadConcept\)/);
+    assert.match(source, /function downloadGenerationFile\(type, button\)/);
+        assert.match(source, /downloadGenerationFile\("concept", detailDownloadConcept\)/);
     assert.match(source, /downloadGenerationFile\("linework", detailLineworkButton\)/);
     assert.match(source, /downloadGenerationFile\("placement", detailDownloadPlacement\)/);
     assert.match(source, /designStatus\.textContent = `Preparing \$\{type\} download\.\.\.`/);
+    assert.match(source, /const downloadUrl = `\/api\/download\?generationId=/);
+    assert.match(source, /triggerDownload\(downloadUrl, `inkfirst-\$\{type\}\.png`\)/);
+    assert.match(source, /window\.setTimeout\(\(\) => \{/);
   }
 
   assert.match(styles, /\.design-download-actions \.result-action\.is-downloading/);

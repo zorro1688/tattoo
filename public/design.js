@@ -316,7 +316,7 @@ function setDownloadButtonState(button, isDownloading) {
   }
 }
 
-async function downloadGenerationFile(type, button) {
+function downloadGenerationFile(type, button) {
   if (!currentDesign?.id) {
     return;
   }
@@ -327,37 +327,17 @@ async function downloadGenerationFile(type, button) {
     return;
   }
 
+  const downloadUrl = `/api/download?generationId=${encodeURIComponent(currentDesign.id)}&${typeParam}`;
   setDownloadButtonState(button, true);
   designStatus.textContent = `Preparing ${type} download...`;
+  triggerDownload(downloadUrl, `inkfirst-${type}.png`);
 
-  try {
-    const response = await fetch(
-      `/api/download?generationId=${encodeURIComponent(currentDesign.id)}&${typeParam}`
-    );
-
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({}));
-      designStatus.textContent = data.error ?? "Could not download this file.";
-      return;
-    }
-
-    const blob = await response.blob();
-    const filename = getFilenameFromDisposition(
-      response.headers.get("content-disposition"),
-      `inkfirst-${type}.png`
-    );
-    const objectUrl = URL.createObjectURL(blob);
-    triggerDownload(objectUrl, filename);
-    URL.revokeObjectURL(objectUrl);
-
+  window.setTimeout(() => {
+    setDownloadButtonState(button, false);
     designStatus.textContent = downloadAccess.highResolution
       ? `${type.charAt(0).toUpperCase()}${type.slice(1)} download started.`
       : downloadAccess.message;
-  } catch {
-    designStatus.textContent = "Could not download this file. Try again in a moment.";
-  } finally {
-    setDownloadButtonState(button, false);
-  }
+  }, 1400);
 }
 
 function drawWatermark(context, canvasWidth, canvasHeight) {
