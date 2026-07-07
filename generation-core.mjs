@@ -134,6 +134,28 @@ export function buildTattooPrompt(body) {
   return parts.join(" ");
 }
 
+
+export function extractImageUrls(output) {
+  if (!output) {
+    return [];
+  }
+
+  if (typeof output === "string") {
+    return output.startsWith("http") ? [output] : [];
+  }
+
+  if (Array.isArray(output)) {
+    return output.flatMap((item) => extractImageUrls(item));
+  }
+
+  if (typeof output === "object") {
+    const directUrl = typeof output.url === "string" && output.url.startsWith("http") ? [output.url] : [];
+    return [...directUrl, ...Object.values(output).flatMap((value) => extractImageUrls(value))];
+  }
+
+  return [];
+}
+
 export function extractFirstImageUrl(output) {
   if (!output) {
     return "";
@@ -225,7 +247,7 @@ async function createReplicateGeneration(body, env = process.env, fetchImpl = fe
       aspect_ratio: "1:1",
       output_format: "webp",
       output_quality: 90,
-      num_outputs: 1
+      num_outputs: 4
     }
   };
 
@@ -254,7 +276,8 @@ async function createReplicateGeneration(body, env = process.env, fetchImpl = fe
     };
   }
 
-  const conceptImage = extractFirstImageUrl(payload.output);
+  const conceptCandidates = [...new Set(extractImageUrls(payload.output))];
+  const conceptImage = conceptCandidates[0];
 
   if (!conceptImage) {
     return {
@@ -273,7 +296,8 @@ async function createReplicateGeneration(body, env = process.env, fetchImpl = fe
     ...base,
     images: {
       concept: conceptImage
-    }
+    },
+    conceptCandidates
   };
 }
 

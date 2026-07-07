@@ -156,6 +156,47 @@ await run("replicate provider requires an API token", async () => {
   assert.match(generation.error, /REPLICATE_API_TOKEN/);
 });
 
+
+await run("replicate concept generation keeps multiple candidate images", async () => {
+  const generation = await createGeneration(
+    {
+      idea: "dragon",
+      style: "Fine line",
+      placement: "Forearm",
+      size: "Medium",
+      complexity: "Balanced detail"
+    },
+    {
+      GENERATION_PROVIDER: "replicate",
+      REPLICATE_API_TOKEN: "r8_test",
+      GENERATION_MODEL: "black-forest-labs/flux-schnell"
+    },
+    async (url, init) => {
+      const body = JSON.parse(init.body);
+      assert.equal(body.input.num_outputs, 4);
+      return {
+        ok: true,
+        json: async () => ({
+          id: "multi_123",
+          status: "succeeded",
+          output: [
+            "https://replicate.delivery/pbxt/dragon-1.webp",
+            "https://replicate.delivery/pbxt/dragon-2.webp",
+            "https://replicate.delivery/pbxt/dragon-3.webp"
+          ]
+        })
+      };
+    }
+  );
+
+  assert.equal(generation.images.concept, "https://replicate.delivery/pbxt/dragon-1.webp");
+  assert.deepEqual(generation.conceptCandidates, [
+    "https://replicate.delivery/pbxt/dragon-1.webp",
+    "https://replicate.delivery/pbxt/dragon-2.webp",
+    "https://replicate.delivery/pbxt/dragon-3.webp"
+  ]);
+});
+
 await run("replicate provider returns the generated concept image URL", async () => {
   const calls = [];
   const generation = await createGeneration(

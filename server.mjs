@@ -25,6 +25,7 @@ import {
   getDownloadAccess,
   getBillingHistory,
   getGeneration,
+  updateGenerationConceptSelection,
   updateGenerationPlacementAdjustment,
   getQuotaState,
   listGenerations,
@@ -258,14 +259,16 @@ const server = createServer(async (request, response) => {
     }
 
     try {
-      const updated = await updateGenerationPlacementAdjustment(
-        session.ownerId,
-        body.generationId,
-        body.placementAdjustment ?? null
-      );
+      const updated = body.selectedConceptUrl
+        ? await updateGenerationConceptSelection(session.ownerId, body.generationId, body.selectedConceptUrl)
+        : await updateGenerationPlacementAdjustment(
+            session.ownerId,
+            body.generationId,
+            body.placementAdjustment ?? null
+          );
       writeJson(response, 200, { generation: updated.generation }, headers);
     } catch (error) {
-      const message = error.message ?? "Could not save placement adjustment.";
+      const message = error.message ?? "Could not update saved generation.";
       writeJson(response, message === "Saved generation was not found" ? 404 : 400, { error: message }, headers);
     }
     return;

@@ -23,6 +23,7 @@ await run("homepage hero contains current result actions and details", async () 
   assert.match(html, /id="heroLineworkAction"/);
   assert.match(html, /href="\/my-designs"/);
   assert.match(html, /id="generateAnotherButton"/);
+  assert.match(html, /id="conceptCandidateStrip"/);
 });
 
 await run("homepage script updates result state and supports downloads", async () => {
@@ -37,12 +38,24 @@ await run("homepage script updates result state and supports downloads", async (
   assert.match(script, /generateAnotherButton/);
   assert.match(script, /regenerateConceptButton/);
   assert.match(script, /regenerateConcept\(\)/);
+  assert.match(script, /conceptCandidateStrip/);
+  assert.match(script, /renderConceptCandidates/);
+  assert.match(script, /selectConceptCandidate/);
   assert.match(script, /getGeneratedImage\("linework"\) \|\| getConceptPreviewImage\(\)/);
   assert.match(script, /isDefaultHeroImage/);
   assert.match(script, /const blockingError = Boolean\(generationError && !generated\)/);
   assert.match(script, /classList\.toggle\("is-error", blockingError\)/);
 });
 
+
+
+await run("homepage concept candidates have compact selectable styling", async () => {
+  const styles = await readFile("styles.css", "utf8");
+
+  assert.match(styles, /\.concept-candidate-strip/);
+  assert.match(styles, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
+  assert.match(styles, /\.concept-candidate\.selected/);
+});
 
 await run("homepage advanced prompt is editable and sent with generation requests", async () => {
   const html = await readFile("index.html", "utf8");

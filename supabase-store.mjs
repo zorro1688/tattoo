@@ -435,6 +435,46 @@ export async function persistPlacementAdjustmentToSupabase(clientId, generationI
   return { skipped: false };
 }
 
+
+export async function persistConceptSelectionToSupabase(clientId, generation, env = process.env, fetchImpl = fetch) {
+  const config = getSupabaseConfig(env);
+
+  if (!config) {
+    return { skipped: true };
+  }
+
+  const supabaseGeneration = await findSupabaseGeneration(generation.id, clientId, env, fetchImpl);
+
+  if (!supabaseGeneration?.id) {
+    return { skipped: true, reason: "generation_not_found" };
+  }
+
+  await insertAssets(supabaseGeneration.id, { concept: generation.images?.concept }, config, env, fetchImpl, {
+    owner: clientId,
+    localGenerationId: generation.id
+  });
+
+  await requestSupabase(`/generations?local_generation_id=eq.${encodeURIComponent(generation.id)}`, {
+    method: "PATCH",
+    headers: {
+      Prefer: "return=minimal"
+    },
+    body: JSON.stringify({
+      updated_at: generation.updatedAt
+    })
+  }, env, fetchImpl);
+
+  return { skipped: false };
+}
+
+export async function safePersistConceptSelectionToSupabase(clientId, generation, env = process.env, fetchImpl = fetch) {
+  try {
+    return await persistConceptSelectionToSupabase(clientId, generation, env, fetchImpl);
+  } catch (error) {
+    return { skipped: true, error };
+  }
+}
+
 export async function persistLineworkToSupabase(clientId, generation, quota, env = process.env, fetchImpl = fetch) {
   const config = getSupabaseConfig(env);
   const owner = normalizeOwner(clientId);

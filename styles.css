@@ -2694,6 +2694,46 @@ textarea {
   line-height: 1.5;
 }
 
+
+.concept-candidate-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0 28px 18px;
+}
+
+.concept-candidate-strip[hidden] {
+  display: none;
+}
+
+.concept-candidate {
+  display: grid;
+  gap: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  background: #fff;
+  padding: 7px;
+  color: #1d1d1f;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.04);
+}
+
+.concept-candidate img {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  background: #fbfaf7;
+  object-fit: contain;
+}
+
+.concept-candidate.selected {
+  border-color: rgba(0, 113, 227, 0.72);
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
+}
+
 .hero-result-meta {
   display: grid;
   gap: 8px;

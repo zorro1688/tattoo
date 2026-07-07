@@ -8,6 +8,7 @@ import {
   consumeLineworkCredit,
   consumeGenerationCredit,
   getGeneration,
+  updateGenerationConceptSelection,
   updateGenerationPlacementAdjustment,
   getClientSession,
   getQuotaState,
@@ -159,6 +160,46 @@ await run("generation history only returns the current client's recent designs",
     assert.equal(history[0].input.idea, "second idea");
     assert.equal(history[1].input.idea, "first idea");
     assert.equal(history.every((item) => item.clientId === undefined), true);
+  });
+});
+
+
+await run("selected concept candidate updates the saved main concept and clears dependent previews", async () => {
+  await withTempStore(async (storePath) => {
+    const saved = await consumeGenerationCredit(
+      "client-a",
+      input,
+      {
+        ...generation,
+        conceptCandidates: [
+          "https://replicate.delivery/concept-a.webp",
+          "https://replicate.delivery/concept-b.webp"
+        ],
+        images: {
+          concept: "https://replicate.delivery/concept-a.webp",
+          linework: "https://replicate.delivery/linework-a.webp",
+          placement: "https://replicate.delivery/placement-a.webp"
+        }
+      },
+      storePath
+    );
+
+    await updateGenerationConceptSelection(
+      "client-a",
+      saved.generation.id,
+      "https://replicate.delivery/concept-b.webp",
+      storePath
+    );
+
+    const record = await getGeneration("client-a", saved.generation.id, storePath);
+
+    assert.equal(record.images.concept, "https://replicate.delivery/concept-b.webp");
+    assert.equal(record.images.linework, undefined);
+    assert.equal(record.images.placement, undefined);
+    assert.deepEqual(record.conceptCandidates, [
+      "https://replicate.delivery/concept-a.webp",
+      "https://replicate.delivery/concept-b.webp"
+    ]);
   });
 });
 

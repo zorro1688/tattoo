@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { buildClientCookie, getClientSession, getGeneration, updateGenerationPlacementAdjustment } from "../../../quota-store.mjs";
+import { buildClientCookie, getClientSession, getGeneration, updateGenerationConceptSelection, updateGenerationPlacementAdjustment } from "../../../quota-store.mjs";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -31,15 +31,17 @@ export async function PATCH(request) {
   }
 
   try {
-    const updated = await updateGenerationPlacementAdjustment(
-      session.ownerId,
-      body.generationId,
-      body.placementAdjustment ?? null
-    );
+    const updated = body.selectedConceptUrl
+      ? await updateGenerationConceptSelection(session.ownerId, body.generationId, body.selectedConceptUrl)
+      : await updateGenerationPlacementAdjustment(
+          session.ownerId,
+          body.generationId,
+          body.placementAdjustment ?? null
+        );
 
     return NextResponse.json({ generation: updated.generation }, { status: 200, headers });
   } catch (error) {
-    const message = error.message ?? "Could not save placement adjustment.";
+    const message = error.message ?? "Could not update saved generation.";
     const status = message === "Saved generation was not found" ? 404 : 400;
     return NextResponse.json({ error: message }, { status, headers });
   }

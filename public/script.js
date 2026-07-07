@@ -56,6 +56,7 @@ const heroPromptText = document.querySelector("#heroPromptText");
 const downloadConceptButton = document.querySelector("#downloadConceptButton");
 const heroLineworkAction = document.querySelector("#heroLineworkAction");
 const downloadPlacementButton = document.querySelector("#downloadPlacementButton");
+const conceptCandidateStrip = document.querySelector("#conceptCandidateStrip");
 const regenerateConceptButton = document.querySelector("#regenerateConceptButton");
 const generateAnotherButton = document.querySelector("#generateAnotherButton");
 const priceCards = document.querySelectorAll(".price-card");
@@ -71,6 +72,8 @@ let quota = 3;
 let generatedPrompt = "";
 let generatedPlacementNote = "";
 let generatedImages = {};
+let conceptCandidates = [];
+let selectedConceptIndex = 0;
 let currentGenerationId = "";
 let isGenerating = false;
 let generationError = "";
@@ -787,6 +790,8 @@ function resetGeneratedResult() {
   generatedPrompt = "";
   generatedPlacementNote = "";
   generatedImages = {};
+  conceptCandidates = [];
+  selectedConceptIndex = 0;
   currentGenerationId = "";
   generationError = "";
   lineworkError = "";
@@ -860,6 +865,60 @@ function renderPrompt() {
   }
   renderArtistBrief();
   renderHeroPreview();
+}
+
+function renderConceptCandidates() {
+  if (!conceptCandidateStrip) {
+    return;
+  }
+
+  const candidates = conceptCandidates.length ? conceptCandidates : generatedImages.concept ? [generatedImages.concept] : [];
+  conceptCandidateStrip.hidden = !generated || candidates.length <= 1;
+  conceptCandidateStrip.innerHTML = candidates
+    .map((url, index) => `
+      <button class="concept-candidate${index === selectedConceptIndex ? " selected" : ""}" type="button" data-index="${index}" aria-label="Use concept option ${index + 1}">
+        <img src="${escapeHtml(url)}" alt="Concept option ${index + 1}" loading="lazy">
+        <span>Option ${index + 1}</span>
+      </button>
+    `)
+    .join("");
+}
+
+async function persistSelectedConcept(url) {
+  if (!currentGenerationId || !url) {
+    return;
+  }
+
+  await fetch("/api/generation", {
+    method: "PATCH",
+    headers: {
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      generationId: currentGenerationId,
+      selectedConceptUrl: url
+    })
+  }).catch(() => {});
+}
+
+function selectConceptCandidate(index) {
+  const candidate = conceptCandidates[index];
+
+  if (!candidate) {
+    return;
+  }
+
+  selectedConceptIndex = index;
+  generatedImages = {
+    ...generatedImages,
+    concept: candidate,
+    linework: undefined,
+    placement: undefined
+  };
+  lineworkError = "";
+  heroMode = "concept";
+  renderHeroPreview();
+  persistSelectedConcept(candidate);
 }
 
 function renderHeroPreview() {
@@ -948,6 +1007,8 @@ function renderHeroPreview() {
   if (heroPromptText) {
     heroPromptText.textContent = generatedPrompt || buildPrompt();
   }
+
+  renderConceptCandidates();
 
   if (downloadConceptButton) {
     downloadConceptButton.disabled = (!generatedImages.concept && !blockingError) || isGenerating;
@@ -1140,6 +1201,8 @@ async function generate() {
     generatedPrompt = data.prompt ?? buildPrompt();
     generatedPlacementNote = data.placementNote ?? getPlacementGuidance();
     generatedImages = data.images ?? {};
+    conceptCandidates = data.conceptCandidates ?? (generatedImages.concept ? [generatedImages.concept] : []);
+    selectedConceptIndex = 0;
     currentGenerationId = data.savedGenerationId ?? "";
     renderConcepts();
     renderPrompt();
@@ -1161,6 +1224,8 @@ function regenerateConcept() {
 
   heroMode = "concept";
   generatedImages = {};
+  conceptCandidates = [];
+  selectedConceptIndex = 0;
   currentGenerationId = "";
   lineworkError = "";
   generate();
@@ -1322,6 +1387,18 @@ if (downloadConceptButton) {
     }
 
     downloadGenerationFile("concept");
+  });
+}
+
+if (conceptCandidateStrip) {
+  conceptCandidateStrip.addEventListener("click", (event) => {
+    const button = event.target.closest(".concept-candidate");
+
+    if (!button) {
+      return;
+    }
+
+    selectConceptCandidate(Number(button.dataset.index));
   });
 }
 

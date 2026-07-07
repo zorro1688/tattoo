@@ -10,6 +10,7 @@ import {
   safePersistGenerationToSupabase,
   safePersistLineworkToSupabase,
   safePersistPlacementAdjustmentToSupabase,
+  safePersistConceptSelectionToSupabase,
   safeGetGenerationFromSupabase,
   safeListGenerationsFromSupabase,
   safeGetQuotaFromSupabase,
@@ -249,6 +250,7 @@ function buildSavedGeneration(clientId, input, generation) {
     placementNote: generation.placementNote,
     placementAdjustment: generation.placementAdjustment ?? null,
     images: generation.images,
+    conceptCandidates: generation.conceptCandidates ?? (generation.images?.concept ? [generation.images.concept] : []),
     input: {
       idea: input.idea,
       style: input.style,
@@ -258,6 +260,53 @@ function buildSavedGeneration(clientId, input, generation) {
     },
     createdAt: nowIso()
   };
+}
+
+
+function sanitizeGeneration(generation) {
+  const { clientId, ...safeGeneration } = generation;
+  return { ...safeGeneration };
+}
+
+export async function updateGenerationConceptSelection(clientId, generationId, selectedConceptUrl, storePath = getStorePath()) {
+  if (!selectedConceptUrl || !/^https?:\/\//i.test(String(selectedConceptUrl))) {
+    throw new Error("A valid concept image URL is required");
+  }
+
+  const store = await readStore(storePath);
+  const generation = store.generations.find(
+    (item) => item.id === generationId && item.clientId === clientId
+  );
+
+  if (!generation) {
+    throw new Error("Saved generation was not found");
+  }
+
+  const allowedCandidates = new Set([
+    ...(generation.conceptCandidates ?? []),
+    generation.images?.concept
+  ].filter(Boolean));
+
+  if (!allowedCandidates.has(selectedConceptUrl)) {
+    throw new Error("Selected concept was not found for this generation");
+  }
+
+  generation.images = {
+    ...generation.images,
+    concept: selectedConceptUrl,
+    linework: undefined,
+    placement: undefined
+  };
+  generation.conceptCandidates = Array.from(new Set([
+    ...(generation.conceptCandidates ?? []),
+    selectedConceptUrl
+  ]));
+  generation.updatedAt = nowIso();
+
+  await writeStore(store, storePath);
+  await safePersistConceptSelectionToSupabase(clientId, generation);
+
+  return { generation: sanitizeGeneration(generation) };
 }
 
 export async function getGeneration(clientId, generationId, storePath = getStorePath()) {
@@ -643,6 +692,7 @@ export async function listGenerations(clientId, options = {}, storePath = getSto
       lineworkStatus: generation.lineworkStatus,
       lineworkPrompt: generation.lineworkPrompt,
       images: generation.images,
+      conceptCandidates: generation.conceptCandidates ?? (generation.images?.concept ? [generation.images.concept] : []),
       input: generation.input,
       createdAt: generation.createdAt,
       updatedAt: generation.updatedAt
