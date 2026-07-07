@@ -56,6 +56,7 @@ const heroPromptText = document.querySelector("#heroPromptText");
 const downloadConceptButton = document.querySelector("#downloadConceptButton");
 const heroLineworkAction = document.querySelector("#heroLineworkAction");
 const downloadPlacementButton = document.querySelector("#downloadPlacementButton");
+const regenerateConceptButton = document.querySelector("#regenerateConceptButton");
 const generateAnotherButton = document.querySelector("#generateAnotherButton");
 const priceCards = document.querySelectorAll(".price-card");
 const leadForm = document.querySelector("#leadForm");
@@ -333,6 +334,18 @@ function normalizePromptText(value = "") {
   return String(value).replace(/\s+/g, " ").trim();
 }
 
+function subjectCompletenessGuidance(userIdea = "") {
+  const text = normalizePromptText(userIdea).toLowerCase();
+  const isPortrait = /\b(head|face|portrait|bust|skull)\b/.test(text);
+  const isCreature = /\b(dragon|eagle|bird|wolf|tiger|lion|cat|dog|fox|snake|fish|butterfly|moth|phoenix|animal|creature|wings|tail|claws)\b/.test(text);
+
+  if (isCreature && !isPortrait) {
+    return "Full body complete subject: show the whole creature in one tattoo motif, with feet, claws, wings, and tail fully inside the artwork. Do not crop or hide any body part.";
+  }
+
+  return "Complete tattoo motif: keep the full design visible inside the canvas, with no cropped edges or missing important elements.";
+}
+
 function stylePresetFor(selectedStyle = "Fine line") {
   const key = normalizePromptText(selectedStyle).toLowerCase();
   return stylePromptPresets[key] ?? `${key}: clean tattoo flash style, readable silhouette, balanced line weight, artist-ready reference.`;
@@ -382,6 +395,7 @@ function buildPrompt() {
     `Design target: ${selectedSize.toLowerCase()} size, ${selectedComplexity.toLowerCase()} complexity.`,
     "Clean black ink linework, centered tattoo flash sheet composition, plain pure white background.",
     "Keep the entire tattoo design fully visible and uncropped, with generous white margin around all edges.",
+    subjectCompletenessGuidance(userIdea),
     "For animals, dragons, and creatures, include all limbs, legs, claws, wings, horns, and tail inside the canvas unless the user asks for a portrait.",
     "Use clean contour lines and controlled contrast so the design can become a stencil or artist reference.",
     "Avoid poster art, logo design, sticker, clipart, 3d render, photorealism.",
@@ -945,6 +959,12 @@ function renderHeroPreview() {
     downloadConceptButton.title = downloadAccess.highResolution ? "" : downloadAccess.message;
   }
 
+  if (regenerateConceptButton) {
+    regenerateConceptButton.disabled = isGenerating || lineworkGenerating || quota <= 0;
+    regenerateConceptButton.textContent = isGenerating ? "Regenerating concept..." : "Regenerate concept";
+    regenerateConceptButton.title = quota <= 0 ? "Upgrade to generate more concept options" : "Create another concept with the same settings";
+  }
+
   if (heroLineworkAction) {
     const hasLinework = hasGeneratedLinework();
     heroLineworkAction.disabled = !generated || lineworkGenerating || isGenerating;
@@ -1133,6 +1153,19 @@ async function generate() {
   }
 }
 
+
+function regenerateConcept() {
+  if (isGenerating || lineworkGenerating) {
+    return;
+  }
+
+  heroMode = "concept";
+  generatedImages = {};
+  currentGenerationId = "";
+  lineworkError = "";
+  generate();
+}
+
 async function generateLinework() {
   if (!generated || !currentGenerationId || hasGeneratedLinework() || lineworkGenerating) {
     return;
@@ -1289,6 +1322,12 @@ if (downloadConceptButton) {
     }
 
     downloadGenerationFile("concept");
+  });
+}
+
+if (regenerateConceptButton) {
+  regenerateConceptButton.addEventListener("click", () => {
+    regenerateConcept();
   });
 }
 

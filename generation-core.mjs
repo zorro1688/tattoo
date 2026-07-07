@@ -89,6 +89,18 @@ function normalizePromptText(value = "") {
   return String(value).replace(/\s+/g, " ").trim();
 }
 
+function subjectCompletenessGuidance(idea = "") {
+  const text = normalizePromptText(idea).toLowerCase();
+  const isPortrait = /\b(head|face|portrait|bust|skull)\b/.test(text);
+  const isCreature = /\b(dragon|eagle|bird|wolf|tiger|lion|cat|dog|fox|snake|fish|butterfly|moth|phoenix|animal|creature|wings|tail|claws)\b/.test(text);
+
+  if (isCreature && !isPortrait) {
+    return "Full body complete subject: show the whole creature in one tattoo motif, with feet, claws, wings, and tail fully inside the artwork. Do not crop or hide any body part.";
+  }
+
+  return "Complete tattoo motif: keep the full design visible inside the canvas, with no cropped edges or missing important elements.";
+}
+
 export function buildTattooPrompt(body) {
   const idea = normalizePromptText(body.idea);
   const style = normalizePromptText(body.style ?? "Fine line");
@@ -106,6 +118,7 @@ export function buildTattooPrompt(body) {
     `Design target: ${size.toLowerCase()} size, ${complexity.toLowerCase()} complexity.`,
     "Clean black ink linework, centered tattoo flash sheet composition, plain pure white background.",
     "Keep the entire tattoo design fully visible and uncropped, with generous white margin around all edges.",
+    subjectCompletenessGuidance(idea),
     "For animals, dragons, and creatures, include all limbs, legs, claws, wings, horns, and tail inside the canvas unless the user asks for a portrait.",
     "Use clean contour lines and controlled contrast so the design can become a stencil or artist reference.",
     "Avoid poster art, logo design, sticker, clipart, 3d render, photorealism.",

@@ -64,6 +64,21 @@ await run("tattoo prompt applies style-specific professional reference templates
   assert.match(japanesePrompt, /large readable tattoo composition with strong focal point/i);
 });
 
+
+await run("animal and creature concept prompts require a complete full-body subject", () => {
+  const prompt = buildTattooPrompt({
+    idea: "dragon with eagle wings",
+    style: "Fine line",
+    placement: "Chest",
+    size: "Medium",
+    complexity: "Balanced detail"
+  });
+
+  assert.match(prompt, /full body complete subject/i);
+  assert.match(prompt, /feet, claws, wings, and tail fully inside the artwork/i);
+  assert.match(prompt, /do not crop or hide any body part/i);
+});
+
 await run("replicate concept requests include negative prompt when the model supports it", async () => {
   const calls = [];
 

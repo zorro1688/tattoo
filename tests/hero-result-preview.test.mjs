@@ -18,6 +18,8 @@ await run("homepage hero contains current result actions and details", async () 
   assert.match(html, /id="heroPlacementNote"/);
   assert.match(html, /id="heroDetails"/);
   assert.match(html, /id="downloadConceptButton"/);
+  assert.match(html, /id="regenerateConceptButton"/);
+  assert.match(html, /Regenerate concept/);
   assert.match(html, /id="heroLineworkAction"/);
   assert.match(html, /href="\/my-designs"/);
   assert.match(html, /id="generateAnotherButton"/);
@@ -33,6 +35,8 @@ await run("homepage script updates result state and supports downloads", async (
   assert.match(script, /Generating your tattoo/);
   assert.match(script, /Try again/);
   assert.match(script, /generateAnotherButton/);
+  assert.match(script, /regenerateConceptButton/);
+  assert.match(script, /regenerateConcept\(\)/);
   assert.match(script, /getGeneratedImage\("linework"\) \|\| getConceptPreviewImage\(\)/);
   assert.match(script, /isDefaultHeroImage/);
   assert.match(script, /const blockingError = Boolean\(generationError && !generated\)/);
