@@ -28,3 +28,21 @@ await run("My Designs page has history container and generator CTA", async () =>
   assert.match(html, /href="\/#generator"/);
   assert.match(html, /src="my-designs.js"/);
 });
+
+
+await run("My Designs cards render saved placement previews instead of only concept thumbnails", async () => {
+  const script = await readFile("my-designs.js", "utf8");
+  const styles = await readFile("styles.css", "utf8");
+
+  assert.match(script, /const placementSkinAssets = \{/);
+  assert.match(script, /function renderPlacementPreview\(design, title\)/);
+  assert.match(script, /design\.placementAdjustment \?\? getDefaultPlacementAdjustment\(design\)/);
+  assert.match(script, /--tattoo-x:\s*\$\{Math\.round\(adjustment\.x \* 1000\) \/ 10\}%/);
+  assert.match(script, /--tattoo-y:\s*\$\{Math\.round\(adjustment\.y \* 1000\) \/ 10\}%/);
+  assert.match(script, /class="my-design-placement-preview"/);
+  assert.match(script, /class="my-design-placement-skin"/);
+  assert.match(script, /class="my-design-placement-tattoo"/);
+  assert.doesNotMatch(script, /const image = design\.images\?\.concept \|\| "assets\/hero-concept\.png";/);
+  assert.match(styles, /\.my-design-placement-preview \{/);
+  assert.match(styles, /\.my-design-placement-tattoo \{/);
+});

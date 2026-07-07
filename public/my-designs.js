@@ -2,6 +2,80 @@ const myDesignsGrid = document.querySelector("#myDesignsGrid");
 const designsStatus = document.querySelector("#designsStatus");
 let savedDesigns = [];
 
+const placementSkinAssets = {
+  forearm: "assets/placement-forearm.jpg",
+  wrist: "assets/placement-wrist.jpg",
+  "upper-arm": "assets/placement-upper-arm.jpg",
+  chest: "assets/placement-chest.jpg",
+  back: "assets/placement-back.jpg",
+  ankle: "assets/placement-ankle.jpg",
+  shoulder: "assets/placement-shoulder.jpg",
+  rib: "assets/placement-rib.jpg"
+};
+
+const placementTattooFits = {
+  forearm: { x: 0.54, y: 0.55, rotation: -7, scale: 0.82 },
+  wrist: { x: 0.48, y: 0.58, rotation: -4, scale: 0.56 },
+  "upper-arm": { x: 0.53, y: 0.46, rotation: -5, scale: 0.82 },
+  chest: { x: 0.5, y: 0.59, rotation: 0, scale: 0.78 },
+  back: { x: 0.5, y: 0.43, rotation: 0, scale: 0.9 },
+  ankle: { x: 0.5, y: 0.58, rotation: -3, scale: 0.58 },
+  shoulder: { x: 0.58, y: 0.34, rotation: -8, scale: 0.92 },
+  rib: { x: 0.57, y: 0.5, rotation: 5, scale: 0.62 }
+};
+
+function normalizePlacementValue(value = "Forearm") {
+  return String(value).toLowerCase().replaceAll(" ", "-");
+}
+
+function getPlacementSkinAsset(value = "Forearm") {
+  const key = normalizePlacementValue(value);
+  return placementSkinAssets[key] ?? placementSkinAssets.forearm;
+}
+
+function getDefaultPlacementAdjustment(design) {
+  const key = normalizePlacementValue(design?.input?.placement ?? "Forearm");
+  return placementTattooFits[key] ?? placementTattooFits.forearm;
+}
+
+function normalizePlacementAdjustment(adjustment, fallback) {
+  if (!adjustment) {
+    return { ...fallback };
+  }
+
+  return {
+    x: Math.min(1, Math.max(0, Number(adjustment.x))),
+    y: Math.min(1, Math.max(0, Number(adjustment.y))),
+    scale: Math.min(2.4, Math.max(0.35, Number(adjustment.scale))),
+    rotation: Math.min(45, Math.max(-45, Number(adjustment.rotation)))
+  };
+}
+
+function renderPlacementPreview(design, title) {
+  const placement = design.input?.placement ?? "Forearm";
+  const adjustment = normalizePlacementAdjustment(
+    design.placementAdjustment ?? getDefaultPlacementAdjustment(design),
+    getDefaultPlacementAdjustment(design)
+  );
+  const tattooImage = hasGeneratedLinework(design)
+    ? design.images?.linework
+    : design.images?.concept;
+  const safeTattooImage = tattooImage || "assets/hero-concept.png";
+  const style = [
+    `--tattoo-x: ${Math.round(adjustment.x * 1000) / 10}%`,
+    `--tattoo-y: ${Math.round(adjustment.y * 1000) / 10}%`,
+    `--tattoo-fit-scale: ${adjustment.scale}`,
+    `--tattoo-rotation: ${adjustment.rotation}deg`
+  ].join("; ");
+
+  return `
+    <div class="my-design-placement-preview" data-placement="${escapeHtml(normalizePlacementValue(placement))}" style="${escapeHtml(style)}">
+      <img class="my-design-placement-skin" src="${escapeHtml(getPlacementSkinAsset(placement))}" alt="" aria-hidden="true" loading="lazy">
+      <img class="my-design-placement-tattoo" src="${escapeHtml(safeTattooImage)}" alt="${escapeHtml(title)} placement preview" loading="lazy">
+    </div>
+  `;
+}
+
 function escapeHtml(value = "") {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -68,7 +142,6 @@ function renderDesigns(designs = []) {
   myDesignsGrid.innerHTML = designs
     .map((design) => {
       const title = formatDesignTitle(design);
-      const image = design.images?.concept || "assets/hero-concept.png";
       const placement = design.input?.placement ?? "Placement";
       const size = design.input?.size ?? "Size";
       const style = design.input?.style ?? "Style";
@@ -83,7 +156,7 @@ function renderDesigns(designs = []) {
         <article class="my-design-card">
           <figure>
             <div class="my-design-image">
-              <img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" loading="lazy">
+              ${renderPlacementPreview(design, title)}
             </div>
             <figcaption class="my-design-copy">
               <span>${escapeHtml(formatDate(design.createdAt))}</span>
