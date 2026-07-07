@@ -242,3 +242,44 @@ await run("placement downloads include saved placement adjustment transform", as
     assert.match(body, /transform="translate\(549 333\) rotate\(-14\) scale\(1\.24\)"/);
   });
 });
+
+
+await run("placement downloads compose the saved tattoo over the selected body photo", async () => {
+  await withTempStore(async (storePath) => {
+    const saved = await consumeGenerationCredit(
+      "client-placement-composite",
+      { ...input, placement: "Back" },
+      generation,
+      storePath
+    );
+    const store = JSON.parse(await readFile(storePath, "utf8"));
+    store.generations[0].input.placement = "Back";
+    store.generations[0].placementAdjustment = { x: 0.62, y: 0.44, scale: 1.18, rotation: 6 };
+    await writeFile(storePath, `${JSON.stringify(store, null, 2)}\n`, "utf8");
+    const fetchedUrls = [];
+
+    const file = await resolveDownloadFile({
+      clientId: "client-placement-composite",
+      generationId: saved.generation.id,
+      type: "placement",
+      fetchImage: async (url) => {
+        fetchedUrls.push(url);
+        return {
+          ok: true,
+          contentType: url.includes("placement-back") ? "image/jpeg" : "image/webp",
+          body: Buffer.from(`original:${url}`)
+        };
+      },
+      storePath
+    });
+
+    const body = file.body.toString("utf8");
+
+    assert.equal(file.status, 200);
+    assert.deepEqual(fetchedUrls, ["https://example.com/linework.webp", "assets/placement-back.jpg"]);
+    assert.match(body, /data-placement-source="back"/);
+    assert.match(body, /data:image\/jpeg;base64/);
+    assert.match(body, /data:image\/webp;base64/);
+    assert.match(body, /transform="translate\(558 396\) rotate\(6\) scale\(1\.18\)"/);
+  });
+});

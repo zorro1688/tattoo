@@ -6,6 +6,28 @@ import { fetchStorageObjectFromSupabase } from "./supabase-store.mjs";
 const allowedTypes = new Set(["concept", "linework", "placement"]);
 const placeholderLinework = "assets/hero-linework.png";
 
+const placementSkinAssets = {
+  forearm: "assets/placement-forearm.jpg",
+  wrist: "assets/placement-wrist.jpg",
+  "upper-arm": "assets/placement-upper-arm.jpg",
+  chest: "assets/placement-chest.jpg",
+  back: "assets/placement-back.jpg",
+  ankle: "assets/placement-ankle.jpg",
+  shoulder: "assets/placement-shoulder.jpg",
+  rib: "assets/placement-rib.jpg"
+};
+
+const placementTattooFits = {
+  forearm: { x: 0.54, y: 0.55, rotation: -7, scale: 0.82 },
+  wrist: { x: 0.48, y: 0.58, rotation: -4, scale: 0.56 },
+  "upper-arm": { x: 0.53, y: 0.46, rotation: -5, scale: 0.82 },
+  chest: { x: 0.5, y: 0.59, rotation: 0, scale: 0.78 },
+  back: { x: 0.5, y: 0.43, rotation: 0, scale: 0.9 },
+  ankle: { x: 0.5, y: 0.58, rotation: -3, scale: 0.58 },
+  shoulder: { x: 0.58, y: 0.34, rotation: -8, scale: 0.92 },
+  rib: { x: 0.57, y: 0.5, rotation: 5, scale: 0.62 }
+};
+
 const extensionByContentType = {
   "image/png": "png",
   "image/jpeg": "jpg",
@@ -40,6 +62,20 @@ function normalizeImageUrl(url = "") {
 
 function isGeneratedLinework(url = "") {
   return Boolean(url && !url.includes(placeholderLinework));
+}
+
+function normalizePlacementValue(value = "Forearm") {
+  return String(value).toLowerCase().replaceAll(" ", "-");
+}
+
+function placementSkinAssetFor(value = "Forearm") {
+  const key = normalizePlacementValue(value);
+  return placementSkinAssets[key] ?? placementSkinAssets.forearm;
+}
+
+function defaultPlacementAdjustmentFor(value = "Forearm") {
+  const key = normalizePlacementValue(value);
+  return placementTattooFits[key] ?? placementTattooFits.forearm;
 }
 
 function imageUrlForType(generation, type) {
@@ -138,24 +174,16 @@ export function renderWatermarkedSvg({
 </svg>`;
 }
 
-function renderPlacementSvg(generation, access, imageUrl) {
+function renderPlacementSvg(generation, access, tattooImageUrl, skinImageUrl) {
   const input = generation.input ?? {};
   const title = `${input.style ?? "Tattoo"} placement preview`;
   const width = access.highResolution ? 1200 : 900;
   const height = access.highResolution ? 1200 : 900;
-  const adjustment = generation.placementAdjustment;
-
-  if (!adjustment) {
-    return renderWatermarkedSvg({
-      imageUrl,
-      title,
-      watermarked: access.watermarked,
-      width,
-      height
-    });
-  }
-
-  const safeUrl = escapeXml(normalizeImageUrl(imageUrl));
+  const placementKey = normalizePlacementValue(input.placement ?? "Forearm");
+  const fallbackAdjustment = defaultPlacementAdjustmentFor(input.placement ?? "Forearm");
+  const adjustment = generation.placementAdjustment ?? fallbackAdjustment;
+  const safeTattooUrl = escapeXml(normalizeImageUrl(tattooImageUrl));
+  const safeSkinUrl = escapeXml(normalizeImageUrl(skinImageUrl));
   const safeTitle = escapeXml(title);
   const x = Math.round(Number(adjustment.x) * width);
   const y = Math.round(Number(adjustment.y) * height);
@@ -168,10 +196,11 @@ function renderPlacementSvg(generation, access, imageUrl) {
       </g>`
     : "";
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${safeTitle}" data-placement-adjustment="${escapeXml(adjustmentData)}">
-  <rect width="100%" height="100%" fill="#ffffff"/>
-  <g transform="translate(${x} ${y}) rotate(${rotation}) scale(${scale})">
-    <image href="${safeUrl}" x="${-width / 2}" y="${-height / 2}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet"/>
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${safeTitle}" data-placement-source="${escapeXml(placementKey)}" data-placement-adjustment="${escapeXml(adjustmentData)}">
+  <rect width="100%" height="100%" fill="#f5f5f7"/>
+  <image href="${safeSkinUrl}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="xMidYMid slice"/>
+  <g opacity="0.74" style="mix-blend-mode:multiply" transform="translate(${x} ${y}) rotate(${rotation}) scale(${scale})">
+    <image href="${safeTattooUrl}" x="${-width / 2}" y="${-height / 2}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet"/>
   </g>
   ${watermark}
 </svg>`;
@@ -219,8 +248,9 @@ export async function resolveDownloadFile({
 
   if (type === "placement") {
     const image = await fetchImageForType(generation, type, fetchImage, fetchStoredImage);
+    const skinImage = await fetchImage(placementSkinAssetFor(generation.input?.placement ?? "Forearm"));
 
-    if (image && !image.ok) {
+    if ((image && !image.ok) || !skinImage.ok) {
       return {
         status: 502,
         error: "Could not fetch the original image file."
@@ -228,7 +258,7 @@ export async function resolveDownloadFile({
     }
 
     const body = Buffer.from(
-      renderPlacementSvg(generation, access, image ? imageToDataUri(image) : ""),
+      renderPlacementSvg(generation, access, image ? imageToDataUri(image) : "", imageToDataUri(skinImage)),
       "utf8"
     );
 
