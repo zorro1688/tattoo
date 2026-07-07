@@ -17,7 +17,8 @@ const negativePrompt = [
   "realistic scene, studio photo, product photo, drop shadow, canvas texture, noisy background",
   "poster art, logo design, sticker, clipart, 3d render, photorealism",
   "watermark, signature, text, letters, words, typography unless the selected style is lettering",
-  "frame, border, extra background objects, duplicate subjects, cropped design"
+  "frame, border, extra background objects, duplicate subjects, cropped design",
+  "cropped, cut off, out of frame, missing limbs, missing legs, missing tail, missing wings"
 ].join(", ");
 
 function stylePresetFor(style = "Fine line") {
@@ -104,6 +105,8 @@ export function buildTattooPrompt(body) {
     `This is only the tattoo artwork for later ${placement.toLowerCase()} placement preview; do not show the placement itself.`,
     `Design target: ${size.toLowerCase()} size, ${complexity.toLowerCase()} complexity.`,
     "Clean black ink linework, centered tattoo flash sheet composition, plain pure white background.",
+    "Keep the entire tattoo design fully visible and uncropped, with generous white margin around all edges.",
+    "For animals, dragons, and creatures, include all limbs, legs, claws, wings, horns, and tail inside the canvas unless the user asks for a portrait.",
     "Use clean contour lines and controlled contrast so the design can become a stencil or artist reference.",
     "Avoid poster art, logo design, sticker, clipart, 3d render, photorealism.",
     "No person, no model, no hand, no arm, no forearm, no wrist, no skin, no body parts, no clothing.",

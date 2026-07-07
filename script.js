@@ -381,6 +381,8 @@ function buildPrompt() {
     `This is only the tattoo artwork for later ${selectedPlacement.toLowerCase()} placement preview; do not show the placement itself.`,
     `Design target: ${selectedSize.toLowerCase()} size, ${selectedComplexity.toLowerCase()} complexity.`,
     "Clean black ink linework, centered tattoo flash sheet composition, plain pure white background.",
+    "Keep the entire tattoo design fully visible and uncropped, with generous white margin around all edges.",
+    "For animals, dragons, and creatures, include all limbs, legs, claws, wings, horns, and tail inside the canvas unless the user asks for a portrait.",
     "Use clean contour lines and controlled contrast so the design can become a stencil or artist reference.",
     "Avoid poster art, logo design, sticker, clipart, 3d render, photorealism.",
     "No person, no model, no hand, no arm, no forearm, no wrist, no skin, no body parts, no clothing.",

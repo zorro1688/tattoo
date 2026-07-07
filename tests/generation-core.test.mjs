@@ -30,6 +30,8 @@ await run("tattoo prompt avoids body and placement mockup language", () => {
 
   assert.match(prompt, /isolated fine line tattoo design reference/);
   assert.match(prompt, /do not show the placement itself/i);
+  assert.match(prompt, /entire tattoo design fully visible and uncropped/i);
+  assert.match(prompt, /all limbs, legs, claws, wings, horns, and tail inside the canvas/i);
   assert.match(prompt, /No person, no model, no hand, no arm, no forearm, no wrist, no skin/i);
   assert.match(prompt, /Additional user instructions: make the rose more delicate\./);
   assert.doesNotMatch(prompt, /suitable for forearm placement/i);
@@ -96,6 +98,7 @@ await run("replicate concept requests include negative prompt when the model sup
   assert.match(body.input.prompt, /blackwork: solid black shapes, high contrast, controlled negative space/i);
   assert.match(body.input.negative_prompt, /person, human, model, hand, arm, forearm, wrist, skin/i);
   assert.match(body.input.negative_prompt, /photo, mockup, placement preview, shadow, grey background, paper texture/i);
+  assert.match(body.input.negative_prompt, /cropped, cut off, out of frame, missing limbs, missing legs, missing tail, missing wings/i);
   assert.match(body.input.negative_prompt, /watermark, signature, text, letters, words/i);
 });
 

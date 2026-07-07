@@ -9,7 +9,8 @@ export async function GET(request) {
   const file = await resolveDownloadFile({
     clientId: session.ownerId,
     generationId: searchParams.get("generationId"),
-    type: searchParams.get("type")
+    type: searchParams.get("type"),
+    publicBaseUrl: new URL(request.url).origin
   });
 
   if (file.error) {

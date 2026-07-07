@@ -108,22 +108,45 @@ function filenameFor(type, access, contentType = "image/svg+xml") {
   return `inkfirst-${type}-high-resolution.${extension}`;
 }
 
-async function defaultFetchImage(url) {
+export async function fetchDownloadImage(url, publicBaseUrl = "") {
   if (!url) {
     throw new Error("Image URL is required.");
   }
 
   if (url.startsWith("/") || !/^https?:\/\//i.test(url)) {
     const localPath = url.startsWith("/") ? url.slice(1) : url;
-    const filePath = join(process.cwd(), localPath);
-    const body = await readFile(filePath);
-    const contentType = contentTypeByExtension[extname(filePath).toLowerCase()] ?? "application/octet-stream";
+    const candidates = [join(process.cwd(), localPath), join(process.cwd(), "public", localPath)];
 
-    return {
-      ok: true,
-      contentType,
-      body
-    };
+    for (const filePath of candidates) {
+      try {
+        const body = await readFile(filePath);
+        const contentType = contentTypeByExtension[extname(filePath).toLowerCase()] ?? "application/octet-stream";
+
+        return {
+          ok: true,
+          contentType,
+          body
+        };
+      } catch (error) {
+        if (error?.code !== "ENOENT") {
+          throw error;
+        }
+      }
+    }
+
+    if (publicBaseUrl) {
+      const publicUrl = new URL(`/${localPath}`, publicBaseUrl).toString();
+      const response = await fetch(publicUrl);
+      const body = Buffer.from(await response.arrayBuffer());
+
+      return {
+        ok: response.ok,
+        contentType: response.headers.get("content-type") ?? "application/octet-stream",
+        body
+      };
+    }
+
+    throw new Error(`Local image asset was not found: ${localPath}`);
   }
 
   const response = await fetch(url);
@@ -136,7 +159,7 @@ async function defaultFetchImage(url) {
   };
 }
 
-async function fetchImageForType(generation, type, fetchImage, fetchStoredImage) {
+async function fetchImageForType(generation, type, fetchImage, fetchStoredImage, publicBaseUrl) {
   const asset = assetForType(generation, type);
 
   if (asset?.storagePath || asset?.storage_path) {
@@ -149,7 +172,7 @@ async function fetchImageForType(generation, type, fetchImage, fetchStoredImage)
 
   const imageUrl = imageUrlForType(generation, type);
 
-  return imageUrl ? fetchImage(imageUrl) : null;
+  return imageUrl ? fetchImage(imageUrl, publicBaseUrl) : null;
 }
 
 export function renderWatermarkedSvg({
@@ -206,13 +229,18 @@ function renderPlacementSvg(generation, access, tattooImageUrl, skinImageUrl) {
 </svg>`;
 }
 
+async function defaultFetchImage(url, publicBaseUrl = "") {
+  return fetchDownloadImage(url, publicBaseUrl);
+}
+
 export async function resolveDownloadFile({
   clientId,
   generationId,
   type,
   fetchImage = defaultFetchImage,
   fetchStoredImage = fetchStorageObjectFromSupabase,
-  storePath
+  storePath,
+  publicBaseUrl = ""
 }) {
   if (!allowedTypes.has(type)) {
     return {
@@ -247,13 +275,23 @@ export async function resolveDownloadFile({
   const access = await getDownloadAccess(clientId, storePath);
 
   if (type === "placement") {
-    const image = await fetchImageForType(generation, type, fetchImage, fetchStoredImage);
-    const skinImage = await fetchImage(placementSkinAssetFor(generation.input?.placement ?? "Forearm"));
+    let image;
+    let skinImage;
+
+    try {
+      image = await fetchImageForType(generation, type, fetchImage, fetchStoredImage, publicBaseUrl);
+      skinImage = await fetchImage(placementSkinAssetFor(generation.input?.placement ?? "Forearm"), publicBaseUrl);
+    } catch {
+      return {
+        status: 502,
+        error: "Could not fetch the placement image file."
+      };
+    }
 
     if ((image && !image.ok) || !skinImage.ok) {
       return {
         status: 502,
-        error: "Could not fetch the original image file."
+        error: "Could not fetch the placement image file."
       };
     }
 
@@ -281,7 +319,7 @@ export async function resolveDownloadFile({
   }
 
   if (!access.highResolution) {
-    const image = await fetchImageForType(generation, type, fetchImage, fetchStoredImage);
+    const image = await fetchImageForType(generation, type, fetchImage, fetchStoredImage, publicBaseUrl);
 
     if (!image.ok) {
       return {
@@ -309,7 +347,7 @@ export async function resolveDownloadFile({
     };
   }
 
-  const image = await fetchImageForType(generation, type, fetchImage, fetchStoredImage);
+  const image = await fetchImageForType(generation, type, fetchImage, fetchStoredImage, publicBaseUrl);
 
   if (!image.ok) {
     return {

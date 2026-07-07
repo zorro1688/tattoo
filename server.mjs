@@ -324,7 +324,8 @@ const server = createServer(async (request, response) => {
     const file = await resolveDownloadFile({
       clientId: session.ownerId,
       generationId: url.searchParams.get("generationId"),
-      type: url.searchParams.get("type")
+      type: url.searchParams.get("type"),
+      publicBaseUrl: request.headers.host ? `http://${request.headers.host}` : `http://localhost:${PORT}`
     });
 
     writeDownload(response, file, headers);

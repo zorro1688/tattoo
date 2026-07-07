@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { consumeGenerationCredit, addPaidCredits } from "../quota-store.mjs";
 import {
+  fetchDownloadImage,
   resolveDownloadFile,
   renderWatermarkedSvg
 } from "../download-core.mjs";
@@ -243,6 +244,35 @@ await run("placement downloads include saved placement adjustment transform", as
   });
 });
 
+
+
+
+await run("local download images fall back to the public asset URL", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+
+  globalThis.fetch = async (url) => {
+    calls.push(String(url));
+    return {
+      ok: true,
+      headers: {
+        get: () => "image/png"
+      },
+      arrayBuffer: async () => Buffer.from("public asset")
+    };
+  };
+
+  try {
+    const image = await fetchDownloadImage("assets/missing-placement-test.png", "https://inkfirst.test");
+
+    assert.equal(image.ok, true);
+    assert.equal(image.contentType, "image/png");
+    assert.equal(image.body.toString("utf8"), "public asset");
+    assert.deepEqual(calls, ["https://inkfirst.test/assets/missing-placement-test.png"]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
 
 await run("placement downloads can read bundled local assets without a mocked image fetcher", async () => {
   await withTempStore(async (storePath) => {
