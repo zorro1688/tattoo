@@ -14,6 +14,7 @@ const stylePromptPresets = {
 const negativePrompt = [
   "person, human, model, hand, arm, forearm, wrist, skin, body parts, clothing",
   "photo, mockup, placement preview, shadow, grey background, paper texture",
+  "black background, transparent background, dark canvas, alpha channel, inverted white lines",
   "realistic scene, studio photo, product photo, drop shadow, canvas texture, noisy background",
   "poster art, logo design, sticker, clipart, 3d render, photorealism",
   "watermark, signature, text, letters, words, typography unless the selected style is lettering",
@@ -48,6 +49,14 @@ function complexityGuidance(complexity = "Beginner friendly") {
   return "beginner friendly complexity, simple enough to explain to a tattoo artist, clean and not overcrowded.";
 }
 
+export const conceptVariantOrder = ["simple", "balanced", "ornamental", "bold"];
+
+const conceptVariantDirections = {
+  simple: "Candidate direction: simple. Minimal clean silhouette, fewer internal marks, strong readable outline, beginner friendly and easy to tattoo.",
+  balanced: "Candidate direction: balanced. Complete classic tattoo flash composition, medium line detail, clear anatomy, strong focal point, practical artist reference.",
+  ornamental: "Candidate direction: ornamental. Decorative flow with tasteful pattern accents, elegant curves, refined detail, still clean and stencil-friendly.",
+  bold: "Candidate direction: bold. Stronger contrast, thicker confident outline, dynamic pose, powerful silhouette, readable from a distance."
+};
 export function buildNegativePrompt() {
   return negativePrompt;
 }
@@ -116,8 +125,9 @@ export function buildTattooPrompt(body) {
     complexityGuidance(complexity),
     `This is only the tattoo artwork for later ${placement.toLowerCase()} placement preview; do not show the placement itself.`,
     `Design target: ${size.toLowerCase()} size, ${complexity.toLowerCase()} complexity.`,
-    "Clean black ink linework, centered tattoo flash sheet composition, plain pure white background.",
+    "Clean black ink linework, centered tattoo flash sheet composition, opaque pure white background only.",
     "Keep the entire tattoo design fully visible and uncropped, with generous white margin around all edges.",
+    "Black ink on white background only; no black background, no transparent background, no inverted white lines.",
     subjectCompletenessGuidance(idea),
     "For animals, dragons, and creatures, include all limbs, legs, claws, wings, horns, and tail inside the canvas unless the user asks for a portrait.",
     "Use clean contour lines and controlled contrast so the design can become a stencil or artist reference.",
@@ -134,6 +144,10 @@ export function buildTattooPrompt(body) {
   return parts.join(" ");
 }
 
+export function buildConceptVariantPrompt(body, variant = "balanced") {
+  const key = conceptVariantOrder.includes(variant) ? variant : "balanced";
+  return buildTattooPrompt(body) + " " + conceptVariantDirections[key];
+}
 
 export function extractImageUrls(output) {
   if (!output) {
@@ -237,62 +251,68 @@ async function createReplicateGeneration(body, env = process.env, fetchImpl = fe
   }
 
   const base = createBaseGeneration(body, env);
-  const modelEndpoint = model.includes("/") && !/^[a-f0-9]{32,}$/i.test(model)
-    ? `https://api.replicate.com/v1/models/${model}/predictions`
-    : "https://api.replicate.com/v1/predictions";
-  const requestBody = {
-    input: {
-      prompt: base.prompt,
+
+  async function requestConceptVariant(variant) {
+    const { modelEndpoint, requestBody } = createReplicatePredictionBody(model, {
+      prompt: buildConceptVariantPrompt(body, variant),
       negative_prompt: buildNegativePrompt(),
       aspect_ratio: "1:1",
       output_format: "webp",
       output_quality: 90,
-      num_outputs: 4
+      num_outputs: 1
+    });
+
+    const response = await fetchImpl(modelEndpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Prefer: "wait=60"
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    const payload = await response.json().catch(async () => ({ error: await response.text() }));
+
+    if (!response.ok) {
+      return {
+        variant,
+        error: payload.detail ?? payload.error ?? "Replicate generation failed.",
+        status: "failed"
+      };
     }
-  };
 
-  if (modelEndpoint.endsWith("/v1/predictions")) {
-    requestBody.version = model;
-  }
-
-  const response = await fetchImpl(modelEndpoint, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      Prefer: "wait=60"
-    },
-    body: JSON.stringify(requestBody)
-  });
-
-  const payload = await response.json().catch(async () => ({ error: await response.text() }));
-
-  if (!response.ok) {
     return {
-      error: payload.detail ?? payload.error ?? "Replicate generation failed.",
-      provider: "replicate",
-      model,
-      status: "failed"
+      variant,
+      payload,
+      urls: extractImageUrls(payload.output)
     };
   }
 
-  const conceptCandidates = [...new Set(extractImageUrls(payload.output))];
+  const variantResults = await Promise.all(
+    conceptVariantOrder.map((variant) => requestConceptVariant(variant))
+  );
+  const conceptCandidates = [
+    ...new Set(variantResults.flatMap((result) => result.urls ?? []))
+  ];
   const conceptImage = conceptCandidates[0];
+  const firstPayload = variantResults.find((result) => result.payload)?.payload;
 
   if (!conceptImage) {
+    const firstError = variantResults.find((result) => result.error)?.error;
     return {
-      error: `Replicate prediction did not return an image yet. Status: ${payload.status ?? "unknown"}.`,
+      error: firstError ?? `Replicate prediction did not return an image yet. Status: ${firstPayload?.status ?? "unknown"}.`,
       provider: "replicate",
       model,
-      status: payload.status ?? "processing",
-      predictionId: payload.id
+      status: firstPayload?.status ?? "failed",
+      predictionId: firstPayload?.id
     };
   }
 
   return {
-    id: payload.id ?? `replicate-${Date.now()}`,
+    id: firstPayload?.id ?? `replicate-${Date.now()}`,
     provider: "replicate",
-    status: payload.status ?? "succeeded",
+    status: firstPayload?.status ?? "succeeded",
     ...base,
     images: {
       concept: conceptImage
@@ -300,7 +320,6 @@ async function createReplicateGeneration(body, env = process.env, fetchImpl = fe
     conceptCandidates
   };
 }
-
 function createReplicatePredictionBody(model, input) {
   const modelEndpoint = model.includes("/") && !/^[a-f0-9]{32,}$/i.test(model)
     ? `https://api.replicate.com/v1/models/${model}/predictions`

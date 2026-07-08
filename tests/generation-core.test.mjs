@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   buildTattooPrompt,
+  buildConceptVariantPrompt,
   createGeneration,
   createLineworkGeneration,
   extractFirstImageUrl,
@@ -157,7 +158,33 @@ await run("replicate provider requires an API token", async () => {
 });
 
 
+
+await run("concept variants produce distinct tattoo directions", () => {
+  const body = {
+    idea: "dragon",
+    style: "Fine line",
+    placement: "Chest",
+    size: "Medium",
+    complexity: "Beginner friendly"
+  };
+
+  const simple = buildConceptVariantPrompt(body, "simple");
+  const balanced = buildConceptVariantPrompt(body, "balanced");
+  const ornamental = buildConceptVariantPrompt(body, "ornamental");
+  const bold = buildConceptVariantPrompt(body, "bold");
+
+  assert.match(simple, /Candidate direction: simple/i);
+  assert.match(balanced, /Candidate direction: balanced/i);
+  assert.match(ornamental, /Candidate direction: ornamental/i);
+  assert.match(bold, /Candidate direction: bold/i);
+  assert.match(simple, /opaque pure white background/i);
+  assert.match(simple, /no black background/i);
+  assert.notEqual(simple, balanced);
+  assert.notEqual(balanced, ornamental);
+  assert.notEqual(ornamental, bold);
+});
 await run("replicate concept generation keeps multiple candidate images", async () => {
+  const calls = [];
   const generation = await createGeneration(
     {
       idea: "dragon",
@@ -172,31 +199,36 @@ await run("replicate concept generation keeps multiple candidate images", async 
       GENERATION_MODEL: "black-forest-labs/flux-schnell"
     },
     async (url, init) => {
+      const index = calls.length;
       const body = JSON.parse(init.body);
-      assert.equal(body.input.num_outputs, 4);
+      calls.push({ url, body });
+      assert.equal(body.input.num_outputs, 1);
       return {
         ok: true,
         json: async () => ({
-          id: "multi_123",
+          id: `multi_${index + 1}`,
           status: "succeeded",
-          output: [
-            "https://replicate.delivery/pbxt/dragon-1.webp",
-            "https://replicate.delivery/pbxt/dragon-2.webp",
-            "https://replicate.delivery/pbxt/dragon-3.webp"
-          ]
+          output: [`https://replicate.delivery/pbxt/dragon-${index + 1}.webp`]
         })
       };
     }
   );
 
+  assert.equal(calls.length, 4);
+  assert.match(calls[0].body.input.prompt, /Candidate direction: simple/i);
+  assert.match(calls[1].body.input.prompt, /Candidate direction: balanced/i);
+  assert.match(calls[2].body.input.prompt, /Candidate direction: ornamental/i);
+  assert.match(calls[3].body.input.prompt, /Candidate direction: bold/i);
+  assert.match(calls[0].body.input.prompt, /opaque pure white background/i);
+  assert.match(calls[0].body.input.negative_prompt, /black background, transparent background/i);
   assert.equal(generation.images.concept, "https://replicate.delivery/pbxt/dragon-1.webp");
   assert.deepEqual(generation.conceptCandidates, [
     "https://replicate.delivery/pbxt/dragon-1.webp",
     "https://replicate.delivery/pbxt/dragon-2.webp",
-    "https://replicate.delivery/pbxt/dragon-3.webp"
+    "https://replicate.delivery/pbxt/dragon-3.webp",
+    "https://replicate.delivery/pbxt/dragon-4.webp"
   ]);
 });
-
 await run("replicate provider returns the generated concept image URL", async () => {
   const calls = [];
   const generation = await createGeneration(
@@ -225,7 +257,7 @@ await run("replicate provider returns the generated concept image URL", async ()
     }
   );
 
-  assert.equal(calls.length, 1);
+  assert.equal(calls.length, 4);
   assert.equal(calls[0].url, "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions");
   assert.equal(calls[0].init.headers.Authorization, "Bearer r8_test");
   assert.equal(calls[0].init.headers.Prefer, "wait=60");
