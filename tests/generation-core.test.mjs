@@ -236,26 +236,32 @@ await run("replicate concept generation keeps multiple candidate images", async 
       GENERATION_MODEL: "black-forest-labs/flux-schnell"
     },
     async (url, init) => {
-      const index = calls.length;
       const body = JSON.parse(init.body);
       calls.push({ url, body });
-      assert.equal(body.input.num_outputs, 1);
       return {
         ok: true,
         json: async () => ({
-          id: `multi_${index + 1}`,
+          id: "multi_1",
           status: "succeeded",
-          output: [`https://replicate.delivery/pbxt/dragon-${index + 1}.webp`]
+          output: [
+            "https://replicate.delivery/pbxt/dragon-1.webp",
+            "https://replicate.delivery/pbxt/dragon-2.webp",
+            "https://replicate.delivery/pbxt/dragon-3.webp",
+            "https://replicate.delivery/pbxt/dragon-4.webp"
+          ]
         })
       };
     }
   );
 
-  assert.equal(calls.length, 4);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].body.input.num_outputs, 4);
+  assert.match(calls[0].body.input.prompt, /Candidate directions to vary across the four outputs/i);
   assert.match(calls[0].body.input.prompt, /Candidate direction: simple/i);
-  assert.match(calls[1].body.input.prompt, /Candidate direction: portrait/i);
-  assert.match(calls[2].body.input.prompt, /Candidate direction: dynamic/i);
-  assert.match(calls[3].body.input.prompt, /Candidate direction: bold/i);
+  assert.match(calls[0].body.input.prompt, /Candidate direction: portrait/i);
+  assert.match(calls[0].body.input.prompt, /Candidate direction: dynamic/i);
+  assert.match(calls[0].body.input.prompt, /Candidate direction: bold/i);
+  assert.doesNotMatch(calls[0].body.input.prompt, /ornamental/i);
   assert.match(calls[0].body.input.prompt, /opaque pure white background/i);
   assert.match(calls[0].body.input.prompt, /white canvas with black tattoo lines/i);
   assert.match(calls[0].body.input.negative_prompt, /black background, transparent background/i);
@@ -297,7 +303,7 @@ await run("replicate provider returns the generated concept image URL", async ()
     }
   );
 
-  assert.equal(calls.length, 4);
+  assert.equal(calls.length, 1);
   assert.equal(calls[0].url, "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions");
   assert.equal(calls[0].init.headers.Authorization, "Bearer r8_test");
   assert.equal(calls[0].init.headers.Prefer, "wait=60");

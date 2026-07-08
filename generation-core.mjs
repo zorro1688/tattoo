@@ -166,9 +166,17 @@ export function buildTattooPrompt(body) {
   return parts.join(" ");
 }
 
-export function buildConceptVariantPrompt(body, variant = "balanced") {
-  const key = conceptVariantOrder.includes(variant) ? variant : "balanced";
+export function buildConceptVariantPrompt(body, variant = "portrait") {
+  const key = conceptVariantOrder.includes(variant) ? variant : "portrait";
   return buildTattooPrompt(body) + " " + conceptVariantDirections[key];
+}
+
+export function buildConceptBatchPrompt(body) {
+  const directions = conceptVariantOrder
+    .map((variant) => conceptVariantDirections[variant])
+    .join(" ");
+
+  return `${buildTattooPrompt(body)} Candidate directions to vary across the four outputs: ${directions} Generate four distinct alternatives while keeping the requested subject only.`;
 }
 
 export function extractImageUrls(output) {
@@ -273,68 +281,54 @@ async function createReplicateGeneration(body, env = process.env, fetchImpl = fe
   }
 
   const base = createBaseGeneration(body, env);
+  const { modelEndpoint, requestBody } = createReplicatePredictionBody(model, {
+    prompt: buildConceptBatchPrompt(body),
+    negative_prompt: buildNegativePrompt(body),
+    aspect_ratio: "1:1",
+    output_format: "png",
+    output_quality: 90,
+    num_outputs: 4
+  });
 
-  async function requestConceptVariant(variant) {
-    const { modelEndpoint, requestBody } = createReplicatePredictionBody(model, {
-      prompt: buildConceptVariantPrompt(body, variant),
-      negative_prompt: buildNegativePrompt(body),
-      aspect_ratio: "1:1",
-      output_format: "png",
-      output_quality: 90,
-      num_outputs: 1
-    });
+  const response = await fetchImpl(modelEndpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Prefer: "wait=60"
+    },
+    body: JSON.stringify(requestBody)
+  });
 
-    const response = await fetchImpl(modelEndpoint, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        Prefer: "wait=60"
-      },
-      body: JSON.stringify(requestBody)
-    });
+  const payload = await response.json().catch(async () => ({ error: await response.text() }));
 
-    const payload = await response.json().catch(async () => ({ error: await response.text() }));
-
-    if (!response.ok) {
-      return {
-        variant,
-        error: payload.detail ?? payload.error ?? "Replicate generation failed.",
-        status: "failed"
-      };
-    }
-
+  if (!response.ok) {
     return {
-      variant,
-      payload,
-      urls: extractImageUrls(payload.output)
+      error: payload.detail ?? payload.error ?? "Replicate generation failed.",
+      provider: "replicate",
+      model,
+      status: "failed",
+      predictionId: payload.id
     };
   }
 
-  const variantResults = await Promise.all(
-    conceptVariantOrder.map((variant) => requestConceptVariant(variant))
-  );
-  const conceptCandidates = [
-    ...new Set(variantResults.flatMap((result) => result.urls ?? []))
-  ];
+  const conceptCandidates = [...new Set(extractImageUrls(payload.output))].slice(0, 4);
   const conceptImage = conceptCandidates[0];
-  const firstPayload = variantResults.find((result) => result.payload)?.payload;
 
   if (!conceptImage) {
-    const firstError = variantResults.find((result) => result.error)?.error;
     return {
-      error: firstError ?? `Replicate prediction did not return an image yet. Status: ${firstPayload?.status ?? "unknown"}.`,
+      error: `Replicate prediction did not return an image yet. Status: ${payload.status ?? "unknown"}.`,
       provider: "replicate",
       model,
-      status: firstPayload?.status ?? "failed",
-      predictionId: firstPayload?.id
+      status: payload.status ?? "failed",
+      predictionId: payload.id
     };
   }
 
   return {
-    id: firstPayload?.id ?? `replicate-${Date.now()}`,
+    id: payload.id ?? `replicate-${Date.now()}`,
     provider: "replicate",
-    status: firstPayload?.status ?? "succeeded",
+    status: payload.status ?? "succeeded",
     ...base,
     images: {
       concept: conceptImage
