@@ -31,3 +31,14 @@ await run("pricing buttons are marked with plan metadata", async () => {
   assert.match(html, /id="upgradeButton"[^>]+data-plan="pro-monthly"/);
   assert.match(html, /id="yearlyButton"[^>]+data-plan="pro-yearly"/);
 });
+await run("empty quota generate button routes users to pricing", async () => {
+  for (const file of ["script.js", "public/script.js"]) {
+    const script = await readFile(file, "utf8");
+
+    assert.match(script, /generateButton\.disabled = isGenerating/);
+    assert.doesNotMatch(script, /generateButton\.disabled = quota <= 0 \|\| isGenerating/);
+    assert.match(script, /Upgrade to Generate More/);
+    assert.match(script, /Free quota is used up\. Upgrade to unlock more tattoo ideas\./);
+    assert.match(script, /document\.querySelector\("#pricing"\)\?\.scrollIntoView\(\{ behavior: "smooth" \}\)/);
+  }
+});

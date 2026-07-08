@@ -470,7 +470,7 @@ function escapeHtml(value) {
 
 function updateQuota() {
   quotaLabel.textContent = `${quota} generation${quota === 1 ? "" : "s"} available`;
-  generateButton.disabled = quota <= 0 || isGenerating;
+  generateButton.disabled = isGenerating;
   generateButton.textContent = isGenerating
     ? "Generating your tattoo..."
     : quota <= 0
@@ -1158,6 +1158,7 @@ function downloadConcept(index) {
 async function generate() {
   if (quota <= 0) {
     billingNotice.textContent = "Free quota is used up. Upgrade to unlock more tattoo ideas.";
+    document.querySelector("#pricing")?.scrollIntoView({ behavior: "smooth" });
     return;
   }
 

@@ -50,11 +50,16 @@ await run("homepage script updates result state and supports downloads", async (
 
 
 await run("homepage concept candidates have compact selectable styling", async () => {
-  const styles = await readFile("styles.css", "utf8");
+  for (const file of ["styles.css", "app/globals.css"]) {
+    const styles = await readFile(file, "utf8");
 
-  assert.match(styles, /\.concept-candidate-strip/);
-  assert.match(styles, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
-  assert.match(styles, /\.concept-candidate\.selected/);
+    assert.match(styles, /\.concept-candidate-strip/);
+    assert.match(styles, /display: flex/);
+    assert.match(styles, /overflow-x: auto/);
+    assert.match(styles, /flex: 0 0 86px/);
+    assert.match(styles, /height: 74px/);
+    assert.match(styles, /\.concept-candidate\.selected/);
+  }
 });
 
 await run("homepage advanced prompt is editable and sent with generation requests", async () => {
