@@ -14,7 +14,7 @@ const stylePromptPresets = {
 const negativePrompt = [
   "person, human, model, hand, arm, forearm, wrist, skin, body parts, clothing",
   "photo, mockup, placement preview, shadow, grey background, paper texture",
-  "black background, transparent background, dark canvas, alpha channel, inverted white lines",
+  "black background, transparent background, dark canvas, alpha channel, inverted white lines, white linework on black background",
   "realistic scene, studio photo, product photo, drop shadow, canvas texture, noisy background",
   "poster art, logo design, sticker, clipart, 3d render, photorealism",
   "watermark, signature, text, letters, words, typography unless the selected style is lettering",
@@ -49,13 +49,13 @@ function complexityGuidance(complexity = "Beginner friendly") {
   return "beginner friendly complexity, simple enough to explain to a tattoo artist, clean and not overcrowded.";
 }
 
-export const conceptVariantOrder = ["simple", "balanced", "ornamental", "bold"];
+export const conceptVariantOrder = ["simple", "portrait", "dynamic", "bold"];
 
 const conceptVariantDirections = {
-  simple: "Candidate direction: simple. Minimal clean silhouette, fewer internal marks, strong readable outline, beginner friendly and easy to tattoo.",
-  balanced: "Candidate direction: balanced. Complete classic tattoo flash composition, medium line detail, clear anatomy, strong focal point, practical artist reference.",
-  ornamental: "Candidate direction: ornamental. Decorative line flow on the requested subject only, elegant curves, refined contour detail, no extra flowers, leaves, moons, stars, or symbols unless requested.",
-  bold: "Candidate direction: bold. Stronger contrast, thicker confident outline, dynamic pose, powerful silhouette, readable from a distance."
+  simple: "Candidate direction: simple. Minimal clean silhouette, fewer internal marks, strong readable outline, requested subject only, beginner friendly and easy to tattoo.",
+  portrait: "Candidate direction: portrait. Clean centered portrait or upper-body focal composition of the requested subject only, symmetrical readable anatomy, no extra symbols or decorative objects.",
+  dynamic: "Candidate direction: dynamic. Side-view or three-quarter pose of the requested subject only, complete body when the subject is a creature, clear motion, no added flowers, leaves, moons, stars, or background elements.",
+  bold: "Candidate direction: bold. Stronger contrast, thicker confident outline, requested subject only, powerful silhouette, readable from a distance, no unrelated ornaments."
 };
 function allowsDecorativeElement(idea = "", pattern) {
   return pattern.test(normalizePromptText(idea).toLowerCase());
@@ -148,7 +148,7 @@ export function buildTattooPrompt(body) {
     `Design target: ${size.toLowerCase()} size, ${complexity.toLowerCase()} complexity.`,
     "Clean black ink linework, centered tattoo flash sheet composition, opaque pure white background only.",
     "Keep the entire tattoo design fully visible and uncropped, with generous white margin around all edges.",
-    "Black ink on white background only; no black background, no transparent background, no inverted white lines.",
+    "White canvas with black tattoo lines. Black ink only on white background; no black background, no transparent background, no inverted white lines, no white linework on black background.",
     "Only include the requested subject and explicitly requested elements. Do not add flowers, leaves, plants, moons, stars, jewelry, ornaments, or extra symbols unless the user asked for them.",
     subjectCompletenessGuidance(idea),
     "For animals, dragons, and creatures, include all limbs, legs, claws, wings, horns, and tail inside the canvas unless the user asks for a portrait.",
@@ -279,7 +279,7 @@ async function createReplicateGeneration(body, env = process.env, fetchImpl = fe
       prompt: buildConceptVariantPrompt(body, variant),
       negative_prompt: buildNegativePrompt(body),
       aspect_ratio: "1:1",
-      output_format: "webp",
+      output_format: "png",
       output_quality: 90,
       num_outputs: 1
     });

@@ -3,6 +3,7 @@ import {
   buildTattooPrompt,
   buildConceptVariantPrompt,
   buildNegativePrompt,
+  conceptVariantOrder,
   createGeneration,
   createLineworkGeneration,
   extractFirstImageUrl,
@@ -76,19 +77,20 @@ await run("single-subject animal prompts reject unrequested decorative elements"
     size: "Medium",
     complexity: "Balanced detail"
   });
-  const ornamental = buildConceptVariantPrompt({
+  const dynamic = buildConceptVariantPrompt({
     idea: "wolf",
     style: "Fine line",
     placement: "Forearm",
     size: "Medium",
     complexity: "Balanced detail"
-  }, "ornamental");
+  }, "dynamic");
   const negative = buildNegativePrompt({ idea: "wolf" });
 
   assert.doesNotMatch(prompt, /botanical/i);
   assert.match(prompt, /Only include the requested subject/i);
   assert.match(prompt, /Do not add flowers, leaves, plants, moons, stars/i);
-  assert.match(ornamental, /on the requested subject only/i);
+  assert.match(dynamic, /requested subject only/i);
+  assert.doesNotMatch(dynamic, /Candidate direction: ornamental/i);
   assert.match(negative, /flowers, floral ornaments, leaves, vines, plants, moon, stars, extra decorative objects/i);
 });
 
@@ -201,19 +203,22 @@ await run("concept variants produce distinct tattoo directions", () => {
   };
 
   const simple = buildConceptVariantPrompt(body, "simple");
-  const balanced = buildConceptVariantPrompt(body, "balanced");
-  const ornamental = buildConceptVariantPrompt(body, "ornamental");
+  const portrait = buildConceptVariantPrompt(body, "portrait");
+  const dynamic = buildConceptVariantPrompt(body, "dynamic");
   const bold = buildConceptVariantPrompt(body, "bold");
 
+  assert.deepEqual(conceptVariantOrder, ["simple", "portrait", "dynamic", "bold"]);
   assert.match(simple, /Candidate direction: simple/i);
-  assert.match(balanced, /Candidate direction: balanced/i);
-  assert.match(ornamental, /Candidate direction: ornamental/i);
+  assert.match(portrait, /Candidate direction: portrait/i);
+  assert.match(dynamic, /Candidate direction: dynamic/i);
   assert.match(bold, /Candidate direction: bold/i);
   assert.match(simple, /opaque pure white background/i);
+  assert.match(simple, /black ink only/i);
   assert.match(simple, /no black background/i);
-  assert.notEqual(simple, balanced);
-  assert.notEqual(balanced, ornamental);
-  assert.notEqual(ornamental, bold);
+  assert.doesNotMatch(simple + portrait + dynamic + bold, /Candidate direction: ornamental/i);
+  assert.notEqual(simple, portrait);
+  assert.notEqual(portrait, dynamic);
+  assert.notEqual(dynamic, bold);
 });
 await run("replicate concept generation keeps multiple candidate images", async () => {
   const calls = [];
@@ -248,11 +253,14 @@ await run("replicate concept generation keeps multiple candidate images", async 
 
   assert.equal(calls.length, 4);
   assert.match(calls[0].body.input.prompt, /Candidate direction: simple/i);
-  assert.match(calls[1].body.input.prompt, /Candidate direction: balanced/i);
-  assert.match(calls[2].body.input.prompt, /Candidate direction: ornamental/i);
+  assert.match(calls[1].body.input.prompt, /Candidate direction: portrait/i);
+  assert.match(calls[2].body.input.prompt, /Candidate direction: dynamic/i);
   assert.match(calls[3].body.input.prompt, /Candidate direction: bold/i);
   assert.match(calls[0].body.input.prompt, /opaque pure white background/i);
+  assert.match(calls[0].body.input.prompt, /white canvas with black tattoo lines/i);
   assert.match(calls[0].body.input.negative_prompt, /black background, transparent background/i);
+  assert.match(calls[0].body.input.negative_prompt, /white linework on black background/i);
+  assert.equal(calls[0].body.input.output_format, "png");
   assert.equal(generation.images.concept, "https://replicate.delivery/pbxt/dragon-1.webp");
   assert.deepEqual(generation.conceptCandidates, [
     "https://replicate.delivery/pbxt/dragon-1.webp",

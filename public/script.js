@@ -398,7 +398,7 @@ function buildPrompt() {
     `Design target: ${selectedSize.toLowerCase()} size, ${selectedComplexity.toLowerCase()} complexity.`,
     "Clean black ink linework, centered tattoo flash sheet composition, opaque pure white background only.",
     "Keep the entire tattoo design fully visible and uncropped, with generous white margin around all edges.",
-    "Black ink on white background only; no black background, no transparent background, no inverted white lines.",
+    "White canvas with black tattoo lines. Black ink only on white background; no black background, no transparent background, no inverted white lines, no white linework on black background.",
     "Only include the requested subject and explicitly requested elements. Do not add flowers, leaves, plants, moons, stars, jewelry, ornaments, or extra symbols unless the user asked for them.",
     subjectCompletenessGuidance(userIdea),
     "For animals, dragons, and creatures, include all limbs, legs, claws, wings, horns, and tail inside the canvas unless the user asks for a portrait.",
