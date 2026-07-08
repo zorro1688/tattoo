@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   buildTattooPrompt,
   buildConceptVariantPrompt,
+  buildNegativePrompt,
   createGeneration,
   createLineworkGeneration,
   extractFirstImageUrl,
@@ -66,6 +67,37 @@ await run("tattoo prompt applies style-specific professional reference templates
 });
 
 
+
+await run("single-subject animal prompts reject unrequested decorative elements", () => {
+  const prompt = buildTattooPrompt({
+    idea: "wolf",
+    style: "Fine line",
+    placement: "Forearm",
+    size: "Medium",
+    complexity: "Balanced detail"
+  });
+  const ornamental = buildConceptVariantPrompt({
+    idea: "wolf",
+    style: "Fine line",
+    placement: "Forearm",
+    size: "Medium",
+    complexity: "Balanced detail"
+  }, "ornamental");
+  const negative = buildNegativePrompt({ idea: "wolf" });
+
+  assert.doesNotMatch(prompt, /botanical/i);
+  assert.match(prompt, /Only include the requested subject/i);
+  assert.match(prompt, /Do not add flowers, leaves, plants, moons, stars/i);
+  assert.match(ornamental, /on the requested subject only/i);
+  assert.match(negative, /flowers, floral ornaments, leaves, vines, plants, moon, stars, extra decorative objects/i);
+});
+
+await run("explicit decorative subjects are not blocked by the negative prompt", () => {
+  const negative = buildNegativePrompt({ idea: "small rose with moon" });
+
+  assert.doesNotMatch(negative, /flowers, floral ornaments/);
+  assert.doesNotMatch(negative, /moon, stars/);
+});
 await run("animal and creature concept prompts require a complete full-body subject", () => {
   const prompt = buildTattooPrompt({
     idea: "dragon with eagle wings",

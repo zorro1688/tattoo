@@ -3,7 +3,7 @@ export const defaultReplicateModel = "black-forest-labs/flux-schnell";
 export const defaultReplicateLineworkModel = "black-forest-labs/flux-canny-pro";
 
 const stylePromptPresets = {
-  "fine line": "fine line: delicate thin outlines, elegant negative space, minimal shading, graceful botanical or symbolic detail, refined tattoo flash finish.",
+  "fine line": "fine line: delicate thin outlines, elegant negative space, minimal shading, refined contour detail, polished tattoo flash finish.",
   minimalist: "minimalist: simple iconic silhouette, very few lines, balanced empty space, instantly readable at small size.",
   blackwork: "blackwork: solid black shapes, high contrast, controlled negative space, bold tattoo readability, no grey wash.",
   geometric: "geometric: clean symmetrical geometry, precise line weight, balanced sacred-geometry inspired structure, crisp edges.",
@@ -54,11 +54,32 @@ export const conceptVariantOrder = ["simple", "balanced", "ornamental", "bold"];
 const conceptVariantDirections = {
   simple: "Candidate direction: simple. Minimal clean silhouette, fewer internal marks, strong readable outline, beginner friendly and easy to tattoo.",
   balanced: "Candidate direction: balanced. Complete classic tattoo flash composition, medium line detail, clear anatomy, strong focal point, practical artist reference.",
-  ornamental: "Candidate direction: ornamental. Decorative flow with tasteful pattern accents, elegant curves, refined detail, still clean and stencil-friendly.",
+  ornamental: "Candidate direction: ornamental. Decorative line flow on the requested subject only, elegant curves, refined contour detail, no extra flowers, leaves, moons, stars, or symbols unless requested.",
   bold: "Candidate direction: bold. Stronger contrast, thicker confident outline, dynamic pose, powerful silhouette, readable from a distance."
 };
-export function buildNegativePrompt() {
-  return negativePrompt;
+function allowsDecorativeElement(idea = "", pattern) {
+  return pattern.test(normalizePromptText(idea).toLowerCase());
+}
+
+export function buildNegativePrompt(body = {}) {
+  const idea = body?.idea ?? "";
+  const extraNegative = [];
+
+  if (!allowsDecorativeElement(idea, /\b(flower|flowers|floral|rose|roses|lotus|peony|petal|petals)\b/)) {
+    extraNegative.push("flowers, floral ornaments");
+  }
+
+  if (!allowsDecorativeElement(idea, /\b(leaf|leaves|plant|plants|vine|vines|branch|branches)\b/)) {
+    extraNegative.push("leaves, vines, plants");
+  }
+
+  if (!allowsDecorativeElement(idea, /\b(moon|crescent|star|stars|sun|celestial)\b/)) {
+    extraNegative.push("moon, stars");
+  }
+
+  extraNegative.push("extra decorative objects, unrelated symbols");
+
+  return [negativePrompt, ...extraNegative].join(", ");
 }
 
 export function resolveGenerationModel(env = process.env) {
@@ -128,6 +149,7 @@ export function buildTattooPrompt(body) {
     "Clean black ink linework, centered tattoo flash sheet composition, opaque pure white background only.",
     "Keep the entire tattoo design fully visible and uncropped, with generous white margin around all edges.",
     "Black ink on white background only; no black background, no transparent background, no inverted white lines.",
+    "Only include the requested subject and explicitly requested elements. Do not add flowers, leaves, plants, moons, stars, jewelry, ornaments, or extra symbols unless the user asked for them.",
     subjectCompletenessGuidance(idea),
     "For animals, dragons, and creatures, include all limbs, legs, claws, wings, horns, and tail inside the canvas unless the user asks for a portrait.",
     "Use clean contour lines and controlled contrast so the design can become a stencil or artist reference.",
@@ -255,7 +277,7 @@ async function createReplicateGeneration(body, env = process.env, fetchImpl = fe
   async function requestConceptVariant(variant) {
     const { modelEndpoint, requestBody } = createReplicatePredictionBody(model, {
       prompt: buildConceptVariantPrompt(body, variant),
-      negative_prompt: buildNegativePrompt(),
+      negative_prompt: buildNegativePrompt(body),
       aspect_ratio: "1:1",
       output_format: "webp",
       output_quality: 90,

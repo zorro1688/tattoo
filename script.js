@@ -325,7 +325,7 @@ const defaultHeroImages = {
 };
 
 const stylePromptPresets = {
-  "fine line": "fine line: delicate thin outlines, elegant negative space, minimal shading, graceful botanical or symbolic detail, refined tattoo flash finish.",
+  "fine line": "fine line: delicate thin outlines, elegant negative space, minimal shading, refined contour detail, polished tattoo flash finish.",
   minimalist: "minimalist: simple iconic silhouette, very few lines, balanced empty space, instantly readable at small size.",
   blackwork: "blackwork: solid black shapes, high contrast, controlled negative space, bold tattoo readability, no grey wash.",
   geometric: "geometric: clean symmetrical geometry, precise line weight, balanced sacred-geometry inspired structure, crisp edges.",
@@ -399,6 +399,7 @@ function buildPrompt() {
     "Clean black ink linework, centered tattoo flash sheet composition, opaque pure white background only.",
     "Keep the entire tattoo design fully visible and uncropped, with generous white margin around all edges.",
     "Black ink on white background only; no black background, no transparent background, no inverted white lines.",
+    "Only include the requested subject and explicitly requested elements. Do not add flowers, leaves, plants, moons, stars, jewelry, ornaments, or extra symbols unless the user asked for them.",
     subjectCompletenessGuidance(userIdea),
     "For animals, dragons, and creatures, include all limbs, legs, claws, wings, horns, and tail inside the canvas unless the user asks for a portrait.",
     "Use clean contour lines and controlled contrast so the design can become a stencil or artist reference.",
