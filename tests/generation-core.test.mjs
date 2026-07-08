@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import sharp from "sharp";
 import {
   buildTattooPrompt,
   buildConceptVariantPrompt,
@@ -276,24 +275,8 @@ await run("replicate concept generation keeps multiple candidate images", async 
     "https://replicate.delivery/pbxt/dragon-4.webp"
   ]);
 });
-await run("replicate concept generation normalizes black-background candidate images", async () => {
-  const blackConcept = await sharp({
-    create: {
-      width: 96,
-      height: 96,
-      channels: 3,
-      background: "#000000"
-    }
-  })
-    .composite([
-      {
-        input: Buffer.from('<svg width="96" height="96"><path d="M20 74 L48 18 L76 74" stroke="white" stroke-width="8" fill="none" stroke-linecap="round"/></svg>'),
-        top: 0,
-        left: 0
-      }
-    ])
-    .png()
-    .toBuffer();
+await run("replicate concept generation keeps response candidates as external image URLs", async () => {
+  const calls = [];
   const predictionUrls = [
     "https://replicate.delivery/pbxt/dark-1.png",
     "https://replicate.delivery/pbxt/dark-2.png",
@@ -314,14 +297,7 @@ await run("replicate concept generation normalizes black-background candidate im
       GENERATION_MODEL: "black-forest-labs/flux-schnell"
     },
     async (url, init = {}) => {
-      if (url.includes("replicate.delivery")) {
-        return {
-          ok: true,
-          headers: { get: () => "image/png" },
-          arrayBuffer: async () => blackConcept
-        };
-      }
-
+      calls.push({ url, init });
       return {
         ok: true,
         json: async () => ({
@@ -333,9 +309,11 @@ await run("replicate concept generation normalizes black-background candidate im
     }
   );
 
+  assert.equal(calls.length, 1);
   assert.equal(generation.conceptCandidates.length, 4);
-  assert.ok(generation.images.concept.startsWith("data:image/png;base64,"));
-  assert.ok(generation.conceptCandidates.every((url) => url.startsWith("data:image/png;base64,")));
+  assert.equal(generation.images.concept, predictionUrls[0]);
+  assert.deepEqual(generation.conceptCandidates, predictionUrls);
+  assert.equal(generation.conceptCandidates.some((url) => url.startsWith("data:")), false);
 });
 
 await run("replicate provider returns the generated concept image URL", async () => {

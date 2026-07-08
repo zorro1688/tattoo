@@ -1,4 +1,3 @@
-import { normalizeConceptImageUrl } from "./image-postprocess.mjs";
 export const defaultMockModel = "mock-static-assets";
 export const defaultReplicateModel = "black-forest-labs/flux-schnell";
 export const defaultReplicateLineworkModel = "black-forest-labs/flux-canny-pro";
@@ -313,11 +312,7 @@ async function createReplicateGeneration(body, env = process.env, fetchImpl = fe
     };
   }
 
-  const rawConceptCandidates = [...new Set(extractImageUrls(payload.output))].slice(0, 4);
-  const normalizedConcepts = await Promise.all(
-    rawConceptCandidates.map((url) => normalizeConceptImageUrl(url, fetchImpl))
-  );
-  const conceptCandidates = normalizedConcepts.map((result) => result.url).filter(Boolean);
+  const conceptCandidates = [...new Set(extractImageUrls(payload.output))].slice(0, 4);
   const conceptImage = conceptCandidates[0];
 
   if (!conceptImage) {

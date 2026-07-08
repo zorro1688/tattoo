@@ -461,6 +461,17 @@ function renderArtistBrief() {
   `;
 }
 
+async function readJsonResponse(response, fallbackMessage = "Request failed. Please try again.") {
+  const contentType = response.headers.get("content-type") || "";
+
+  if (!contentType.includes("application/json")) {
+    await response.text().catch(() => "");
+    throw new Error(fallbackMessage);
+  }
+
+  return response.json();
+}
+
 function escapeHtml(value) {
   return value
     .replaceAll("&", "&amp;")
@@ -1193,7 +1204,7 @@ async function generate() {
         advancedPrompt: advancedPrompt?.value.trim() ?? ""
       })
     });
-    const data = await response.json();
+    const data = await readJsonResponse(response, "Generation service is temporarily unavailable. Please try again.");
     applyQuota(data.quota);
 
     if (!response.ok) {
@@ -1261,7 +1272,7 @@ async function generateLinework() {
         generationId: currentGenerationId
       })
     });
-    const data = await response.json();
+    const data = await readJsonResponse(response, "Linework service is temporarily unavailable. Please try again.");
     applyQuota(data.quota);
 
     if (!response.ok) {

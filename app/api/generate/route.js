@@ -1,3 +1,5 @@
+export const maxDuration = 60;
+
 import { NextResponse } from "next/server";
 import { createGeneration } from "../../../generation-core.mjs";
 import {

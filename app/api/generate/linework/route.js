@@ -1,3 +1,5 @@
+export const maxDuration = 60;
+
 import { NextResponse } from "next/server";
 import { createLineworkGeneration } from "../../../../generation-core.mjs";
 import {

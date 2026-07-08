@@ -124,3 +124,14 @@ await run("public homepage script keeps the same hero linework fallback logic", 
   assert.match(script, /const blockingError = Boolean\(generationError && !generated\)/);
   assert.doesNotMatch(script, /downloadConceptButton\.textContent = generationError/);
 });
+await run("homepage generation fetch handles non-JSON platform errors", async () => {
+  const script = await readFile("script.js", "utf8");
+  const publicScript = await readFile("public/script.js", "utf8");
+
+  for (const source of [script, publicScript]) {
+    assert.match(source, /async function readJsonResponse/);
+    assert.match(source, /content-type/);
+    assert.match(source, /Generation service is temporarily unavailable/);
+    assert.doesNotMatch(source, /const data = await response\.json\(\);\n    applyQuota\(data\.quota\);/);
+  }
+});
