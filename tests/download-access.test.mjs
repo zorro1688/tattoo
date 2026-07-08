@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { access, mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -62,3 +62,33 @@ await run("paid clients can download high resolution files even after credits ch
   });
 });
 
+
+await run("configured Supabase download access never writes local fallback store", async () => {
+  await withTempStore(async (storePath) => {
+    const previousUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const previousKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "http://127.0.0.1:1";
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
+
+    try {
+      const accessState = await getDownloadAccess("client-production", storePath);
+
+      assert.equal(accessState.highResolution, false);
+      assert.equal(accessState.watermarked, true);
+      await assert.rejects(() => access(storePath), /ENOENT/);
+    } finally {
+      if (previousUrl === undefined) {
+        delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+      } else {
+        process.env.NEXT_PUBLIC_SUPABASE_URL = previousUrl;
+      }
+
+      if (previousKey === undefined) {
+        delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+      } else {
+        process.env.SUPABASE_SERVICE_ROLE_KEY = previousKey;
+      }
+    }
+  });
+});

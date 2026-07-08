@@ -647,6 +647,14 @@ export async function getDownloadAccess(clientId, storePath = getStorePath()) {
     return supabaseResult.downloadAccess;
   }
 
+  if (hasSupabaseStore()) {
+    return {
+      highResolution: false,
+      watermarked: true,
+      message: "Upgrade to download high-resolution files"
+    };
+  }
+
   const store = await readStore(storePath);
   const client = ensureClient(store, clientId);
   const hasPaidEvent = Object.values(store.creditEvents).some((event) => event.clientId === clientId);
