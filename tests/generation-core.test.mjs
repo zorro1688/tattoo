@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import sharp from "sharp";
 import {
   buildTattooPrompt,
   buildConceptVariantPrompt,
@@ -275,6 +276,68 @@ await run("replicate concept generation keeps multiple candidate images", async 
     "https://replicate.delivery/pbxt/dragon-4.webp"
   ]);
 });
+await run("replicate concept generation normalizes black-background candidate images", async () => {
+  const blackConcept = await sharp({
+    create: {
+      width: 96,
+      height: 96,
+      channels: 3,
+      background: "#000000"
+    }
+  })
+    .composite([
+      {
+        input: Buffer.from('<svg width="96" height="96"><path d="M20 74 L48 18 L76 74" stroke="white" stroke-width="8" fill="none" stroke-linecap="round"/></svg>'),
+        top: 0,
+        left: 0
+      }
+    ])
+    .png()
+    .toBuffer();
+  const predictionUrls = [
+    "https://replicate.delivery/pbxt/dark-1.png",
+    "https://replicate.delivery/pbxt/dark-2.png",
+    "https://replicate.delivery/pbxt/dark-3.png",
+    "https://replicate.delivery/pbxt/dark-4.png"
+  ];
+  const generation = await createGeneration(
+    {
+      idea: "wolf",
+      style: "Fine line",
+      placement: "Back",
+      size: "Medium",
+      complexity: "Balanced detail"
+    },
+    {
+      GENERATION_PROVIDER: "replicate",
+      REPLICATE_API_TOKEN: "r8_test",
+      GENERATION_MODEL: "black-forest-labs/flux-schnell"
+    },
+    async (url, init = {}) => {
+      if (url.includes("replicate.delivery")) {
+        return {
+          ok: true,
+          headers: { get: () => "image/png" },
+          arrayBuffer: async () => blackConcept
+        };
+      }
+
+      return {
+        ok: true,
+        json: async () => ({
+          id: "dark_candidates",
+          status: "succeeded",
+          output: predictionUrls
+        })
+      };
+    }
+  );
+
+  assert.equal(generation.conceptCandidates.length, 4);
+  assert.ok(generation.images.concept.startsWith("data:image/png;base64,"));
+  assert.ok(generation.conceptCandidates.every((url) => url.startsWith("data:image/png;base64,")));
+});
+
 await run("replicate provider returns the generated concept image URL", async () => {
   const calls = [];
   const generation = await createGeneration(
@@ -303,11 +366,12 @@ await run("replicate provider returns the generated concept image URL", async ()
     }
   );
 
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions");
-  assert.equal(calls[0].init.headers.Authorization, "Bearer r8_test");
-  assert.equal(calls[0].init.headers.Prefer, "wait=60");
-  assert.equal(JSON.parse(calls[0].init.body).version, undefined);
+  const predictionCalls = calls.filter((call) => call.url.includes("api.replicate.com"));
+  assert.equal(predictionCalls.length, 1);
+  assert.equal(predictionCalls[0].url, "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions");
+  assert.equal(predictionCalls[0].init.headers.Authorization, "Bearer r8_test");
+  assert.equal(predictionCalls[0].init.headers.Prefer, "wait=60");
+  assert.equal(JSON.parse(predictionCalls[0].init.body).version, undefined);
   assert.equal(generation.provider, "replicate");
   assert.equal(generation.model, "black-forest-labs/flux-schnell");
   assert.equal(generation.images.concept, "https://replicate.delivery/pbxt/example.webp");

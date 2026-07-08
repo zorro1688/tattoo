@@ -205,6 +205,33 @@ await run("Supabase generation persistence writes client, generation, and assets
   assert.equal(assetsBody[0].storage_path, "anonymous/anon_client/gen_local_123/concept.webp");
 });
 
+await run("Supabase generation persistence uploads normalized data URL concept images", async () => {
+  const { calls, fetchMock } = createFetchMock();
+  const pngDataUrl = `data:image/png;base64,${Buffer.from("normalized-png").toString("base64")}`;
+  const result = await persistGenerationToSupabase(
+    "anon_client",
+    {
+      ...savedGeneration,
+      images: {
+        concept: pngDataUrl
+      }
+    },
+    { freeRemaining: 2, paidRemaining: 0, highResolution: false },
+    env,
+    fetchMock
+  );
+
+  const serviceCalls = calls.filter((call) => !call.url.includes("replicate.delivery"));
+  assert.equal(result.skipped, false);
+  assert.match(serviceCalls[2].url, /\/storage\/v1\/object\/inkfirst-designs\/anonymous\/anon_client\/gen_local_123\/concept\.png$/);
+  assert.equal(serviceCalls[2].options.headers["Content-Type"], "image/png");
+  assert.equal(Buffer.from(serviceCalls[2].options.body).toString(), "normalized-png");
+
+  const assetsBody = JSON.parse(serviceCalls[3].options.body);
+  assert.equal(assetsBody[0].storage_path, "anonymous/anon_client/gen_local_123/concept.png");
+  assert.equal(assetsBody[0].content_type, "image/png");
+});
+
 await run("Supabase generation persistence stores signed-in user assets under users prefix", async () => {
   const { calls, fetchMock } = createFetchMock();
   const userId = "00000000-0000-4000-8000-000000000001";

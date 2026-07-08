@@ -217,9 +217,34 @@ function extensionFromSource(sourceUrl, contentType) {
   return extension || "png";
 }
 
+function readDataUrl(sourceUrl) {
+  const match = /^data:([^;,]+)(;base64)?,(.*)$/i.exec(sourceUrl);
+
+  if (!match) {
+    return null;
+  }
+
+  const contentType = match[1] || "application/octet-stream";
+  const body = match[2]
+    ? Buffer.from(match[3], "base64")
+    : Buffer.from(decodeURIComponent(match[3]), "utf8");
+
+  return { body, contentType };
+}
+
 async function readImageSource(sourceUrl, fetchImpl = fetch) {
   if (!sourceUrl) {
     throw new Error("Image source is required.");
+  }
+
+  if (sourceUrl.startsWith("data:")) {
+    const dataImage = readDataUrl(sourceUrl);
+
+    if (!dataImage) {
+      throw new Error("Invalid image data URL.");
+    }
+
+    return dataImage;
   }
 
   if (sourceUrl.startsWith("/") || !/^https?:\/\//i.test(sourceUrl)) {
