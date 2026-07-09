@@ -74,6 +74,7 @@ let generatedPlacementNote = "";
 let generatedImages = {};
 let conceptCandidates = [];
 let selectedConceptIndex = 0;
+let selectedConceptPersistPromise = Promise.resolve();
 let currentGenerationId = "";
 let isGenerating = false;
 let generationError = "";
@@ -627,9 +628,20 @@ async function downloadGenerationFile(type) {
     return;
   }
 
-  const response = await fetch(
-    `/api/download?generationId=${encodeURIComponent(currentGenerationId)}&${typeParam}`
-  );
+  if (type === "concept") {
+    await selectedConceptPersistPromise.catch(() => {});
+  }
+
+  const params = new URLSearchParams({
+    generationId: currentGenerationId,
+    type
+  });
+
+  if (type === "concept" && generatedImages.concept) {
+    params.set("selectedConceptUrl", generatedImages.concept);
+  }
+
+  const response = await fetch(`/api/download?${params.toString()}`);
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
@@ -899,10 +911,10 @@ function renderConceptCandidates() {
 
 async function persistSelectedConcept(url) {
   if (!currentGenerationId || !url) {
-    return;
+    return null;
   }
 
-  await fetch("/api/generation", {
+  const response = await fetch("/api/generation", {
     method: "PATCH",
     headers: {
       "content-type": "application/json"
@@ -911,7 +923,14 @@ async function persistSelectedConcept(url) {
       generationId: currentGenerationId,
       selectedConceptUrl: url
     })
-  }).catch(() => {});
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error ?? "Could not save selected concept.");
+  }
+
+  return data.generation ?? null;
 }
 
 function selectConceptCandidate(index) {
@@ -931,7 +950,20 @@ function selectConceptCandidate(index) {
   lineworkError = "";
   heroMode = "concept";
   renderHeroPreview();
-  persistSelectedConcept(candidate);
+  selectedConceptPersistPromise = persistSelectedConcept(candidate)
+    .then((generation) => {
+      if (generation?.images?.concept) {
+        generatedImages = {
+          ...generatedImages,
+          concept: generation.images.concept,
+          linework: generation.images.linework,
+          placement: generation.images.placement
+        };
+      }
+    })
+    .catch((error) => {
+      billingNotice.textContent = error.message ?? "Could not save selected concept.";
+    });
 }
 
 function renderHeroPreview() {

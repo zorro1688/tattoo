@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { getDownloadAccess, getGeneration } from "./quota-store.mjs";
-import { fetchStorageObjectFromSupabase } from "./supabase-store.mjs";
+import { fetchStorageObjectFromSupabase, storagePathFromAppImageUrl } from "./supabase-store.mjs";
 
 const allowedTypes = new Set(["concept", "linework", "placement"]);
 const placeholderLinework = "assets/hero-linework.png";
@@ -86,6 +86,46 @@ function imageUrlForType(generation, type) {
   return generation.images?.[type];
 }
 
+
+function conceptCandidateBelongsToGeneration(generation, selectedConceptUrl = "") {
+  if (!selectedConceptUrl || typeof selectedConceptUrl !== "string") {
+    return false;
+  }
+
+  const allowedCandidates = new Set([
+    ...(generation.conceptCandidates ?? []),
+    generation.images?.concept
+  ].filter(Boolean));
+
+  if (allowedCandidates.has(selectedConceptUrl)) {
+    return true;
+  }
+
+  const storagePath = storagePathFromAppImageUrl(selectedConceptUrl);
+
+  return Boolean(storagePath && storagePath.includes("/" + generation.id + "/concept-candidates/"));
+}
+
+function assetForImageUrl(generation, type, imageUrl) {
+  const primaryUrl = imageUrlForType(generation, type);
+
+  if (imageUrl === primaryUrl) {
+    return assetForType(generation, type);
+  }
+
+  const storagePath = storagePathFromAppImageUrl(imageUrl);
+
+  return storagePath
+    ? {
+        storageBucket: generation.assets?.[type]?.storageBucket,
+        storagePath,
+        sourceUrl: imageUrl,
+        contentType: "image/png",
+        isWatermarked: false
+      }
+    : null;
+}
+
 function assetForType(generation, type) {
   if (type === "placement") {
     return generation.assets?.linework || generation.assets?.concept || generation.assets?.placement;
@@ -159,8 +199,9 @@ export async function fetchDownloadImage(url, publicBaseUrl = "") {
   };
 }
 
-async function fetchImageForType(generation, type, fetchImage, fetchStoredImage, publicBaseUrl) {
-  const asset = assetForType(generation, type);
+async function fetchImageForType(generation, type, fetchImage, fetchStoredImage, publicBaseUrl, imageUrlOverride = "") {
+  const imageUrl = imageUrlOverride || imageUrlForType(generation, type);
+  const asset = imageUrlOverride ? assetForImageUrl(generation, type, imageUrlOverride) : assetForType(generation, type);
 
   if (asset?.storagePath || asset?.storage_path) {
     const storedImage = await fetchStoredImage(asset);
@@ -169,8 +210,6 @@ async function fetchImageForType(generation, type, fetchImage, fetchStoredImage,
       return storedImage;
     }
   }
-
-  const imageUrl = imageUrlForType(generation, type);
 
   return imageUrl ? fetchImage(imageUrl, publicBaseUrl) : null;
 }
@@ -240,7 +279,8 @@ export async function resolveDownloadFile({
   fetchImage = defaultFetchImage,
   fetchStoredImage = fetchStorageObjectFromSupabase,
   storePath,
-  publicBaseUrl = ""
+  publicBaseUrl = "",
+  selectedConceptUrl = ""
 }) {
   if (!allowedTypes.has(type)) {
     return {
@@ -309,7 +349,9 @@ export async function resolveDownloadFile({
     };
   }
 
-  const imageUrl = imageUrlForType(generation, type);
+  const imageUrl = type === "concept" && conceptCandidateBelongsToGeneration(generation, selectedConceptUrl)
+    ? selectedConceptUrl
+    : imageUrlForType(generation, type);
 
   if (!imageUrl) {
     return {
@@ -319,7 +361,7 @@ export async function resolveDownloadFile({
   }
 
   if (!access.highResolution) {
-    const image = await fetchImageForType(generation, type, fetchImage, fetchStoredImage, publicBaseUrl);
+    const image = await fetchImageForType(generation, type, fetchImage, fetchStoredImage, publicBaseUrl, imageUrl);
 
     if (!image.ok) {
       return {
@@ -347,7 +389,7 @@ export async function resolveDownloadFile({
     };
   }
 
-  const image = await fetchImageForType(generation, type, fetchImage, fetchStoredImage, publicBaseUrl);
+  const image = await fetchImageForType(generation, type, fetchImage, fetchStoredImage, publicBaseUrl, imageUrl);
 
   if (!image.ok) {
     return {

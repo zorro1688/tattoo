@@ -106,6 +106,18 @@ await run("linework endpoint returns quota when provider fails", async () => {
   assert.match(server, /if \(linework\.error\)/);
   assert.match(server, /\.\.\.linework,\s*quota/s);
 });
+await run("homepage waits for selected concept persistence before linework generation", async () => {
+  const scripts = [
+    await readFile("script.js", "utf8"),
+    await readFile("public/script.js", "utf8")
+  ];
+
+  for (const script of scripts) {
+    assert.match(script, /await selectedConceptPersistPromise/);
+    assert.match(script, /Could not save selected concept/);
+  }
+});
+
 await run("linework failures do not become concept generation failures", async () => {
   const script = await readFile("script.js", "utf8");
 

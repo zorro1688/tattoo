@@ -347,6 +347,7 @@ const server = createServer(async (request, response) => {
       clientId: session.ownerId,
       generationId: url.searchParams.get("generationId"),
       type: url.searchParams.get("type"),
+      selectedConceptUrl: url.searchParams.get("selectedConceptUrl") ?? "",
       publicBaseUrl: request.headers.host ? `http://${request.headers.host}` : `http://localhost:${PORT}`
     });
 

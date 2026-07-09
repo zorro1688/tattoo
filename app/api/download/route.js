@@ -10,6 +10,7 @@ export async function GET(request) {
     clientId: session.ownerId,
     generationId: searchParams.get("generationId"),
     type: searchParams.get("type"),
+    selectedConceptUrl: searchParams.get("selectedConceptUrl") ?? "",
     publicBaseUrl: new URL(request.url).origin
   });
 

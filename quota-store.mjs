@@ -12,6 +12,8 @@ import {
   safePersistLineworkToSupabase,
   safePersistPlacementAdjustmentToSupabase,
   safePersistConceptSelectionToSupabase,
+  persistConceptSelectionToSupabase,
+  storagePathFromAppImageUrl,
   safeGetGenerationFromSupabase,
   safeListGenerationsFromSupabase,
   safeGetQuotaFromSupabase,
@@ -270,11 +272,61 @@ function sanitizeGeneration(generation) {
   return { ...safeGeneration };
 }
 
+function conceptCandidateBelongsToSavedGeneration(generation, selectedConceptUrl = "") {
+  const allowedCandidates = new Set([
+    ...(generation.conceptCandidates ?? []),
+    generation.images?.concept
+  ].filter(Boolean));
+
+  if (allowedCandidates.has(selectedConceptUrl)) {
+    return true;
+  }
+
+  const storagePath = storagePathFromAppImageUrl(selectedConceptUrl);
+
+  return Boolean(storagePath && storagePath.includes("/" + generation.id + "/concept-candidates/"));
+}
+
 export async function updateGenerationConceptSelection(clientId, generationId, selectedConceptUrl, storePath = getStorePath()) {
   const isValidConceptUrl = /^https?:\/\//i.test(String(selectedConceptUrl)) || String(selectedConceptUrl).startsWith("/api/storage-image?path=");
 
   if (!selectedConceptUrl || !isValidConceptUrl) {
     throw new Error("A valid concept image URL is required");
+  }
+
+  if (hasSupabaseStore()) {
+    const generation = await getGeneration(clientId, generationId, storePath);
+
+    if (!generation) {
+      throw new Error("Saved generation was not found");
+    }
+
+    if (!conceptCandidateBelongsToSavedGeneration(generation, selectedConceptUrl)) {
+      throw new Error("Selected concept was not found for this generation");
+    }
+
+    const updatedGeneration = {
+      ...generation,
+      images: {
+        ...generation.images,
+        concept: selectedConceptUrl,
+        linework: undefined,
+        placement: undefined
+      },
+      conceptCandidates: Array.from(new Set([
+        ...(generation.conceptCandidates ?? []),
+        selectedConceptUrl
+      ])),
+      updatedAt: nowIso()
+    };
+
+    const result = await persistConceptSelectionToSupabase(clientId, updatedGeneration);
+
+    if (result.skipped) {
+      throw new Error(result.reason ?? "Could not save selected concept");
+    }
+
+    return { generation: sanitizeGeneration(updatedGeneration) };
   }
 
   const store = await readStore(storePath);

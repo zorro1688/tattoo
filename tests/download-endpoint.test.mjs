@@ -17,6 +17,7 @@ await run("static server exposes the image download endpoint", async () => {
   assert.match(server, /\/api\/download/);
   assert.match(server, /resolveDownloadFile/);
   assert.match(server, /Content-Disposition/);
+  assert.match(server, /selectedConceptUrl/);
 });
 
 await run("Next app exposes the image download endpoint", async () => {
@@ -25,6 +26,7 @@ await run("Next app exposes the image download endpoint", async () => {
   assert.match(route, /resolveDownloadFile/);
   assert.match(route, /generationId/);
   assert.match(route, /Content-Disposition/);
+  assert.match(route, /selectedConceptUrl/);
 });
 
 await run("front-end download buttons use the server download endpoint", async () => {
@@ -38,4 +40,7 @@ await run("front-end download buttons use the server download endpoint", async (
     assert.match(script, /type=linework/);
     assert.match(script, /type=placement/);
   }
+
+  assert.match(homepageScript, /selectedConceptUrl/);
 });
+

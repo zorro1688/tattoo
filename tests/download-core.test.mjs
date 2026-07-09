@@ -141,6 +141,46 @@ await run("paid concept downloads prefer Supabase Storage assets", async () => {
   });
 });
 
+await run("paid concept downloads can use the currently selected candidate", async () => {
+  await withTempStore(async (storePath) => {
+    const saved = await consumeGenerationCredit(
+      "client-paid-candidate",
+      input,
+      {
+        ...generation,
+        conceptCandidates: [
+          "https://example.com/concept-1.webp",
+          "https://example.com/concept-2.webp"
+        ],
+        images: {
+          ...generation.images,
+          concept: "https://example.com/concept-1.webp"
+        }
+      },
+      storePath
+    );
+    await addPaidCredits("client-paid-candidate", 20, { externalEventId: "evt_paid_candidate_download" }, storePath);
+
+    const file = await resolveDownloadFile({
+      clientId: "client-paid-candidate",
+      generationId: saved.generation.id,
+      type: "concept",
+      selectedConceptUrl: "https://example.com/concept-2.webp",
+      fetchImage: async (url) => ({
+        ok: true,
+        contentType: "image/webp",
+        body: Buffer.from(`original:${url}`)
+      }),
+      storePath
+    });
+
+    assert.equal(file.status, 200);
+    assert.equal(file.contentType, "image/webp");
+    assert.equal(file.filename, "inkfirst-concept-high-resolution.webp");
+    assert.equal(file.body.toString("utf8"), "original:https://example.com/concept-2.webp");
+  });
+});
+
 await run("missing linework returns a clear not found error", async () => {
   await withTempStore(async (storePath) => {
     const saved = await consumeGenerationCredit(
