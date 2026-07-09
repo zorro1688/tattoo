@@ -46,6 +46,15 @@ await run("package exposes production readiness command", async () => {
   assert.equal(pkg.scripts["check:prod"], "node scripts/check-production-setup.mjs");
 });
 
+await run("production deploy includes sharp native image runtime", async () => {
+  const npmrc = await readFile(".npmrc", "utf8");
+  const nextConfig = await readFile("next.config.mjs", "utf8");
+
+  assert.match(npmrc, /include=optional/);
+  assert.match(nextConfig, /outputFileTracingIncludes/);
+  assert.match(nextConfig, /sharp-linux-x64/);
+  assert.match(nextConfig, /sharp-libvips-linux-x64/);
+});
 await run("production deployment checklist documents required setup", async () => {
   const checklist = await readFile("docs/production-checklist.md", "utf8");
 
