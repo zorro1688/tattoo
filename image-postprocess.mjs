@@ -82,8 +82,9 @@ export async function normalizeConceptImageUrl(sourceUrl, fetchImpl = fetch) {
     }
 
     return {
-      url: `data:${image.contentType};base64,${image.body.toString("base64")}`,
-      normalized: true
+      url: sourceUrl,
+      normalized: true,
+      image
     };
   } catch {
     return { url: sourceUrl, normalized: false };

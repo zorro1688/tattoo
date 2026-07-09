@@ -32,7 +32,7 @@ import {
   mergeLocalAnonymousClientIntoUser,
   recordBillingEvent
 } from "./quota-store.mjs";
-import { mergeAnonymousClientIntoUser } from "./supabase-store.mjs";
+import { fetchOwnedStorageImage, mergeAnonymousClientIntoUser } from "./supabase-store.mjs";
 
 function loadLocalEnv() {
   const envPath = join(process.cwd(), ".env.local");
@@ -295,6 +295,25 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  if (url.pathname === "/api/storage-image" && request.method === "GET") {
+    const session = getClientSession(request.headers.cookie ?? "");
+    const headers = session.isNew ? { "Set-Cookie": buildClientCookie(session.clientId) } : {};
+    const image = await fetchOwnedStorageImage(session.ownerId, url.searchParams.get("path"));
+
+    if (!image?.ok) {
+      writeJson(response, 404, { error: "Image was not found." }, headers);
+      return;
+    }
+
+    response.writeHead(200, {
+      "Content-Type": image.contentType,
+      "Cache-Control": "private, max-age=300",
+      ...headers
+    });
+    response.end(image.body);
+    return;
+  }
+
   if (url.pathname === "/api/download-access" && request.method === "GET") {
     const session = getClientSession(request.headers.cookie ?? "");
     const headers = session.isNew ? { "Set-Cookie": buildClientCookie(session.clientId) } : {};
@@ -375,6 +394,8 @@ const server = createServer(async (request, response) => {
         200,
         {
           ...generation,
+          images: saved.generation.images ?? generation.images,
+          conceptCandidates: saved.generation.conceptCandidates ?? generation.conceptCandidates,
           savedGenerationId: saved.generation.id,
           quota: saved.quota
         },

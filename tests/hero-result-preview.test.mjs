@@ -135,3 +135,16 @@ await run("homepage generation fetch handles non-JSON platform errors", async ()
     assert.doesNotMatch(source, /const data = await response\.json\(\);\n    applyQuota\(data\.quota\);/);
   }
 });
+
+await run("generation APIs return saved Storage image URLs and expose a private image proxy", async () => {
+  const nextRoute = await readFile("app/api/generate/route.js", "utf8");
+  const staticServer = await readFile("server.mjs", "utf8");
+  const storageRoute = await readFile("app/api/storage-image/route.js", "utf8");
+
+  assert.match(nextRoute, /images: saved\.generation\.images \?\? generation\.images/);
+  assert.match(nextRoute, /conceptCandidates: saved\.generation\.conceptCandidates \?\? generation\.conceptCandidates/);
+  assert.match(staticServer, /images: saved\.generation\.images \?\? generation\.images/);
+  assert.match(staticServer, /url\.pathname === "\/api\/storage-image"/);
+  assert.match(storageRoute, /fetchOwnedStorageImage/);
+  assert.match(storageRoute, /Cache-Control/);
+});

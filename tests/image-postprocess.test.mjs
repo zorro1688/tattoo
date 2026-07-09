@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import sharp from "sharp";
-import { normalizeConceptImage } from "../image-postprocess.mjs";
+import { normalizeConceptImage, normalizeConceptImageUrl } from "../image-postprocess.mjs";
 
 async function run(name, testBody) {
   try {
@@ -49,4 +49,28 @@ await run("black-background white-line concepts are inverted to white-background
   assert.equal(result.contentType, "image/png");
   assert.equal(result.normalized, true);
   assert.ok(luminance > 220, `expected white background after normalization, got ${luminance}`);
+});
+
+await run("URL normalization never returns base64 image data to the frontend", async () => {
+  const blackConcept = await sharp({
+    create: {
+      width: 24,
+      height: 24,
+      channels: 3,
+      background: "#000000"
+    }
+  }).png().toBuffer();
+
+  const result = await normalizeConceptImageUrl("https://replicate.delivery/dark.png", async () => ({
+    ok: true,
+    headers: {
+      get: () => "image/png"
+    },
+    arrayBuffer: async () => blackConcept
+  }));
+
+  assert.equal(result.normalized, true);
+  assert.equal(result.url, "https://replicate.delivery/dark.png");
+  assert.equal(result.url.startsWith("data:"), false);
+  assert.equal(result.image.contentType, "image/png");
 });

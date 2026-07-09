@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { billingStatusFromEventType, mergeBillingHistory } from "./billing-history-core.mjs";
+import { normalizeConceptImage } from "./image-postprocess.mjs";
 
 const generationStatuses = new Set(["queued", "processing", "succeeded", "failed", "mock"]);
 const billingProviders = new Set(["creem", "stripe", "manual"]);
@@ -197,6 +198,44 @@ function storageObjectUrl(config, bucket, storagePath) {
   return `${config.restUrl.replace("/rest/v1", "")}/storage/v1/object/${bucket}/${encodedPath}`;
 }
 
+export function storageImageAppUrl(storagePath) {
+  return `/api/storage-image?path=${encodeURIComponent(storagePath)}`;
+}
+
+export function storagePathFromAppImageUrl(sourceUrl = "") {
+  if (!sourceUrl || typeof sourceUrl !== "string") {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(sourceUrl, "http://inkfirst.local");
+
+    if (parsed.pathname !== "/api/storage-image") {
+      return null;
+    }
+
+    return parsed.searchParams.get("path");
+  } catch {
+    return null;
+  }
+}
+
+async function fetchStorageObjectByPath(config, bucket, storagePath, fetchImpl = fetch) {
+  const response = await fetchImpl(storageObjectUrl(config, bucket, storagePath), {
+    headers: {
+      apikey: config.key,
+      Authorization: `Bearer ${config.key}`
+    }
+  });
+
+  return {
+    ok: response.ok,
+    status: response.status,
+    contentType: response.headers?.get?.("content-type") ?? "application/octet-stream",
+    body: Buffer.from(await response.arrayBuffer())
+  };
+}
+
 function storagePrefixForOwner(owner) {
   const normalized = normalizeOwner(owner);
 
@@ -232,7 +271,7 @@ function readDataUrl(sourceUrl) {
   return { body, contentType };
 }
 
-async function readImageSource(sourceUrl, fetchImpl = fetch) {
+async function readImageSource(sourceUrl, fetchImpl = fetch, config = null) {
   if (!sourceUrl) {
     throw new Error("Image source is required.");
   }
@@ -245,6 +284,22 @@ async function readImageSource(sourceUrl, fetchImpl = fetch) {
     }
 
     return dataImage;
+  }
+
+  const storagePath = storagePathFromAppImageUrl(sourceUrl);
+
+  if (storagePath) {
+    if (!config) {
+      throw new Error("Supabase storage config is required to read private image sources.");
+    }
+
+    const stored = await fetchStorageObjectByPath(config, config.bucket, storagePath, fetchImpl);
+
+    if (!stored.ok) {
+      throw new Error(`Could not fetch Supabase storage image: ${storagePath}`);
+    }
+
+    return { body: stored.body, contentType: stored.contentType };
   }
 
   if (sourceUrl.startsWith("/") || !/^https?:\/\//i.test(sourceUrl)) {
@@ -268,10 +323,7 @@ async function readImageSource(sourceUrl, fetchImpl = fetch) {
   };
 }
 
-async function uploadImageToStorage({ owner, localGenerationId, assetType, sourceUrl, config, fetchImpl }) {
-  const image = await readImageSource(sourceUrl, fetchImpl);
-  const extension = extensionFromSource(sourceUrl, image.contentType);
-  const storagePath = `${storagePrefixForOwner(owner)}/${localGenerationId}/${assetType}.${extension}`;
+async function uploadImageBodyToStorage({ storagePath, image, config, fetchImpl }) {
   const response = await fetchImpl(storageObjectUrl(config, config.bucket, storagePath), {
     method: "POST",
     headers: {
@@ -292,6 +344,65 @@ async function uploadImageToStorage({ owner, localGenerationId, assetType, sourc
     storagePath,
     contentType: image.contentType
   };
+}
+
+async function uploadImageToStorage({ owner, localGenerationId, assetType, sourceUrl, config, fetchImpl }) {
+  const image = await readImageSource(sourceUrl, fetchImpl, config);
+  const storagePath = storagePathFromAppImageUrl(sourceUrl);
+  const extension = extensionFromSource(storagePath || sourceUrl, image.contentType);
+  const targetPath = `${storagePrefixForOwner(owner)}/${localGenerationId}/${assetType}.${extension}`;
+
+  return uploadImageBodyToStorage({
+    storagePath: targetPath,
+    image,
+    config,
+    fetchImpl
+  });
+}
+
+export async function prepareConceptCandidatesForSupabase(clientId, savedGeneration, env = process.env, fetchImpl = fetch) {
+  const config = getSupabaseConfig(env);
+
+  if (!config) {
+    return { skipped: true };
+  }
+
+  const candidates = [
+    ...(savedGeneration.conceptCandidates ?? []),
+    savedGeneration.images?.concept
+  ].filter(Boolean);
+  const uniqueCandidates = [...new Set(candidates)].slice(0, 4);
+
+  if (!uniqueCandidates.length) {
+    return { skipped: true, reason: "no_concept_candidates" };
+  }
+
+  const processedUrls = [];
+
+  for (const [index, sourceUrl] of uniqueCandidates.entries()) {
+    const image = await readImageSource(sourceUrl, fetchImpl, config);
+    const normalized = await normalizeConceptImage(image);
+    const finalImage = normalized?.body ? normalized : image;
+    const extension = extensionFromSource(sourceUrl, finalImage.contentType);
+    const storagePath = `${storagePrefixForOwner(clientId)}/${savedGeneration.id}/concept-candidates/${index + 1}.${extension}`;
+
+    await uploadImageBodyToStorage({
+      storagePath,
+      image: finalImage,
+      config,
+      fetchImpl
+    });
+
+    processedUrls.push(storageImageAppUrl(storagePath));
+  }
+
+  savedGeneration.conceptCandidates = processedUrls;
+  savedGeneration.images = {
+    ...savedGeneration.images,
+    concept: processedUrls[0]
+  };
+
+  return { skipped: false, conceptCandidates: processedUrls };
 }
 
 async function upsertOwnerCredits(owner, quota, env, fetchImpl) {
@@ -777,18 +888,28 @@ export async function fetchStorageObjectFromSupabase(asset, env = process.env, f
     return null;
   }
 
-  const response = await fetchImpl(storageObjectUrl(config, bucket, storagePath), {
-    headers: {
-      apikey: config.key,
-      Authorization: `Bearer ${config.key}`
-    }
-  });
+  const result = await fetchStorageObjectByPath(config, bucket, storagePath, fetchImpl);
 
   return {
-    ok: response.ok,
-    contentType: response.headers.get("content-type") ?? asset.contentType ?? "application/octet-stream",
-    body: Buffer.from(await response.arrayBuffer())
+    ...result,
+    contentType: result.contentType ?? asset.contentType ?? "application/octet-stream"
   };
+}
+
+export async function fetchOwnedStorageImage(clientId, storagePath, env = process.env, fetchImpl = fetch) {
+  const config = getSupabaseConfig(env);
+
+  if (!config || !storagePath) {
+    return null;
+  }
+
+  const allowedPrefix = `${storagePrefixForOwner(clientId)}/`;
+
+  if (!storagePath.startsWith(allowedPrefix)) {
+    return null;
+  }
+
+  return fetchStorageObjectByPath(config, config.bucket, storagePath, fetchImpl);
 }
 
 async function getAnonymousClientFromSupabase(clientId, env, fetchImpl) {

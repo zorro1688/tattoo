@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
+import sharp from "sharp";
 import {
+  fetchOwnedStorageImage,
   getDownloadAccessFromSupabase,
   getGenerationFromSupabase,
   getQuotaFromSupabase,
   listGenerationsFromSupabase,
+  prepareConceptCandidatesForSupabase,
   persistCreditEventToSupabase,
   persistGenerationToSupabase,
   persistLineworkToSupabase,
@@ -253,6 +256,106 @@ await run("Supabase generation persistence stores signed-in user assets under us
 
   const assetsBody = JSON.parse(serviceCalls[4].options.body);
   assert.equal(assetsBody[0].storage_path, "users/00000000-0000-4000-8000-000000000001/gen_local_123/concept.webp");
+});
+
+await run("Supabase concept candidates are normalized, uploaded, and exposed through app image URLs", async () => {
+  const blackConcept = await sharp({
+    create: {
+      width: 24,
+      height: 24,
+      channels: 3,
+      background: "#000000"
+    }
+  }).png().toBuffer();
+  const calls = [];
+  const fetchMock = async (url, options = {}) => {
+    calls.push({ url, options });
+
+    if (url.includes("replicate.delivery")) {
+      return {
+        ok: true,
+        status: 200,
+        headers: {
+          get: () => "image/png"
+        },
+        arrayBuffer: async () => blackConcept
+      };
+    }
+
+    if (url.includes("/storage/v1/object/")) {
+      return {
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify({ Key: "stored" })
+      };
+    }
+
+    throw new Error(`Unexpected fetch ${url}`);
+  };
+
+  const generation = {
+    ...savedGeneration,
+    images: {
+      concept: "https://replicate.delivery/dark-1.png"
+    },
+    conceptCandidates: [
+      "https://replicate.delivery/dark-1.png",
+      "https://replicate.delivery/dark-2.png"
+    ]
+  };
+
+  const result = await prepareConceptCandidatesForSupabase("anon_client", generation, env, fetchMock);
+  const storageCalls = calls.filter((call) => call.url.includes("/storage/v1/object/"));
+
+  assert.equal(result.skipped, false);
+  assert.equal(generation.conceptCandidates.length, 2);
+  assert.equal(generation.conceptCandidates.every((url) => url.startsWith("/api/storage-image?path=")), true);
+  assert.equal(generation.conceptCandidates.some((url) => url.startsWith("data:")), false);
+  assert.equal(generation.images.concept, generation.conceptCandidates[0]);
+  assert.match(decodeURIComponent(generation.conceptCandidates[0]), /anonymous\/anon_client\/gen_local_123\/concept-candidates\/1\.png/);
+  assert.equal(storageCalls.length, 2);
+  assert.match(storageCalls[0].url, /\/storage\/v1\/object\/inkfirst-designs\/anonymous\/anon_client\/gen_local_123\/concept-candidates\/1\.png$/);
+  assert.equal(storageCalls[0].options.headers["Content-Type"], "image/png");
+
+  const uploadedPixel = await sharp(Buffer.from(storageCalls[0].options.body))
+    .resize(1, 1)
+    .raw()
+    .toBuffer();
+  assert.ok(uploadedPixel[0] > 240);
+});
+
+await run("Supabase owned storage image fetch only serves the current owner prefix", async () => {
+  const calls = [];
+  const fetchMock = async (url, options = {}) => {
+    calls.push({ url, options });
+    return {
+      ok: true,
+      status: 200,
+      headers: {
+        get: () => "image/png"
+      },
+      arrayBuffer: async () => Buffer.from("stored-image")
+    };
+  };
+
+  const allowed = await fetchOwnedStorageImage(
+    "anon_client",
+    "anonymous/anon_client/gen_local_123/concept-candidates/1.png",
+    env,
+    fetchMock
+  );
+  const denied = await fetchOwnedStorageImage(
+    "anon_client",
+    "anonymous/other_client/gen_local_123/concept-candidates/1.png",
+    env,
+    fetchMock
+  );
+
+  assert.equal(allowed.ok, true);
+  assert.equal(allowed.contentType, "image/png");
+  assert.equal(Buffer.from(allowed.body).toString(), "stored-image");
+  assert.equal(denied, null);
+  assert.equal(calls.length, 1);
 });
 
 await run("Supabase linework persistence updates the saved generation asset", async () => {

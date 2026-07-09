@@ -47,6 +47,8 @@ export async function POST(request) {
     return json(
     {
       ...generation,
+      images: saved.generation.images ?? generation.images,
+      conceptCandidates: saved.generation.conceptCandidates ?? generation.conceptCandidates,
       savedGenerationId: saved.generation.id,
       quota: saved.quota
     },

@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import {
   persistGenerationToSupabase,
+  prepareConceptCandidatesForSupabase,
   persistLineworkToSupabase,
   persistBillingEventToSupabase,
   listBillingHistoryFromSupabase,
@@ -202,6 +203,7 @@ export async function consumeGenerationCredit(clientId, input, generation, store
     nextQuota.totalRemaining = nextQuota.freeRemaining + nextQuota.paidRemaining;
 
     const savedGeneration = buildSavedGeneration(clientId, input, generation);
+    await prepareConceptCandidatesForSupabase(clientId, savedGeneration);
     await persistGenerationToSupabase(clientId, savedGeneration, nextQuota);
 
     return {
@@ -269,7 +271,9 @@ function sanitizeGeneration(generation) {
 }
 
 export async function updateGenerationConceptSelection(clientId, generationId, selectedConceptUrl, storePath = getStorePath()) {
-  if (!selectedConceptUrl || !/^https?:\/\//i.test(String(selectedConceptUrl))) {
+  const isValidConceptUrl = /^https?:\/\//i.test(String(selectedConceptUrl)) || String(selectedConceptUrl).startsWith("/api/storage-image?path=");
+
+  if (!selectedConceptUrl || !isValidConceptUrl) {
     throw new Error("A valid concept image URL is required");
   }
 
