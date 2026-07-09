@@ -1,7 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { billingStatusFromEventType, mergeBillingHistory } from "./billing-history-core.mjs";
-import { normalizeConceptImage } from "./image-postprocess.mjs";
 
 const generationStatuses = new Set(["queued", "processing", "succeeded", "failed", "mock"]);
 const billingProviders = new Set(["creem", "stripe", "manual"]);
@@ -346,6 +345,16 @@ async function uploadImageBodyToStorage({ storagePath, image, config, fetchImpl 
   };
 }
 
+async function normalizeConceptImageForStorage(image) {
+  try {
+    const { normalizeConceptImage } = await import("./image-postprocess.mjs");
+    return await normalizeConceptImage(image);
+  } catch (error) {
+    console.warn(`Concept image normalization skipped: ${error.message}`);
+    return { ...image, normalized: false };
+  }
+}
+
 async function uploadImageToStorage({ owner, localGenerationId, assetType, sourceUrl, config, fetchImpl }) {
   const image = await readImageSource(sourceUrl, fetchImpl, config);
   const storagePath = storagePathFromAppImageUrl(sourceUrl);
@@ -381,7 +390,7 @@ export async function prepareConceptCandidatesForSupabase(clientId, savedGenerat
 
   for (const [index, sourceUrl] of uniqueCandidates.entries()) {
     const image = await readImageSource(sourceUrl, fetchImpl, config);
-    const normalized = await normalizeConceptImage(image);
+    const normalized = await normalizeConceptImageForStorage(image);
     const finalImage = normalized?.body ? normalized : image;
     const extension = extensionFromSource(sourceUrl, finalImage.contentType);
     const storagePath = `${storagePrefixForOwner(clientId)}/${savedGeneration.id}/concept-candidates/${index + 1}.${extension}`;

@@ -92,3 +92,10 @@ await run("configured Supabase download access never writes local fallback store
     }
   });
 });
+
+await run("download access path does not eagerly import image postprocessing", async () => {
+  const source = await import("node:fs/promises").then((fs) => fs.readFile("supabase-store.mjs", "utf8"));
+
+  assert.doesNotMatch(source, /import \{ normalizeConceptImage \} from "\.\/image-postprocess\.mjs"/);
+  assert.match(source, /await import\("\.\/image-postprocess\.mjs"\)/);
+});
