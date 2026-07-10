@@ -366,6 +366,7 @@ const server = createServer(async (request, response) => {
         return;
       }
 
+
       const quota = await getQuotaState(session.ownerId);
 
       if (quota.totalRemaining <= 0) {
@@ -419,11 +420,16 @@ const server = createServer(async (request, response) => {
         return;
       }
 
-      const savedGeneration = await getGeneration(session.ownerId, body.generationId);
+      let savedGeneration = await getGeneration(session.ownerId, body.generationId);
 
       if (!savedGeneration) {
         writeJson(response, 404, { error: "Saved generation was not found." }, cookieHeaders);
         return;
+      }
+
+      if (body.selectedConceptUrl) {
+        const selected = await updateGenerationConceptSelection(session.ownerId, body.generationId, body.selectedConceptUrl);
+        savedGeneration = selected.generation;
       }
 
       const quota = await getQuotaState(session.ownerId);

@@ -121,15 +121,23 @@ await run("homepage protects selected concept downloads from stale persistence r
   }
 });
 
-await run("homepage waits for selected concept persistence before linework generation", async () => {
+await run("homepage sends the current selected concept to linework generation", async () => {
   const scripts = [
     await readFile("script.js", "utf8"),
     await readFile("public/script.js", "utf8")
   ];
+  const nextRoute = await readFile("app/api/generate/linework/route.js", "utf8");
+  const staticServer = await readFile("server.mjs", "utf8");
 
   for (const script of scripts) {
-    assert.match(script, /await selectedConceptPersistPromise/);
-    assert.match(script, /Could not save selected concept/);
+    assert.match(script, /selectedConceptUrl: generatedImages\.concept \?\? ""/);
+    assert.doesNotMatch(script, /if \(type === "concept"\) \{\s*await selectedConceptPersistPromise/s);
+  }
+
+  for (const source of [nextRoute, staticServer]) {
+    assert.match(source, /body\.selectedConceptUrl/);
+    assert.match(source, /updateGenerationConceptSelection/);
+    assert.match(source, /savedGeneration = selected\.generation/);
   }
 });
 

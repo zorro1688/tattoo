@@ -7,7 +7,8 @@ import {
   consumeLineworkCredit,
   getClientSession,
   getGeneration,
-  getQuotaState
+  getQuotaState,
+  updateGenerationConceptSelection
 } from "../../../../quota-store.mjs";
 
 function json(body, status, session) {
@@ -24,10 +25,15 @@ export async function POST(request) {
     return json({ error: "Saved generation id is required." }, 400, session);
   }
 
-    const savedGeneration = await getGeneration(session.ownerId, body.generationId);
+    let savedGeneration = await getGeneration(session.ownerId, body.generationId);
 
     if (!savedGeneration) {
     return json({ error: "Saved generation was not found." }, 404, session);
+  }
+
+    if (body.selectedConceptUrl) {
+    const selected = await updateGenerationConceptSelection(session.ownerId, body.generationId, body.selectedConceptUrl);
+    savedGeneration = selected.generation;
   }
 
     const quota = await getQuotaState(session.ownerId);

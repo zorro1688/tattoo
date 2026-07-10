@@ -631,10 +631,6 @@ async function downloadGenerationFile(type) {
 
   const selectedConceptUrl = type === "concept" ? generatedImages.concept : "";
 
-  if (type === "concept") {
-    await selectedConceptPersistPromise.catch(() => {});
-  }
-
   const params = new URLSearchParams({
     generationId: currentGenerationId,
     type
@@ -965,8 +961,8 @@ function selectConceptCandidate(index) {
         generatedImages = {
           ...generatedImages,
           concept: generation.images.concept,
-          linework: generation.images.linework,
-          placement: generation.images.placement
+          linework: generation.images.linework ?? generatedImages.linework,
+          placement: generation.images.placement ?? generatedImages.placement
         };
       }
     })
@@ -1312,7 +1308,8 @@ async function generateLinework() {
         "content-type": "application/json"
       },
       body: JSON.stringify({
-        generationId: currentGenerationId
+        generationId: currentGenerationId,
+        selectedConceptUrl: generatedImages.concept ?? ""
       })
     });
     const data = await readJsonResponse(response, "Linework service is temporarily unavailable. Please try again.");
@@ -1324,6 +1321,7 @@ async function generateLinework() {
 
     generatedImages = {
       ...generatedImages,
+      ...(data.generation?.images ?? {}),
       linework: data.images?.linework ?? data.generation?.images?.linework ?? generatedImages.linework
     };
     generatedPrompt = data.prompt ?? generatedPrompt;
