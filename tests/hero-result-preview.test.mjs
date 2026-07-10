@@ -106,6 +106,21 @@ await run("linework endpoint returns quota when provider fails", async () => {
   assert.match(server, /if \(linework\.error\)/);
   assert.match(server, /\.\.\.linework,\s*quota/s);
 });
+await run("homepage protects selected concept downloads from stale persistence responses", async () => {
+  const scripts = [
+    await readFile("script.js", "utf8"),
+    await readFile("public/script.js", "utf8")
+  ];
+
+  for (const script of scripts) {
+    assert.match(script, /let selectedConceptPersistVersion = 0/);
+    assert.match(script, /const persistVersion = selectedConceptPersistVersion \+ 1/);
+    assert.match(script, /persistVersion !== selectedConceptPersistVersion/);
+    assert.match(script, /const selectedConceptUrl = type === "concept" \? generatedImages\.concept : ""/);
+    assert.match(script, /params\.set\("selectedConceptUrl", selectedConceptUrl\)/);
+  }
+});
+
 await run("homepage waits for selected concept persistence before linework generation", async () => {
   const scripts = [
     await readFile("script.js", "utf8"),

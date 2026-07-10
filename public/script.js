@@ -75,6 +75,7 @@ let generatedImages = {};
 let conceptCandidates = [];
 let selectedConceptIndex = 0;
 let selectedConceptPersistPromise = Promise.resolve();
+let selectedConceptPersistVersion = 0;
 let currentGenerationId = "";
 let isGenerating = false;
 let generationError = "";
@@ -628,6 +629,8 @@ async function downloadGenerationFile(type) {
     return;
   }
 
+  const selectedConceptUrl = type === "concept" ? generatedImages.concept : "";
+
   if (type === "concept") {
     await selectedConceptPersistPromise.catch(() => {});
   }
@@ -637,8 +640,8 @@ async function downloadGenerationFile(type) {
     type
   });
 
-  if (type === "concept" && generatedImages.concept) {
-    params.set("selectedConceptUrl", generatedImages.concept);
+  if (type === "concept" && selectedConceptUrl) {
+    params.set("selectedConceptUrl", selectedConceptUrl);
   }
 
   const response = await fetch(`/api/download?${params.toString()}`);
@@ -941,6 +944,8 @@ function selectConceptCandidate(index) {
   }
 
   selectedConceptIndex = index;
+  const persistVersion = selectedConceptPersistVersion + 1;
+  selectedConceptPersistVersion = persistVersion;
   generatedImages = {
     ...generatedImages,
     concept: candidate,
@@ -952,6 +957,10 @@ function selectConceptCandidate(index) {
   renderHeroPreview();
   selectedConceptPersistPromise = persistSelectedConcept(candidate)
     .then((generation) => {
+      if (persistVersion !== selectedConceptPersistVersion) {
+        return;
+      }
+
       if (generation?.images?.concept) {
         generatedImages = {
           ...generatedImages,
@@ -962,7 +971,9 @@ function selectConceptCandidate(index) {
       }
     })
     .catch((error) => {
-      billingNotice.textContent = error.message ?? "Could not save selected concept.";
+      if (persistVersion === selectedConceptPersistVersion) {
+        billingNotice.textContent = error.message ?? "Could not save selected concept.";
+      }
     });
 }
 
