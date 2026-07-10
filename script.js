@@ -951,7 +951,9 @@ function selectConceptCandidate(index) {
   lineworkError = "";
   heroMode = "concept";
   renderHeroPreview();
-  selectedConceptPersistPromise = persistSelectedConcept(candidate)
+  selectedConceptPersistPromise = selectedConceptPersistPromise
+    .catch(() => undefined)
+    .then(() => persistSelectedConcept(candidate))
     .then((generation) => {
       if (persistVersion !== selectedConceptPersistVersion) {
         return;
@@ -1302,6 +1304,7 @@ async function generateLinework() {
   promptPreview.innerHTML = "<strong>Prompt preview:</strong> Creating clean tattoo linework...";
 
   try {
+    await selectedConceptPersistPromise;
     const response = await fetch("/api/generate/linework", {
       method: "POST",
       headers: {

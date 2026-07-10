@@ -132,6 +132,8 @@ await run("homepage sends the current selected concept to linework generation", 
   for (const script of scripts) {
     assert.match(script, /selectedConceptUrl: generatedImages\.concept \?\? ""/);
     assert.doesNotMatch(script, /if \(type === "concept"\) \{\s*await selectedConceptPersistPromise/s);
+    assert.match(script, /selectedConceptPersistPromise = selectedConceptPersistPromise/);
+    assert.match(script, /await selectedConceptPersistPromise;/);
   }
 
   for (const source of [nextRoute, staticServer]) {

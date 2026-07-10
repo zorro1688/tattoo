@@ -878,7 +878,10 @@ async function generateLinework() {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ generationId: currentDesign.id })
+      body: JSON.stringify({
+        generationId: currentDesign.id,
+        selectedConceptUrl: currentDesign.images?.concept ?? ""
+      })
     });
     const data = await response.json();
 

@@ -203,6 +203,36 @@ await run("selected concept candidate updates the saved main concept and clears 
   });
 });
 
+await run("re-saving the active concept does not clear completed linework", async () => {
+  await withTempStore(async (storePath) => {
+    const saved = await consumeGenerationCredit(
+      "client-a",
+      input,
+      {
+        ...generation,
+        conceptCandidates: ["https://replicate.delivery/concept-a.webp"],
+        images: {
+          concept: "https://replicate.delivery/concept-a.webp",
+          linework: "https://replicate.delivery/linework-a.webp",
+          placement: "https://replicate.delivery/placement-a.webp"
+        }
+      },
+      storePath
+    );
+
+    await updateGenerationConceptSelection(
+      "client-a",
+      saved.generation.id,
+      "https://replicate.delivery/concept-a.webp",
+      storePath
+    );
+
+    const record = await getGeneration("client-a", saved.generation.id, storePath);
+
+    assert.equal(record.images.linework, "https://replicate.delivery/linework-a.webp");
+    assert.equal(record.images.placement, "https://replicate.delivery/placement-a.webp");
+  });
+});
 await run("linework generation updates the saved design and consumes one credit", async () => {
   await withTempStore(async (storePath) => {
     const saved = await consumeGenerationCredit("client-a", input, generation, storePath);

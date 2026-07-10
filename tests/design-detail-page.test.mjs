@@ -39,6 +39,7 @@ await run("design detail script loads one saved generation and supports linework
   assert.match(script, /Download high-res/);
   assert.match(script, /Download watermarked/);
   assert.match(script, /detailUpgradeConcept/);
+  assert.match(script, /selectedConceptUrl: currentDesign\.images\?\.concept \?\? ""/);
   assert.match(script, /\/api\/billing\/checkout/);
   assert.match(script, /returnTo/);
   assert.match(script, /handleCheckoutReturn/);

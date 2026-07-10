@@ -305,6 +305,10 @@ export async function updateGenerationConceptSelection(clientId, generationId, s
       throw new Error("Selected concept was not found for this generation");
     }
 
+    if (generation.images?.concept === selectedConceptUrl) {
+      return { generation: sanitizeGeneration(generation) };
+    }
+
     const updatedGeneration = {
       ...generation,
       images: {
@@ -345,6 +349,10 @@ export async function updateGenerationConceptSelection(clientId, generationId, s
 
   if (!allowedCandidates.has(selectedConceptUrl)) {
     throw new Error("Selected concept was not found for this generation");
+  }
+
+  if (generation.images?.concept === selectedConceptUrl) {
+    return { generation: sanitizeGeneration(generation) };
   }
 
   generation.images = {
