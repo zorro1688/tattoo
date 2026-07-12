@@ -185,3 +185,15 @@ await run("generation APIs return saved Storage image URLs and expose a private 
   assert.match(storageRoute, /fetchOwnedStorageImage/);
   assert.match(storageRoute, /Cache-Control/);
 });
+
+await run("homepage concept downloads wait for the selected candidate before creating a file", async () => {
+  const scripts = [
+    await readFile("script.js", "utf8"),
+    await readFile("public/script.js", "utf8")
+  ];
+
+  for (const script of scripts) {
+    assert.match(script, /async function downloadGenerationFile\(type\) \{[\s\S]*?await selectedConceptPersistPromise;/);
+    assert.match(script, /params\.set\("downloadRevision",/);
+  }
+});

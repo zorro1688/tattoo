@@ -768,7 +768,7 @@ async function loadDesign() {
   }
 
   try {
-    const response = await fetch(`/api/generation?id=${encodeURIComponent(generationId)}`);
+    const response = await fetch(`/api/generation?id=${encodeURIComponent(generationId)}`, { cache: "no-store" });
     const data = await response.json();
 
     if (!response.ok) {

@@ -4,7 +4,7 @@ import { buildClientCookie, getClientSession, getGeneration, updateGenerationCon
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const session = getClientSession(request.headers.get("cookie") ?? "");
-  const headers = session.isNew ? { "Set-Cookie": buildClientCookie(session.clientId) } : {};
+  const headers = { "Cache-Control": "private, no-store", ...(session.isNew ? { "Set-Cookie": buildClientCookie(session.clientId) } : {}) };
   const generationId = searchParams.get("id");
 
   if (!generationId) {
@@ -23,7 +23,7 @@ export async function GET(request) {
 
 export async function PATCH(request) {
   const session = getClientSession(request.headers.get("cookie") ?? "");
-  const headers = session.isNew ? { "Set-Cookie": buildClientCookie(session.clientId) } : {};
+  const headers = { "Cache-Control": "private, no-store", ...(session.isNew ? { "Set-Cookie": buildClientCookie(session.clientId) } : {}) };
   const body = await request.json().catch(() => ({}));
 
   if (!body.generationId) {

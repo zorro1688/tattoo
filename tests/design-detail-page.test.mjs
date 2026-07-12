@@ -238,3 +238,18 @@ await run("design detail download buttons show active feedback and protect slow 
   assert.match(styles, /\.design-download-actions \.result-action\.is-downloading/);
   assert.match(styles, /background: #0071e3/);
 });
+
+await run("design detail reloads saved linework without browser cache", async () => {
+  const route = await readFile("app/api/generation/route.js", "utf8");
+  const scripts = [
+    await readFile("design.js", "utf8"),
+    await readFile("public/design.js", "utf8")
+  ];
+
+  assert.match(route, /Cache-Control/);
+  assert.match(route, /no-store/);
+
+  for (const script of scripts) {
+    assert.match(script, /fetch\(`\/api\/generation\?id=\$\{encodeURIComponent\(generationId\)\}`, \{ cache: "no-store" \}\)/);
+  }
+});

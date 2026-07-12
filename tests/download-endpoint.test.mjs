@@ -27,6 +27,8 @@ await run("Next app exposes the image download endpoint", async () => {
   assert.match(route, /generationId/);
   assert.match(route, /Content-Disposition/);
   assert.match(route, /selectedConceptUrl/);
+  assert.match(route, /Cache-Control/);
+  assert.match(route, /no-store/);
 });
 
 await run("front-end download buttons use the server download endpoint", async () => {

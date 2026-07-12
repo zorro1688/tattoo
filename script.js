@@ -629,6 +629,15 @@ async function downloadGenerationFile(type) {
     return;
   }
 
+  if (type === "concept") {
+    try {
+      await selectedConceptPersistPromise;
+    } catch (error) {
+      billingNotice.textContent = error.message ?? "Could not save the selected concept.";
+      return;
+    }
+  }
+
   const selectedConceptUrl = type === "concept" ? generatedImages.concept : "";
 
   const params = new URLSearchParams({
@@ -638,9 +647,10 @@ async function downloadGenerationFile(type) {
 
   if (type === "concept" && selectedConceptUrl) {
     params.set("selectedConceptUrl", selectedConceptUrl);
+    params.set("downloadRevision", String(selectedConceptPersistVersion));
   }
 
-  const response = await fetch(`/api/download?${params.toString()}`);
+  const response = await fetch(`/api/download?${params.toString()}`, { cache: "no-store" });
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
