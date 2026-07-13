@@ -4,6 +4,7 @@ const detailCreatedAt = document.querySelector("#detailCreatedAt");
 const detailConceptImage = document.querySelector("#detailConceptImage");
 const detailLineworkImage = document.querySelector("#detailLineworkImage");
 const detailLineworkEmpty = document.querySelector("#detailLineworkEmpty");
+const detailLineworkStatus = document.querySelector("#detailLineworkStatus");
 const detailPlacementMockup = document.querySelector("#detailPlacementMockup");
 const detailPlacementSkin = document.querySelector("#detailPlacementSkin");
 const detailPlacementTattoo = document.querySelector("#detailPlacementTattoo");
@@ -23,6 +24,12 @@ const placementRotateControl = document.querySelector("#placementRotateControl")
 const savePlacementButton = document.querySelector("#savePlacementButton");
 const resetPlacementButton = document.querySelector("#resetPlacementButton");
 
+
+async function readJsonResponse(response) {
+  const text = await response.text();
+  if (!text) return {};
+  try { return JSON.parse(text); } catch { return { error: "The server returned an invalid response. Please try again." }; }
+}
 
 const placementSkinAssets = {
   forearm: "assets/placement-forearm.jpg",
@@ -871,6 +878,7 @@ async function generateLinework() {
   detailLineworkButton.disabled = true;
   detailLineworkButton.textContent = "Creating stencil linework...";
   designStatus.textContent = "Creating stencil linework. This uses 1 generation credit.";
+  detailLineworkStatus.textContent = "Creating stencil linework...";
 
   try {
     const response = await fetch("/api/generate/linework", {
@@ -883,7 +891,7 @@ async function generateLinework() {
         selectedConceptUrl: currentDesign.images?.concept ?? ""
       })
     });
-    const data = await response.json();
+    const data = await readJsonResponse(response);
 
     if (!response.ok) {
       throw new Error(data.error ?? "Could not create linework.");
@@ -891,10 +899,13 @@ async function generateLinework() {
 
     renderDesign(data.generation);
     designStatus.textContent = "Linework ready.";
+    detailLineworkStatus.textContent = "Linework ready.";
   } catch (error) {
     detailLineworkButton.disabled = false;
     detailLineworkButton.textContent = "Generate linework";
-    designStatus.textContent = error.message ?? "Could not create linework.";
+    const message = error.message ?? "Could not create linework.";
+    designStatus.textContent = message;
+    detailLineworkStatus.textContent = message;
   }
 }
 

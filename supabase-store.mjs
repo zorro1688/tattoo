@@ -594,10 +594,14 @@ export async function persistConceptSelectionToSupabase(clientId, generation, en
     return { skipped: true, reason: "generation_not_found" };
   }
 
-  await insertAssets(supabaseGeneration.id, { concept: generation.images?.concept }, config, env, fetchImpl, {
-    owner: clientId,
-    localGenerationId: generation.id
-  });
+  const selectedConceptUrl = generation.images?.concept;
+  const selectedStoragePath = storagePathFromAppImageUrl(selectedConceptUrl);
+  const expectedPrefix = `${storagePrefixForOwner(clientId)}/${generation.id}/concept-candidates/`;
+
+  if (!selectedStoragePath || !selectedStoragePath.startsWith(expectedPrefix)) { throw new Error("Selected concept does not belong to this saved generation."); }
+
+  const contentType = contentTypeByExtension[extname(selectedStoragePath).toLowerCase()] ?? "image/png";
+  await requestSupabase("/generation_assets?on_conflict=generation_id,asset_type,is_watermarked", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify([{ generation_id: supabaseGeneration.id, asset_type: "concept", storage_bucket: config.bucket, storage_path: selectedStoragePath, source_url: selectedConceptUrl, content_type: contentType, is_watermarked: false }]) }, env, fetchImpl);
 
   await requestSupabase(`/generations?local_generation_id=eq.${encodeURIComponent(generation.id)}`, {
     method: "PATCH",
@@ -628,12 +632,10 @@ export async function persistLineworkToSupabase(clientId, generation, quota, env
     return { skipped: true };
   }
 
-  await upsertOwnerCredits(clientId, quota, env, fetchImpl);
-
   const supabaseGeneration = await findSupabaseGeneration(generation.id, clientId, env, fetchImpl);
 
   if (!supabaseGeneration?.id) {
-    return { skipped: true, reason: "generation_not_found" };
+    throw new Error("Saved generation was not found in Supabase.");
   }
 
   await requestSupabase(`/generations?local_generation_id=eq.${encodeURIComponent(generation.id)}`, {
@@ -648,11 +650,23 @@ export async function persistLineworkToSupabase(clientId, generation, quota, env
   }, env, fetchImpl);
 
   await insertAssets(supabaseGeneration.id, { linework: generation.images?.linework }, config, env, fetchImpl, {
-      owner: clientId,
+    owner: clientId,
     localGenerationId: generation.id
   });
 
-  return { skipped: false, generationId: supabaseGeneration.id };
+  const verified = await getGenerationFromSupabase(clientId, generation.id, env, fetchImpl);
+
+  if (!verified.generation?.images?.linework) {
+    throw new Error("Linework could not be verified after saving.");
+  }
+
+  await upsertOwnerCredits(clientId, quota, env, fetchImpl);
+
+  return {
+    skipped: false,
+    generationId: supabaseGeneration.id,
+    generation: verified.generation
+  };
 }
 
 export async function persistCreditEventToSupabase(clientId, credits, metadata, quota, env = process.env, fetchImpl = fetch) {

@@ -7,6 +7,7 @@ import {
   getQuotaFromSupabase,
   listGenerationsFromSupabase,
   prepareConceptCandidatesForSupabase,
+  persistConceptSelectionToSupabase,
   persistCreditEventToSupabase,
   persistGenerationToSupabase,
   persistLineworkToSupabase,
@@ -101,6 +102,18 @@ function createFetchMock() {
   };
 
   return { calls, fetchMock };
+}
+
+function createLineworkPersistenceFetchMock() {
+  const base = createFetchMock();
+  const fetchMock = async (url, options = {}) => {
+    if (url.includes("generation_assets") && options.method === "GET") {
+      base.calls.push({ url, options });
+      return { ok: true, status: 200, text: async () => JSON.stringify([{ id: "00000000-0000-0000-0000-000000000001", local_generation_id: "gen_local_123", status: "succeeded", input_idea: "small rose with moon", input_style: "Fine line", input_placement: "Forearm", input_size: "Small", input_complexity: "Beginner friendly", created_at: "2026-06-17T00:00:00.000Z", updated_at: "2026-06-17T00:01:00.000Z", generation_assets: [{ asset_type: "linework", storage_bucket: "inkfirst-designs", storage_path: "anonymous/anon_client/gen_local_123/linework.webp", source_url: "https://replicate.delivery/linework.webp" }] }]) };
+    }
+    return base.fetchMock(url, options);
+  };
+  return { calls: base.calls, fetchMock };
 }
 
 function createReadFetchMock() {
@@ -359,7 +372,7 @@ await run("Supabase owned storage image fetch only serves the current owner pref
 });
 
 await run("Supabase linework persistence updates the saved generation asset", async () => {
-  const { calls, fetchMock } = createFetchMock();
+  const { calls, fetchMock } = createLineworkPersistenceFetchMock();
   const updated = {
     ...savedGeneration,
     images: {
@@ -380,17 +393,44 @@ await run("Supabase linework persistence updates the saved generation asset", as
 
   const serviceCalls = calls.filter((call) => !call.url.includes("replicate.delivery"));
   assert.equal(result.skipped, false);
-  assert.equal(serviceCalls.length, 5);
-  assert.match(serviceCalls[1].url, /\/generations\?/);
-  assert.equal(serviceCalls[2].options.method, "PATCH");
-  assert.match(serviceCalls[3].url, /\/storage\/v1\/object\/inkfirst-designs\/anonymous\/anon_client\/gen_local_123\/linework\.webp$/);
+  assert.equal(serviceCalls.length, 6);
+  assert.match(serviceCalls[0].url, /\/generations\?/);
+  assert.equal(serviceCalls[1].options.method, "PATCH");
+  assert.match(serviceCalls[2].url, /\/storage\/v1\/object\/inkfirst-designs\/anonymous\/anon_client\/gen_local_123\/linework\.webp$/);
+  assert.match(serviceCalls[4].url, /generation_assets/);
 
-  const assetsBody = JSON.parse(serviceCalls[4].options.body);
+  const assetsBody = JSON.parse(serviceCalls[3].options.body);
   assert.equal(assetsBody.length, 1);
   assert.equal(assetsBody[0].asset_type, "linework");
   assert.equal(assetsBody[0].storage_path, "anonymous/anon_client/gen_local_123/linework.webp");
 });
 
+
+
+await run("Supabase linework persistence fails before charging when the saved generation is missing", async () => {
+  const calls = [];
+  const fetchMock = async (url, options = {}) => {
+    calls.push({ url, options });
+    if (url.includes("/generations?") && options.method === "GET") {
+      return { ok: true, status: 200, text: async () => "[]" };
+    }
+    return { ok: true, status: 204, text: async () => "" };
+  };
+
+  await assert.rejects(
+    () => persistLineworkToSupabase(
+      "anon_client",
+      { ...savedGeneration, images: { ...savedGeneration.images, linework: "https://replicate.delivery/linework.webp" } },
+      { freeRemaining: 1, paidRemaining: 0, highResolution: false },
+      env,
+      fetchMock
+    ),
+    /Saved generation was not found/
+  );
+
+  assert.equal(calls.some((call) => call.url.includes("/user_entitlements")), false);
+  assert.equal(calls.some((call) => call.url.includes("/anonymous_clients") && call.options.method === "POST"), false);
+});
 
 await run("Supabase placement adjustment persistence patches the saved generation", async () => {
   const { calls, fetchMock } = createFetchMock();
@@ -489,4 +529,27 @@ await run("Supabase download access follows high-resolution entitlement", async 
   assert.equal(result.downloadAccess.highResolution, true);
   assert.equal(result.downloadAccess.watermarked, false);
   assert.equal(result.downloadAccess.message, "High-resolution downloads are unlocked");
+});
+
+await run("Supabase concept selection points at the existing candidate without uploading image bytes", async () => {
+  const { calls, fetchMock } = createFetchMock();
+  const candidateUrl = "/api/storage-image?path=anonymous%2Fanon_client%2Fgen_local_123%2Fconcept-candidates%2F2.png";
+  const result = await persistConceptSelectionToSupabase(
+    "anon_client",
+    {
+      ...savedGeneration,
+      images: { ...savedGeneration.images, concept: candidateUrl },
+      updatedAt: "2026-07-13T00:00:00.000Z"
+    },
+    env,
+    fetchMock
+  );
+
+  assert.equal(result.skipped, false);
+  assert.equal(calls.some((call) => call.url.includes("/storage/v1/object/")), false);
+  const assetCall = calls.find((call) => call.url.includes("/generation_assets?on_conflict="));
+  const assetBody = JSON.parse(assetCall.options.body);
+  assert.equal(assetBody[0].asset_type, "concept");
+  assert.equal(assetBody[0].storage_path, "anonymous/anon_client/gen_local_123/concept-candidates/2.png");
+  assert.equal(assetBody[0].source_url, candidateUrl);
 });

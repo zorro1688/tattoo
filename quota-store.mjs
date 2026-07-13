@@ -487,10 +487,14 @@ export async function consumeLineworkCredit(clientId, generationId, linework, st
     nextQuota.totalRemaining = nextQuota.freeRemaining + nextQuota.paidRemaining;
 
     const updatedGeneration = applyLineworkToGeneration(generation, linework);
-    await persistLineworkToSupabase(clientId, updatedGeneration, nextQuota);
+    const persisted = await persistLineworkToSupabase(clientId, updatedGeneration, nextQuota);
+
+    if (!persisted.generation?.images?.linework) {
+      throw new Error("Linework could not be saved. Your credit was not used.");
+    }
 
     return {
-      generation: { ...updatedGeneration },
+      generation: persisted.generation,
       quota: nextQuota
     };
   }

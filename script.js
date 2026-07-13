@@ -76,6 +76,7 @@ let conceptCandidates = [];
 let selectedConceptIndex = 0;
 let selectedConceptPersistPromise = Promise.resolve();
 let selectedConceptPersistVersion = 0;
+let selectionSaving = false;
 let currentGenerationId = "";
 let isGenerating = false;
 let generationError = "";
@@ -665,7 +666,7 @@ async function downloadGenerationFile(type) {
   );
   const objectUrl = URL.createObjectURL(blob);
   triggerDownload(objectUrl, filename);
-  URL.revokeObjectURL(objectUrl);
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1200);
 
   if (!downloadAccess.highResolution) {
     billingNotice.textContent = downloadAccess.message;
@@ -826,6 +827,7 @@ function resetGeneratedResult() {
   generatedImages = {};
   conceptCandidates = [];
   selectedConceptIndex = 0;
+  selectionSaving = false;
   currentGenerationId = "";
   generationError = "";
   lineworkError = "";
@@ -952,6 +954,7 @@ function selectConceptCandidate(index) {
   selectedConceptIndex = index;
   const persistVersion = selectedConceptPersistVersion + 1;
   selectedConceptPersistVersion = persistVersion;
+  selectionSaving = true;
   generatedImages = {
     ...generatedImages,
     concept: candidate,
@@ -979,9 +982,10 @@ function selectConceptCandidate(index) {
       }
     })
     .catch((error) => {
-      if (persistVersion === selectedConceptPersistVersion) {
-        billingNotice.textContent = error.message ?? "Could not save selected concept.";
-      }
+      if (persistVersion === selectedConceptPersistVersion) { billingNotice.textContent = error.message ?? "Could not save selected concept."; }
+    })
+    .finally(() => {
+      if (persistVersion === selectedConceptPersistVersion) { selectionSaving = false; renderHeroPreview(); }
     });
 }
 
@@ -1075,8 +1079,8 @@ function renderHeroPreview() {
   renderConceptCandidates();
 
   if (downloadConceptButton) {
-    downloadConceptButton.disabled = (!generatedImages.concept && !blockingError) || isGenerating;
-    downloadConceptButton.textContent = blockingError
+    downloadConceptButton.disabled = (!generatedImages.concept && !blockingError) || isGenerating || selectionSaving;
+    downloadConceptButton.textContent = selectionSaving ? "Updating selection..." : blockingError
       ? "Try again"
       : downloadAccess.highResolution
         ? "Download high-res concept"
@@ -1092,7 +1096,7 @@ function renderHeroPreview() {
 
   if (heroLineworkAction) {
     const hasLinework = hasGeneratedLinework();
-    heroLineworkAction.disabled = !generated || lineworkGenerating || isGenerating;
+    heroLineworkAction.disabled = !generated || lineworkGenerating || isGenerating || selectionSaving;
     heroLineworkAction.textContent = lineworkGenerating
       ? "Creating stencil linework..."
       : lineworkError
@@ -1291,6 +1295,7 @@ function regenerateConcept() {
   generatedImages = {};
   conceptCandidates = [];
   selectedConceptIndex = 0;
+  selectionSaving = false;
   currentGenerationId = "";
   lineworkError = "";
   generate();

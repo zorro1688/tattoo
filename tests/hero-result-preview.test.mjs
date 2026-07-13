@@ -197,3 +197,19 @@ await run("homepage concept downloads wait for the selected candidate before cre
     assert.match(script, /params\.set\("downloadRevision",/);
   }
 });
+
+await run("homepage disables candidate-dependent actions while selection is saving", async () => {
+  const scripts = [
+    await readFile("script.js", "utf8"),
+    await readFile("public/script.js", "utf8")
+  ];
+
+  for (const script of scripts) {
+    assert.match(script, /let selectionSaving = false/);
+    assert.match(script, /selectionSaving = true/);
+    assert.match(script, /selectionSaving = false/);
+    assert.match(script, /Updating selection\.\.\./);
+    assert.match(script, /downloadConceptButton\.disabled = [^;]*selectionSaving/);
+    assert.match(script, /heroLineworkAction\.disabled = [^;]*selectionSaving/);
+  }
+});

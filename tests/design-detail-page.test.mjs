@@ -253,3 +253,16 @@ await run("design detail reloads saved linework without browser cache", async ()
     assert.match(script, /fetch\(`\/api\/generation\?id=\$\{encodeURIComponent\(generationId\)\}`, \{ cache: "no-store" \}\)/);
   }
 });
+
+await run("design detail shows linework progress and errors beside the linework action", async () => {
+  const html = await readFile("design.html", "utf8");
+  const scripts = [await readFile("design.js", "utf8"), await readFile("public/design.js", "utf8")];
+
+  assert.match(html, /id="detailLineworkStatus"/);
+  for (const source of scripts) {
+    assert.match(source, /const detailLineworkStatus/);
+    assert.match(source, /detailLineworkStatus.textContent = "Creating stencil linework..."/);
+    assert.match(source, /detailLineworkStatus.textContent = "Linework ready."/);
+    assert.match(source, /await readJsonResponse\(response\)/);
+  }
+});
