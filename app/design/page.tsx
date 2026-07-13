@@ -12,6 +12,7 @@ export default function DesignPage() {
   return (
     <>
       <div dangerouslySetInnerHTML={{ __html: getStaticDesignMarkup() }} />
+      <script src="/generation-state.js" defer />
       <script src="/design.js" defer />
     </>
   );

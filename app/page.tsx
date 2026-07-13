@@ -32,6 +32,7 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       <div dangerouslySetInnerHTML={{ __html: getStaticHomepageMarkup() }} />
+      <script src="/generation-state.js" defer />
       <script src="/script.js" defer />
     </>
   );
