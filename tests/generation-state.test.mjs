@@ -60,3 +60,24 @@ await run("public state module matches the root module", async () => {
     rootApi.resolveAssetState({ assetUrl: "https://storage/linework.png" })
   );
 });
+
+await run("static pages load generation state before their page scripts", async () => {
+  const indexHtml = await readFile("index.html", "utf8");
+  const designHtml = await readFile("design.html", "utf8");
+
+  assert.ok(indexHtml.indexOf('src="generation-state.js"') < indexHtml.indexOf('src="script.js"'));
+  assert.ok(designHtml.indexOf('src="generation-state.js"') < designHtml.indexOf('src="design.js"'));
+});
+
+await run("Next pages strip embedded state scripts and load one ordered public copy", async () => {
+  const homePage = await readFile("app/page.tsx", "utf8");
+  const designPage = await readFile("app/design/page.tsx", "utf8");
+
+  for (const page of [homePage, designPage]) {
+    assert.match(page, /generation-state\\\.js/);
+    assert.equal((page.match(/src="\/generation-state\.js"/g) ?? []).length, 1);
+  }
+
+  assert.ok(homePage.indexOf('src="/generation-state.js"') < homePage.indexOf('src="/script.js"'));
+  assert.ok(designPage.indexOf('src="/generation-state.js"') < designPage.indexOf('src="/design.js"'));
+});

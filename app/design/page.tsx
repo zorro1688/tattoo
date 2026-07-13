@@ -5,7 +5,10 @@ function getStaticDesignMarkup() {
   const html = readFileSync(join(process.cwd(), "design.html"), "utf8");
   const body = html.match(/<body>([\s\S]*?)<\/body>/i)?.[1] ?? "";
 
-  return body.replace(/<script\s+src="design\.js"><\/script>/i, "").trim();
+  return body
+    .replace(/\s*<script\s+src="generation-state\.js"><\/script>/i, "")
+    .replace(/<script\s+src="design\.js"><\/script>/i, "")
+    .trim();
 }
 
 export default function DesignPage() {
