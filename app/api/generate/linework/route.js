@@ -2,6 +2,7 @@ export const maxDuration = 60;
 
 import { NextResponse } from "next/server";
 import { createLineworkGeneration } from "../../../../generation-core.mjs";
+import { createSignedConceptUrlForLinework } from "../../../../supabase-store.mjs";
 import {
   buildClientCookie,
   consumeLineworkCredit,
@@ -49,7 +50,18 @@ export async function POST(request) {
     );
   }
 
-    const linework = await createLineworkGeneration(savedGeneration);
+    const signedConceptUrl = await createSignedConceptUrlForLinework(
+      session.ownerId,
+      savedGeneration.images?.concept
+    );
+    const lineworkGeneration = {
+      ...savedGeneration,
+      images: {
+        ...savedGeneration.images,
+        concept: signedConceptUrl
+      }
+    };
+    const linework = await createLineworkGeneration(lineworkGeneration);
 
     if ("error" in linework) {
     return json(linework, 501, session);

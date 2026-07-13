@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import sharp from "sharp";
 import {
+  createSignedConceptUrlForLinework,
   fetchOwnedStorageImage,
   getDownloadAccessFromSupabase,
   getGenerationFromSupabase,
@@ -54,6 +55,48 @@ const savedGeneration = {
   createdAt: "2026-06-17T00:00:00.000Z"
 };
 
+await run("private concept images get a short-lived signed URL for Replicate linework", async () => {
+  const calls = [];
+  const sourceUrl = "/api/storage-image?path=anonymous%2Fanon_client%2Fgen_local_123%2Fconcept-candidates%2F2.png";
+  const signedUrl = await createSignedConceptUrlForLinework(
+    "anon_client",
+    sourceUrl,
+    env,
+    async (url, options = {}) => {
+      calls.push({ url, options });
+      return {
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify({
+          signedURL: "/object/sign/inkfirst-designs/anonymous/anon_client/gen_local_123/concept-candidates/2.png?token=signed-token"
+        })
+      };
+    }
+  );
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].options.method, "POST");
+  assert.deepEqual(JSON.parse(calls[0].options.body), { expiresIn: 300 });
+  assert.match(calls[0].url, /\/storage\/v1\/object\/sign\/inkfirst-designs\/anonymous\/anon_client\/gen_local_123\/concept-candidates\/2\.png$/);
+  assert.equal(
+    signedUrl,
+    "http://127.0.0.1:54321/storage/v1/object/sign/inkfirst-designs/anonymous/anon_client/gen_local_123/concept-candidates/2.png?token=signed-token"
+  );
+});
+
+await run("linework signing rejects a concept image owned by another account", async () => {
+  await assert.rejects(
+    createSignedConceptUrlForLinework(
+      "anon_client",
+      "/api/storage-image?path=anonymous%2Fother_client%2Fgen_local_123%2Fconcept-candidates%2F1.png",
+      env,
+      async () => {
+        throw new Error("fetch should not run");
+      }
+    ),
+    /does not belong to this account/
+  );
+});
 function createFetchMock() {
   const calls = [];
   const fetchMock = async (url, options = {}) => {

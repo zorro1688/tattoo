@@ -186,6 +186,16 @@ await run("generation APIs return saved Storage image URLs and expose a private 
   assert.match(storageRoute, /Cache-Control/);
 });
 
+await run("linework APIs sign private Storage concept images before calling Replicate", async () => {
+  const nextRoute = await readFile("app/api/generate/linework/route.js", "utf8");
+  const staticServer = await readFile("server.mjs", "utf8");
+
+  for (const source of [nextRoute, staticServer]) {
+    assert.match(source, /createSignedConceptUrlForLinework/);
+    assert.match(source, /lineworkGeneration/);
+    assert.match(source, /createLineworkGeneration\(lineworkGeneration\)/);
+  }
+});
 await run("homepage concept downloads wait for the selected candidate before creating a file", async () => {
   const scripts = [
     await readFile("script.js", "utf8"),

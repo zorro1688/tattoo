@@ -74,6 +74,7 @@ function getSupabaseConfig(env = process.env) {
   }
 
   return {
+    projectUrl: url.replace(/\/$/, ""),
     restUrl: `${url.replace(/\/$/, "")}/rest/v1`,
     key,
     bucket: env.SUPABASE_STORAGE_BUCKET || "inkfirst-designs"
@@ -219,6 +220,62 @@ export function storagePathFromAppImageUrl(sourceUrl = "") {
   }
 }
 
+export async function createSignedConceptUrlForLinework(owner, sourceUrl, env = process.env, fetchImpl = fetch) {
+  if (/^https?:\/\//i.test(String(sourceUrl ?? ""))) {
+    return sourceUrl;
+  }
+
+  const storagePath = storagePathFromAppImageUrl(sourceUrl);
+
+  if (!storagePath) {
+    return sourceUrl;
+  }
+
+  const config = getSupabaseConfig(env);
+
+  if (!config) {
+    throw new Error("Supabase storage is not configured for linework generation.");
+  }
+
+  const allowedPrefix = `${storagePrefixForOwner(owner)}/`;
+
+  if (!storagePath.startsWith(allowedPrefix)) {
+    throw new Error("The saved concept image does not belong to this account.");
+  }
+
+  const encodedPath = storagePath
+    .split("/")
+    .map((part) => encodeURIComponent(part))
+    .join("/");
+  const response = await fetchImpl(
+    `${config.projectUrl}/storage/v1/object/sign/${encodeURIComponent(config.bucket)}/${encodedPath}`,
+    {
+      method: "POST",
+      headers: {
+        apikey: config.key,
+        Authorization: `Bearer ${config.key}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ expiresIn: 300 })
+    }
+  );
+  const text = await response.text();
+  const body = text ? JSON.parse(text) : {};
+
+  if (!response.ok) {
+    throw new Error(body?.message || body?.error || text || "Could not prepare the saved concept image for linework generation.");
+  }
+
+  const signedPath = body.signedURL || body.signedUrl;
+
+  if (!signedPath) {
+    throw new Error("Supabase did not return a signed concept image URL.");
+  }
+
+  return /^https?:\/\//i.test(signedPath)
+    ? signedPath
+    : `${config.projectUrl}/storage/v1${signedPath.startsWith("/") ? signedPath : `/${signedPath}`}`;
+}
 async function fetchStorageObjectByPath(config, bucket, storagePath, fetchImpl = fetch) {
   const response = await fetchImpl(storageObjectUrl(config, bucket, storagePath), {
     headers: {

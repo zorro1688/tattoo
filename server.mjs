@@ -32,7 +32,7 @@ import {
   mergeLocalAnonymousClientIntoUser,
   recordBillingEvent
 } from "./quota-store.mjs";
-import { fetchOwnedStorageImage, mergeAnonymousClientIntoUser } from "./supabase-store.mjs";
+import { createSignedConceptUrlForLinework, fetchOwnedStorageImage, mergeAnonymousClientIntoUser } from "./supabase-store.mjs";
 
 function loadLocalEnv() {
   const envPath = join(process.cwd(), ".env.local");
@@ -447,7 +447,18 @@ const server = createServer(async (request, response) => {
         return;
       }
 
-      const linework = await createLineworkGeneration(savedGeneration);
+      const signedConceptUrl = await createSignedConceptUrlForLinework(
+        session.ownerId,
+        savedGeneration.images?.concept
+      );
+      const lineworkGeneration = {
+        ...savedGeneration,
+        images: {
+          ...savedGeneration.images,
+          concept: signedConceptUrl
+        }
+      };
+      const linework = await createLineworkGeneration(lineworkGeneration);
 
       if (linework.error) {
         writeJson(response, 502, { ...linework, quota }, cookieHeaders);
