@@ -310,6 +310,31 @@ await run("Supabase-backed generation does not write local store when quota row 
         return Response.json([{ id: "00000000-0000-4000-8000-000000000001" }]);
       }
 
+      if (String(url).includes("/generations?") && (options.method ?? "GET") === "GET") {
+        return Response.json([{
+          id: "00000000-0000-4000-8000-000000000001",
+          local_generation_id: "provider_123",
+          provider_generation_id: "provider_123",
+          provider: "replicate",
+          model: "model",
+          status: "succeeded",
+          prompt: "fine line tattoo",
+          placement_note: "Forearm guidance",
+          input_idea: input.idea,
+          input_style: input.style,
+          input_placement: input.placement,
+          input_size: input.size,
+          input_complexity: input.complexity,
+          created_at: generation.createdAt,
+          updated_at: generation.createdAt,
+          generation_assets: [{
+            asset_type: "concept",
+            storage_bucket: "inkfirst-designs",
+            storage_path: "anonymous/client-supabase/provider_123/concept.png",
+            source_url: "/api/storage-image?path=anonymous%2Fclient-supabase%2Fprovider_123%2Fconcept.png"
+          }]
+        }]);
+      }
       return new Response("null", { status: 200 });
     };
 

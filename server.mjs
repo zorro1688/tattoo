@@ -396,6 +396,7 @@ const server = createServer(async (request, response) => {
         200,
         {
           ...generation,
+          status: "ready",
           images: saved.generation.images ?? generation.images,
           conceptCandidates: saved.generation.conceptCandidates ?? generation.conceptCandidates,
           savedGenerationId: saved.generation.id,
@@ -403,8 +404,8 @@ const server = createServer(async (request, response) => {
         },
         cookieHeaders
       );
-    } catch {
-      writeJson(response, 400, { error: "Invalid generation request." });
+    } catch (error) {
+      writeJson(response, 500, { error: error.message ?? "Could not complete generation. Please try again." });
     }
     return;
   }
@@ -472,13 +473,14 @@ const server = createServer(async (request, response) => {
         200,
         {
           ...linework,
+          lineworkStatus: "ready",
           generation: updated.generation,
           quota: updated.quota
         },
         cookieHeaders
       );
     } catch (error) {
-      writeJson(response, 400, { error: error.message ?? "Invalid linework request." });
+      writeJson(response, 500, { error: error.message ?? "Could not complete generation. Please try again." });
     }
     return;
   }

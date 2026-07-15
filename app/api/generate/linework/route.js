@@ -72,6 +72,7 @@ export async function POST(request) {
     return json(
     {
       ...linework,
+      lineworkStatus: "ready",
       generation: updated.generation,
       quota: updated.quota
     },

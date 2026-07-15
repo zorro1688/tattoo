@@ -569,8 +569,6 @@ export async function persistGenerationToSupabase(clientId, savedGeneration, quo
     return { skipped: true };
   }
 
-  await upsertOwnerCredits(clientId, quota, env, fetchImpl);
-
   const payload = {
     local_generation_id: savedGeneration.id,
     ...ownerGenerationPayload(clientId),
@@ -607,7 +605,19 @@ export async function persistGenerationToSupabase(clientId, savedGeneration, quo
     });
   }
 
-  return { skipped: false, generationId: supabaseGeneration?.id };
+  const verified = await getGenerationFromSupabase(clientId, savedGeneration.id, env, fetchImpl);
+
+  if (!verified.generation?.images?.concept) {
+    throw new Error("Concept could not be verified after saving.");
+  }
+
+  await upsertOwnerCredits(clientId, quota, env, fetchImpl);
+
+  return {
+    skipped: false,
+    generationId: supabaseGeneration?.id,
+    generation: verified.generation
+  };
 }
 
 export async function persistPlacementAdjustmentToSupabase(clientId, generationId, placementAdjustment, env = process.env, fetchImpl = fetch) {
