@@ -82,7 +82,7 @@ let conceptPhase = "idle";
 let isGenerating = false;
 let generationError = "";
 let lineworkError = "";
-let lineworkGenerating = false;
+let lineworkPhase = "not_generated";
 let pendingCheckoutPlan = "";
 let downloadAccess = {
   highResolution: false,
@@ -542,16 +542,36 @@ function hasGeneratedLinework() {
   return Boolean(getGeneratedImage("linework"));
 }
 
+function getLineworkState() {
+  return window.InkFirstGenerationState.resolveAssetState({
+    phase: lineworkPhase,
+    assetUrl: getGeneratedImage("linework"),
+    failed: lineworkPhase === "failed" || Boolean(lineworkError),
+    defaultAsset: defaultHeroImages.linework,
+    emptyState: "not_generated"
+  });
+}
+
+function isLineworkBusy() {
+  return window.InkFirstGenerationState.isBusy(getLineworkState());
+}
+
 function getLineworkCopy() {
-  if (lineworkGenerating) {
+  const lineworkState = getLineworkState();
+
+  if (lineworkState === "generating") {
     return "Creating stencil linework from your generated concept. This uses 1 generation credit.";
   }
 
-  if (lineworkError) {
+  if (lineworkState === "saving") {
+    return "Saving linework...";
+  }
+
+  if (lineworkState === "failed") {
     return lineworkError;
   }
 
-  if (generated && hasGeneratedLinework()) {
+  if (generated && lineworkState === "ready") {
     return "Linework ready. Download it as a cleaner stencil-style reference for your tattoo artist.";
   }
 
@@ -850,7 +870,7 @@ function resetGeneratedResult() {
   conceptPhase = "idle";
   generationError = "";
   lineworkError = "";
-  lineworkGenerating = false;
+  lineworkPhase = "not_generated";
 }
 
 function normalizeDataValue(value = "") {
@@ -985,6 +1005,7 @@ function selectConceptCandidate(index) {
     placement: undefined
   };
   lineworkError = "";
+  lineworkPhase = "not_generated";
   heroMode = "concept";
   renderHeroPreview();
   selectedConceptPersistPromise = selectedConceptPersistPromise
@@ -1014,6 +1035,8 @@ function selectConceptCandidate(index) {
 
 function renderHeroPreview() {
   const conceptBusy = isGenerationBusy();
+  const lineworkState = getLineworkState();
+  const lineworkBusy = isLineworkBusy();
   const modeCopy = {
     concept: {
       label: "Concept",
@@ -1048,7 +1071,7 @@ function renderHeroPreview() {
   const blockingError = Boolean(generationError && !generated);
 
   heroPreviewPanel.classList.add(`mode-${heroMode}`);
-  heroPreviewPanel.classList.toggle("is-generating", conceptBusy || lineworkGenerating);
+  heroPreviewPanel.classList.toggle("is-generating", conceptBusy || lineworkBusy);
   heroPreviewPanel.classList.toggle("is-error", blockingError);
   heroPreviewPanel.classList.toggle("is-generated", generated);
   heroModeLabel.textContent = state.label;
@@ -1115,17 +1138,19 @@ function renderHeroPreview() {
   }
 
   if (regenerateConceptButton) {
-    regenerateConceptButton.disabled = conceptBusy || lineworkGenerating || quota <= 0;
+    regenerateConceptButton.disabled = conceptBusy || lineworkBusy || quota <= 0;
     regenerateConceptButton.textContent = conceptBusy ? "Regenerating concept..." : "Regenerate concept";
     regenerateConceptButton.title = quota <= 0 ? "Upgrade to generate more concept options" : "Create another concept with the same settings";
   }
 
   if (heroLineworkAction) {
-    const hasLinework = hasGeneratedLinework();
-    heroLineworkAction.disabled = !generated || lineworkGenerating || conceptBusy || selectionSaving;
-    heroLineworkAction.textContent = lineworkGenerating
+    const hasLinework = lineworkState === "ready";
+    heroLineworkAction.disabled = !generated || lineworkBusy || conceptBusy || selectionSaving;
+    heroLineworkAction.textContent = lineworkState === "generating"
       ? "Creating stencil linework..."
-      : lineworkError
+      : lineworkState === "saving"
+        ? "Saving linework..."
+      : lineworkState === "failed"
         ? "Try linework again"
       : hasLinework
         ? downloadAccess.highResolution
@@ -1270,6 +1295,7 @@ async function generate() {
   isGenerating = true;
   generationError = "";
   lineworkError = "";
+  lineworkPhase = "not_generated";
   heroMode = "concept";
   renderHeroPreview();
   updateQuota();
@@ -1304,6 +1330,7 @@ async function generate() {
     generatedPrompt = data.prompt ?? buildPrompt();
     generatedPlacementNote = data.placementNote ?? getPlacementGuidance();
     generatedImages = data.images ?? {};
+    lineworkPhase = getGeneratedImage("linework") ? "ready" : "not_generated";
     conceptCandidates = data.conceptCandidates ?? (generatedImages.concept ? [generatedImages.concept] : []);
     selectedConceptIndex = 0;
     currentGenerationId = data.savedGenerationId ?? "";
@@ -1326,7 +1353,7 @@ async function generate() {
 
 
 function regenerateConcept() {
-  if (isGenerationBusy() || lineworkGenerating) {
+  if (isGenerationBusy() || isLineworkBusy()) {
     return;
   }
 
@@ -1337,11 +1364,12 @@ function regenerateConcept() {
   selectionSaving = false;
   currentGenerationId = "";
   lineworkError = "";
+  lineworkPhase = "not_generated";
   generate();
 }
 
 async function generateLinework() {
-  if (!generated || !currentGenerationId || hasGeneratedLinework() || lineworkGenerating) {
+  if (!generated || !currentGenerationId || hasGeneratedLinework() || isLineworkBusy()) {
     return;
   }
 
@@ -1351,7 +1379,7 @@ async function generateLinework() {
   }
 
   lineworkError = "";
-  lineworkGenerating = true;
+  lineworkPhase = "generating";
   heroMode = "linework";
   linework = true;
   renderHeroPreview();
@@ -1375,6 +1403,9 @@ async function generateLinework() {
     if (!response.ok) {
       throw new Error(data.error ?? "Could not create linework. Try again.");
     }
+    lineworkPhase = "saving";
+    renderHeroPreview();
+    promptPreview.innerHTML = "<strong>Prompt preview:</strong> Saving linework...";
 
     generatedImages = {
       ...generatedImages,
@@ -1382,15 +1413,19 @@ async function generateLinework() {
       linework: data.images?.linework ?? data.generation?.images?.linework ?? generatedImages.linework
     };
     generatedPrompt = data.prompt ?? generatedPrompt;
+    if (!getGeneratedImage("linework")) {
+      throw new Error("Linework was created but could not be saved. Try again.");
+    }
     generationError = "";
     lineworkError = "";
     renderHeroPreview();
     renderConcepts();
+    lineworkPhase = "ready";
   } catch (error) {
     lineworkError = error.message ?? "Could not create linework. Try again.";
     promptPreview.innerHTML = `<strong>Prompt preview:</strong> ${escapeHtml(error.message ?? "Could not create linework. Try again.")}`;
+    lineworkPhase = "failed";
   } finally {
-    lineworkGenerating = false;
     updateQuota();
     renderHeroPreview();
   }

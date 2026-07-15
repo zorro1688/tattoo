@@ -266,3 +266,21 @@ await run("design detail shows linework progress and errors beside the linework 
     assert.match(source, /await readJsonResponse\(response\)/);
   }
 });
+
+await run("design detail restores and retries normalized linework states", async () => {
+  const script = await readFile("design.js", "utf8");
+  const publicScript = await readFile("public/design.js", "utf8");
+
+  for (const source of [script, publicScript]) {
+    assert.match(source, /let lineworkPhase = "not_generated"/);
+    assert.match(source, /function getLineworkState\(design = currentDesign\)/);
+    assert.match(source, /lineworkPhase = lineworkReady \? "ready" : "not_generated"/);
+    assert.match(source, /lineworkPhase = "generating"/);
+    assert.match(source, /lineworkPhase = "saving"/);
+    assert.match(source, /lineworkPhase = "ready"/);
+    assert.match(source, /lineworkPhase = "failed"/);
+    assert.match(source, /Saving linework\.\.\./);
+    assert.match(source, /Try linework again/);
+    assert.match(source, /if \(!currentDesign \|\| detailLineworkButton\.disabled \|\| isLineworkBusy\(\)\)/);
+  }
+});

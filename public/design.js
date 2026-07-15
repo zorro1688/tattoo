@@ -206,6 +206,8 @@ let currentPlacementAdjustment = null;
 let placementDragActive = false;
 let placementPointerId = null;
 let placementDragOffset = { x: 0, y: 0 };
+let lineworkPhase = "not_generated";
+let lineworkError = "";
 let downloadAccess = {
   highResolution: false,
   watermarked: true,
@@ -259,6 +261,20 @@ function hasGeneratedLinework(design = currentDesign) {
     design?.lineworkProviderGenerationId ||
       (linework && !isDefaultLineworkAsset(linework))
   );
+}
+
+function getLineworkState(design = currentDesign) {
+  return window.InkFirstGenerationState.resolveAssetState({
+    phase: lineworkPhase,
+    assetUrl: design?.images?.linework ?? "",
+    failed: lineworkPhase === "failed" || Boolean(lineworkError),
+    defaultAsset: "assets/hero-linework.png",
+    emptyState: "not_generated"
+  });
+}
+
+function isLineworkBusy() {
+  return window.InkFirstGenerationState.isBusy(getLineworkState());
 }
 
 function triggerDownload(url, filename) {
@@ -674,6 +690,8 @@ async function downloadPlacementPreview() {
 function renderDownloadAccessActions(lineworkReady) {
   const hasHighResolution = downloadAccess.highResolution;
   const upgradeLinks = [detailUpgradeConcept, detailUpgradePlacement];
+  const lineworkState = getLineworkState();
+  const lineworkBusy = isLineworkBusy();
 
   detailDownloadConcept.textContent = hasHighResolution
     ? "Download high-res"
@@ -683,12 +701,19 @@ function renderDownloadAccessActions(lineworkReady) {
     ? "Download high-res"
     : "Download watermarked";
   detailDownloadPlacement.title = hasHighResolution ? "" : downloadAccess.message;
-  detailLineworkButton.textContent = lineworkReady
-    ? hasHighResolution
-      ? "Download high-res"
-      : "Download watermarked"
-    : "Generate linework";
+  if (lineworkState === "generating") {
+    detailLineworkButton.textContent = "Creating stencil linework...";
+  } else if (lineworkState === "saving") {
+    detailLineworkButton.textContent = "Saving linework...";
+  } else if (lineworkState === "failed") {
+    detailLineworkButton.textContent = "Try linework again";
+  } else if (lineworkState === "ready") {
+    detailLineworkButton.textContent = hasHighResolution ? "Download high-res" : "Download watermarked";
+  } else {
+    detailLineworkButton.textContent = "Generate linework";
+  }
   detailLineworkButton.title = lineworkReady && !hasHighResolution ? downloadAccess.message : "";
+  detailLineworkButton.disabled = lineworkBusy;
 
   if (lineworkReady) {
     upgradeLinks.push(detailUpgradeLinework);
@@ -714,6 +739,12 @@ function renderDesign(design) {
   const title = formatDesignTitle(design);
   const conceptImage = design.images?.concept || "assets/hero-concept.png";
   const lineworkReady = hasGeneratedLinework(design);
+  if (!isLineworkBusy()) {
+    lineworkPhase = lineworkReady ? "ready" : "not_generated";
+    lineworkError = "";
+  }
+  const lineworkState = getLineworkState(design);
+
   const lineworkImage = lineworkReady ? design.images?.linework : "";
   const tattooImage = lineworkReady ? lineworkImage : conceptImage;
 
@@ -728,6 +759,17 @@ function renderDesign(design) {
   }
   detailLineworkImage.alt = lineworkReady ? `${title} linework` : "Linework not generated yet";
   detailPlacementTattoo.alt = `${title} placement preview`;
+  if (lineworkState === "generating") {
+    detailLineworkStatus.textContent = "Creating stencil linework...";
+  } else if (lineworkState === "saving") {
+    detailLineworkStatus.textContent = "Saving linework...";
+  } else if (lineworkState === "failed") {
+    detailLineworkStatus.textContent = lineworkError;
+  } else if (lineworkState === "ready") {
+    detailLineworkStatus.textContent = "Linework ready.";
+  } else {
+    detailLineworkStatus.textContent = "Linework has not been generated yet.";
+  }
   const selectedPlacement = normalizeDataValue(design.input?.placement ?? "Forearm");
   detailPlacementMockup.dataset.placement = selectedPlacement;
   detailPlacementMockup.dataset.size = normalizeDataValue(design.input?.size ?? "Small");
@@ -749,7 +791,7 @@ function renderDesign(design) {
 
   detailDownloadConcept.disabled = !design.images?.concept;
   detailDownloadPlacement.disabled = false;
-  detailLineworkButton.disabled = false;
+  detailLineworkButton.disabled = isLineworkBusy();
   if (savePlacementButton) {
     savePlacementButton.disabled = false;
   }
@@ -757,7 +799,9 @@ function renderDesign(design) {
     resetPlacementButton.disabled = false;
   }
   renderDownloadAccessActions(lineworkReady);
-  designStatus.textContent = "Saved design loaded.";
+  if (!isLineworkBusy()) {
+    designStatus.textContent = lineworkState === "ready" ? "Linework ready." : "Saved design loaded.";
+  }
 }
 
 function renderError(message) {
@@ -776,7 +820,7 @@ async function loadDesign() {
 
   try {
     const response = await fetch(`/api/generation?id=${encodeURIComponent(generationId)}`, { cache: "no-store" });
-    const data = await response.json();
+    const data = await readJsonResponse(response);
 
     if (!response.ok) {
       throw new Error(data.error ?? "Could not load saved design.");
@@ -866,7 +910,7 @@ async function startUpgradeCheckout(event) {
 }
 
 async function generateLinework() {
-  if (!currentDesign || detailLineworkButton.disabled) {
+  if (!currentDesign || detailLineworkButton.disabled || isLineworkBusy()) {
     return;
   }
 
@@ -875,6 +919,8 @@ async function generateLinework() {
     return;
   }
 
+  lineworkError = "";
+  lineworkPhase = "generating";
   detailLineworkButton.disabled = true;
   detailLineworkButton.textContent = "Creating stencil linework...";
   designStatus.textContent = "Creating stencil linework. This uses 1 generation credit.";
@@ -896,14 +942,27 @@ async function generateLinework() {
     if (!response.ok) {
       throw new Error(data.error ?? "Could not create linework.");
     }
+    lineworkPhase = "saving";
+    detailLineworkButton.textContent = "Saving linework...";
+    designStatus.textContent = "Saving linework...";
+    detailLineworkStatus.textContent = "Saving linework...";
 
-    renderDesign(data.generation);
+    const savedLinework = data.generation?.images?.linework ?? "";
+    if (!savedLinework || isDefaultLineworkAsset(savedLinework)) {
+      throw new Error("Linework was created but could not be saved. Try again.");
+    }
+    currentDesign = data.generation;
+    lineworkPhase = "ready";
+    lineworkError = "";
+    renderDesign(currentDesign);
     designStatus.textContent = "Linework ready.";
     detailLineworkStatus.textContent = "Linework ready.";
   } catch (error) {
-    detailLineworkButton.disabled = false;
-    detailLineworkButton.textContent = "Generate linework";
     const message = error.message ?? "Could not create linework.";
+    lineworkPhase = "failed";
+    lineworkError = message;
+    detailLineworkButton.disabled = false;
+    detailLineworkButton.textContent = "Try linework again";
     designStatus.textContent = message;
     detailLineworkStatus.textContent = message;
   }

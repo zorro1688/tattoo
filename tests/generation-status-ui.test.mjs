@@ -38,3 +38,17 @@ await run("root and public homepage scripts stay identical", async () => {
 
   assert.equal(publicCopy, root);
 });
+
+await run("homepage linework uses normalized lifecycle phases", async () => {
+  const script = await readFile("script.js", "utf8");
+
+  assert.match(script, /let lineworkPhase = "not_generated"/);
+  assert.match(script, /lineworkPhase = "generating"/);
+  assert.match(script, /lineworkPhase = "saving"/);
+  assert.match(script, /lineworkPhase = "ready"/);
+  assert.match(script, /lineworkPhase = "failed"/);
+  assert.match(script, /function getLineworkState\(\)/);
+  assert.match(script, /function isLineworkBusy\(\)/);
+  assert.match(script, /Saving linework\.\.\./);
+  assert.match(script, /if \(!generated \|\| !currentGenerationId \|\| hasGeneratedLinework\(\) \|\| isLineworkBusy\(\)\)/);
+});
