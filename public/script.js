@@ -78,6 +78,7 @@ let selectedConceptPersistPromise = Promise.resolve();
 let selectedConceptPersistVersion = 0;
 let selectionSaving = false;
 let currentGenerationId = "";
+let conceptPhase = "idle";
 let isGenerating = false;
 let generationError = "";
 let lineworkError = "";
@@ -484,11 +485,28 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function getConceptState() {
+  return window.InkFirstGenerationState.resolveAssetState({
+    phase: conceptPhase,
+    assetUrl: generatedImages.concept,
+    failed: conceptPhase === "failed",
+    defaultAsset: defaultHeroImages.concept,
+    emptyState: "idle"
+  });
+}
+
+function isGenerationBusy() {
+  return window.InkFirstGenerationState.isBusy(getConceptState());
+}
+
 function updateQuota() {
+  const conceptBusy = isGenerationBusy();
   quotaLabel.textContent = `${quota} generation${quota === 1 ? "" : "s"} available`;
-  generateButton.disabled = isGenerating;
-  generateButton.textContent = isGenerating
+  generateButton.disabled = conceptBusy;
+  generateButton.textContent = conceptPhase === "generating"
     ? "Generating your tattoo..."
+    : conceptPhase === "saving"
+      ? "Saving your designs..."
     : quota <= 0
       ? "Upgrade to Generate More"
       : "Generate Tattoo Ideas";
@@ -829,6 +847,7 @@ function resetGeneratedResult() {
   selectedConceptIndex = 0;
   selectionSaving = false;
   currentGenerationId = "";
+  conceptPhase = "idle";
   generationError = "";
   lineworkError = "";
   lineworkGenerating = false;
@@ -908,6 +927,7 @@ function renderConceptCandidates() {
     return;
   }
 
+  const conceptBusy = isGenerationBusy();
   const candidates = conceptCandidates.length ? conceptCandidates : generatedImages.concept ? [generatedImages.concept] : [];
   conceptCandidateStrip.hidden = !generated || candidates.length <= 1;
   conceptCandidateStrip.innerHTML = candidates
@@ -918,6 +938,9 @@ function renderConceptCandidates() {
       </button>
     `)
     .join("");
+  conceptCandidateStrip.querySelectorAll(".concept-candidate").forEach((candidate) => {
+    candidate.disabled = conceptBusy;
+  });
 }
 
 async function persistSelectedConcept(url) {
@@ -990,6 +1013,7 @@ function selectConceptCandidate(index) {
 }
 
 function renderHeroPreview() {
+  const conceptBusy = isGenerationBusy();
   const modeCopy = {
     concept: {
       label: "Concept",
@@ -1024,14 +1048,16 @@ function renderHeroPreview() {
   const blockingError = Boolean(generationError && !generated);
 
   heroPreviewPanel.classList.add(`mode-${heroMode}`);
-  heroPreviewPanel.classList.toggle("is-generating", isGenerating || lineworkGenerating);
+  heroPreviewPanel.classList.toggle("is-generating", conceptBusy || lineworkGenerating);
   heroPreviewPanel.classList.toggle("is-error", blockingError);
   heroPreviewPanel.classList.toggle("is-generated", generated);
   heroModeLabel.textContent = state.label;
   heroPreviewTitle.textContent = state.title;
-  heroPreviewCopy.textContent = isGenerating
+  heroPreviewCopy.textContent = conceptPhase === "generating"
     ? "Generating your tattoo..."
-    : blockingError
+    : conceptPhase === "saving"
+      ? "Saving your designs..."
+      : blockingError
       ? generationError
       : heroMode === "linework" && lineworkError
         ? lineworkError
@@ -1079,7 +1105,7 @@ function renderHeroPreview() {
   renderConceptCandidates();
 
   if (downloadConceptButton) {
-    downloadConceptButton.disabled = (!generatedImages.concept && !blockingError) || isGenerating || selectionSaving;
+    downloadConceptButton.disabled = (!generatedImages.concept && !blockingError) || conceptBusy || selectionSaving;
     downloadConceptButton.textContent = selectionSaving ? "Updating selection..." : blockingError
       ? "Try again"
       : downloadAccess.highResolution
@@ -1089,14 +1115,14 @@ function renderHeroPreview() {
   }
 
   if (regenerateConceptButton) {
-    regenerateConceptButton.disabled = isGenerating || lineworkGenerating || quota <= 0;
-    regenerateConceptButton.textContent = isGenerating ? "Regenerating concept..." : "Regenerate concept";
+    regenerateConceptButton.disabled = conceptBusy || lineworkGenerating || quota <= 0;
+    regenerateConceptButton.textContent = conceptBusy ? "Regenerating concept..." : "Regenerate concept";
     regenerateConceptButton.title = quota <= 0 ? "Upgrade to generate more concept options" : "Create another concept with the same settings";
   }
 
   if (heroLineworkAction) {
     const hasLinework = hasGeneratedLinework();
-    heroLineworkAction.disabled = !generated || lineworkGenerating || isGenerating || selectionSaving;
+    heroLineworkAction.disabled = !generated || lineworkGenerating || conceptBusy || selectionSaving;
     heroLineworkAction.textContent = lineworkGenerating
       ? "Creating stencil linework..."
       : lineworkError
@@ -1118,7 +1144,7 @@ function renderHeroPreview() {
   }
 
   if (downloadPlacementButton) {
-    downloadPlacementButton.disabled = !generated || isGenerating;
+    downloadPlacementButton.disabled = !generated || conceptBusy;
     downloadPlacementButton.textContent = downloadAccess.highResolution
       ? "Download high-res placement"
       : "Download watermarked placement";
@@ -1224,6 +1250,10 @@ function downloadConcept(index) {
 }
 
 async function generate() {
+  if (isGenerationBusy()) {
+    return;
+  }
+
   if (quota <= 0) {
     billingNotice.textContent = "Free quota is used up. Upgrade to unlock more tattoo ideas.";
     document.querySelector("#pricing")?.scrollIntoView({ behavior: "smooth" });
@@ -1236,6 +1266,7 @@ async function generate() {
     return;
   }
 
+  conceptPhase = "generating";
   isGenerating = true;
   generationError = "";
   lineworkError = "";
@@ -1266,6 +1297,9 @@ async function generate() {
       throw new Error(data.error ?? "Generation failed.");
     }
 
+    conceptPhase = "saving";
+    renderHeroPreview();
+    updateQuota();
     generated = true;
     generatedPrompt = data.prompt ?? buildPrompt();
     generatedPlacementNote = data.placementNote ?? getPlacementGuidance();
@@ -1273,9 +1307,14 @@ async function generate() {
     conceptCandidates = data.conceptCandidates ?? (generatedImages.concept ? [generatedImages.concept] : []);
     selectedConceptIndex = 0;
     currentGenerationId = data.savedGenerationId ?? "";
+    if (!currentGenerationId || !generatedImages.concept || isDefaultHeroImage("concept", generatedImages.concept)) {
+      throw new Error("Generated concept was not saved. Please try again.");
+    }
+    conceptPhase = "ready";
     renderConcepts();
     renderPrompt();
   } catch (error) {
+    conceptPhase = "failed";
     generationError = error.message ?? "Generation failed. Try again.";
     promptPreview.innerHTML = `<strong>Prompt preview:</strong> ${escapeHtml(error.message ?? "Generation failed. Try again.")}`;
   } finally {
@@ -1287,7 +1326,7 @@ async function generate() {
 
 
 function regenerateConcept() {
-  if (isGenerating || lineworkGenerating) {
+  if (isGenerationBusy() || lineworkGenerating) {
     return;
   }
 

@@ -148,7 +148,7 @@ await run("linework failures do not become concept generation failures", async (
 
   assert.match(script, /let lineworkError = ""/);
   assert.match(script, /const blockingError = Boolean\(generationError && !generated\)/);
-  assert.match(script, /heroPreviewCopy\.textContent = isGenerating/);
+  assert.match(script, /heroPreviewCopy\.textContent = conceptPhase === "generating"/);
   assert.match(script, /heroMode === "linework" && lineworkError/);
   assert.doesNotMatch(script, /downloadConceptButton\.textContent = generationError/);
 });
