@@ -78,5 +78,16 @@ The external Webhook is optional. InkFirst still records structured errors in Ve
 - [ ] Homepage loads with no console errors.
 - [ ] My Designs loads with the signed-in account.
 - [ ] Billing & Credits shows plan, credits, access, and payment history.
+
+## 9. Generation quality evaluation
+
+- [ ] Run `npm run test:quality` without provider credentials.
+- [ ] Run a one-case live smoke test with `npm run eval:quality -- --generate --limit 1`.
+- [ ] Run the full fixed benchmark before changing the production model or prompt templates.
+- [ ] Confirm Four-candidate batch success is at least 90%.
+- [ ] Review dark-background, clipping-risk, duplicate-candidate, and decode-failure counts.
+- [ ] Complete manual review for unrequested elements, missing anatomy, composition quality, and Concept/Linework consistency.
+- [ ] Compare the new report with the previous production baseline before deployment.
+- [ ] Keep generated reports out of Git because they may contain temporary provider image references.
 - [ ] Free users can download watermarked files only.
 - [ ] Paid users can download high-resolution Concept, Linework, and Placement files.

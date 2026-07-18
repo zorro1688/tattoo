@@ -83,6 +83,34 @@ The `/my-designs` page reads the same store to show the current visitor's recent
 Copy `.env.example` to `.env.local` when moving to the production Next.js version:
 
 ```text
+
+## Generation quality evaluation
+
+The fixed benchmark covers animals, plants, lettering, and geometric designs. It checks image decoding, dimensions, dark backgrounds, likely canvas clipping, duplicate candidates, and whether each four-candidate batch contains at least one automated-pass result.
+
+Evaluate an existing manifest without spending Replicate balance:
+
+```bash
+npm run eval:quality -- --manifest path/to/quality-manifest.json
+```
+
+A manifest contains `benchmarkVersion` and a `runs` array. Each run supplies `caseId`, `category`, `input`, and four local or HTTP(S) candidate image references. Reports are written to `quality-reports/` as JSON and Markdown.
+
+Run the fixed benchmark through the live provider only when you intend to spend Replicate balance:
+
+```bash
+GENERATION_PROVIDER=replicate npm run eval:quality -- --generate
+```
+
+Use `--limit 1` for a low-cost smoke test before running all twelve cases:
+
+```bash
+GENERATION_PROVIDER=replicate npm run eval:quality -- --generate --limit 1
+```
+
+Set `REPLICATE_API_TOKEN` in the environment before using `--generate`. The evaluator never writes tokens or signed URL query strings into reports. Anatomy, unrequested elements, tattoo usability, and Concept/Linework consistency remain explicit manual review fields.
+
+Run the offline quality tests with `npm run test:quality`.
 PAYMENT_PROVIDER=creem
 CREEM_API_KEY=
 CREEM_CREATOR_PACK_PRODUCT_ID=

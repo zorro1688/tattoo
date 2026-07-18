@@ -1,0 +1,86 @@
+[
+  {
+    "id": "animal-wolf-portrait",
+    "category": "animal",
+    "input": { "idea": "wolf portrait", "style": "Fine line", "placement": "Forearm", "size": "Medium", "complexity": "Moderate" },
+    "expectedElements": ["one wolf", "complete head", "two ears"],
+    "forbiddenElements": ["flowers", "leaves", "moon", "text"]
+  },
+  {
+    "id": "animal-dragon-full-body",
+    "category": "animal",
+    "input": { "idea": "single dragon with wings", "style": "Blackwork", "placement": "Back", "size": "Large", "complexity": "Detailed" },
+    "expectedElements": ["one dragon", "complete body", "two wings", "tail"],
+    "forbiddenElements": ["flowers", "leaves", "extra dragon", "text"]
+  },
+  {
+    "id": "animal-eagle-spread-wings",
+    "category": "animal",
+    "input": { "idea": "eagle with wings spread", "style": "Geometric", "placement": "Chest", "size": "Large", "complexity": "Moderate" },
+    "expectedElements": ["one eagle", "complete wings", "head"],
+    "forbiddenElements": ["flowers", "leaves", "flag", "text"]
+  },
+  {
+    "id": "plant-single-rose",
+    "category": "plant",
+    "input": { "idea": "single rose with stem", "style": "Fine line", "placement": "Forearm", "size": "Medium", "complexity": "Beginner friendly" },
+    "expectedElements": ["one rose", "stem"],
+    "forbiddenElements": ["moon", "stars", "skull", "text"]
+  },
+  {
+    "id": "plant-lotus",
+    "category": "plant",
+    "input": { "idea": "single lotus flower", "style": "Minimalist", "placement": "Wrist", "size": "Small", "complexity": "Beginner friendly" },
+    "expectedElements": ["one lotus"],
+    "forbiddenElements": ["moon", "stars", "mandala", "text"]
+  },
+  {
+    "id": "plant-olive-branch",
+    "category": "plant",
+    "input": { "idea": "simple olive branch", "style": "Fine line", "placement": "Ankle", "size": "Small", "complexity": "Beginner friendly" },
+    "expectedElements": ["one branch", "olive leaves"],
+    "forbiddenElements": ["flowers", "moon", "birds", "text"]
+  },
+  {
+    "id": "lettering-single-name",
+    "category": "lettering",
+    "input": { "idea": "the name Aurora", "style": "Lettering", "placement": "Wrist", "size": "Small", "complexity": "Beginner friendly" },
+    "expectedElements": ["Aurora"],
+    "forbiddenElements": ["extra words", "flowers", "symbols"]
+  },
+  {
+    "id": "lettering-date",
+    "category": "lettering",
+    "input": { "idea": "the date 07.18.2026", "style": "Lettering", "placement": "Forearm", "size": "Small", "complexity": "Beginner friendly" },
+    "expectedElements": ["07.18.2026"],
+    "forbiddenElements": ["extra numbers", "flowers", "symbols"]
+  },
+  {
+    "id": "lettering-short-phrase",
+    "category": "lettering",
+    "input": { "idea": "the phrase stay wild", "style": "Lettering", "placement": "Rib", "size": "Medium", "complexity": "Moderate" },
+    "expectedElements": ["stay wild"],
+    "forbiddenElements": ["extra words", "animals", "flowers"]
+  },
+  {
+    "id": "geometric-mandala",
+    "category": "geometric",
+    "input": { "idea": "symmetrical mandala", "style": "Geometric", "placement": "Shoulder", "size": "Medium", "complexity": "Detailed" },
+    "expectedElements": ["one mandala", "radial symmetry"],
+    "forbiddenElements": ["flowers", "animals", "text"]
+  },
+  {
+    "id": "geometric-mountain",
+    "category": "geometric",
+    "input": { "idea": "geometric mountain outline", "style": "Geometric", "placement": "Forearm", "size": "Medium", "complexity": "Beginner friendly" },
+    "expectedElements": ["mountain", "geometric lines"],
+    "forbiddenElements": ["trees", "sun", "moon", "text"]
+  },
+  {
+    "id": "geometric-interlocking-circles",
+    "category": "geometric",
+    "input": { "idea": "three interlocking circles", "style": "Geometric", "placement": "Chest", "size": "Medium", "complexity": "Moderate" },
+    "expectedElements": ["three circles", "interlocking geometry"],
+    "forbiddenElements": ["flowers", "animals", "text"]
+  }
+]

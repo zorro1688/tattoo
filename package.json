@@ -11,6 +11,8 @@
     "test:billing": "node tests/billing-core.test.mjs",
     "test:generate": "node tests/generation-core.test.mjs",
     "test:quota": "node tests/quota-store.test.mjs",
+    "test:quality": "node tests/quality-evaluation-dataset.test.mjs && node tests/quality-evaluation-core.test.mjs && node tests/quality-evaluation-cli.test.mjs && node tests/quality-evaluation-setup.test.mjs",
+    "eval:quality": "node scripts/evaluate-generation-quality.mjs",
     "test:supabase": "node tests/supabase-schema.test.mjs && node tests/supabase-store.test.mjs",
     "check:billing": "node scripts/check-billing-setup.mjs",
     "migrate:storage-paths": "node scripts/migrate-storage-paths.mjs",
