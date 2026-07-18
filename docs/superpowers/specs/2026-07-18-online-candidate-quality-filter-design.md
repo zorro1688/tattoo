@@ -54,7 +54,7 @@ The module will contain no network calls and will be covered with unit tests.
 
 ### `candidate-quality-provider.mjs`
 
-A Replicate adapter will call a configurable multimodal model. The initial default will be `meta/llama-4-maverick-instruct`, configurable with `REPLICATE_QUALITY_MODEL`. Calls will use the existing `REPLICATE_API_TOKEN` and run independently in parallel for each candidate.
+A Replicate adapter will call a configurable multimodal model. The initial default will be `google/gemini-3-flash`, configurable with `REPLICATE_QUALITY_MODEL`. This official model accepts `prompt` and `images` inputs, which matches the per-candidate review contract. Calls will use the existing `REPLICATE_API_TOKEN` and run independently in parallel for each candidate.
 
 The adapter must tolerate provider output returned as a string, token array, nested output, or fenced JSON. Invalid output becomes `review_unavailable`, not an automatic rejection.
 
@@ -63,14 +63,15 @@ The adapter must tolerate provider output returned as a string, token array, nes
 The concept generation path will become a bounded orchestration operation:
 
 1. Generate four candidates.
-2. Normalize and persist candidate images using the existing Storage flow.
-3. Run deterministic checks.
-4. Review deterministic survivors with the vision provider.
-5. Rank accepted candidates.
-6. If fewer than two candidates pass, generate one refill batch and repeat steps 2-5 for the refill only.
-7. Return up to four highest-ranked accepted candidates.
-8. If the reviewer is unavailable, return deterministic survivors and record the degraded decision.
-9. If no candidate survives either round, return a quality failure and do not consume a credit.
+2. Run deterministic checks against the temporary Replicate source URLs.
+3. Review deterministic survivors with the vision provider using those source URLs.
+4. Rank accepted candidates.
+5. If fewer than two candidates pass, generate one refill batch and repeat steps 2-4 for the refill only.
+6. Pass only accepted, ranked candidates into the existing Storage persistence and credit flow.
+7. Return up to four highest-ranked persisted candidates.
+8. Retain sanitized metadata for rejected candidates without requiring their files to be stored.
+9. If the reviewer is unavailable, return deterministic survivors and record the degraded decision.
+10. If no candidate survives either round, return a quality failure and do not consume a credit.
 
 The refill limit is fixed at one. There is no unbounded retry loop.
 
@@ -153,7 +154,7 @@ The system returns accepted candidates from the first batch. If none exist, the 
 
 ### Storage upload fails
 
-That candidate is rejected with `storage_upload_failed`. Other candidates continue through the gate. A batch with no persistable candidate fails without consuming a credit.
+Only accepted candidates enter the Storage persistence phase. If one accepted candidate cannot be uploaded, that candidate is removed with `storage_upload_failed` while other accepted candidates continue. A batch with no persistable candidate fails without consuming a credit.
 
 ### Timeout budget
 
@@ -236,4 +237,3 @@ The feature will be introduced behind `QUALITY_REVIEW_ENABLED`. Local mock mode 
 - existing generation, quota, Storage, My Designs, linework, placement, download, authentication, and billing tests remain green;
 - `npm run test:quality`, `npm run test:regression`, and `npm run build` pass;
 - a controlled live Replicate smoke test verifies the reviewer schema before production rollout.
-
