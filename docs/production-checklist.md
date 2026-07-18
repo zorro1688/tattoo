@@ -63,6 +63,18 @@ Both should pass before release.
 
 ## 7. Final release check
 
+## 8. Production error monitoring
+
+- [ ] Confirm generation and download failures appear as one-line JSON events in Vercel Runtime Logs.
+- [ ] Search an event by requestId, generation ID, or Replicate prediction ID.
+- [ ] User and anonymous IDs appear only as a hashed ownerRef.
+- [ ] Logs do not contain prompts, ideas, image URLs, signed URL query strings, emails, cookies, authorization headers, API keys, or payment payload data.
+- [ ] Optionally set ERROR_MONITOR_WEBHOOK_URL to forward the same sanitized event to an external monitor.
+- [ ] If the external endpoint requires authentication, set ERROR_MONITOR_WEBHOOK_TOKEN; it is sent only as a bearer header.
+- [ ] Keep ERROR_MONITOR_TIMEOUT_MS=1500 unless the monitoring endpoint needs a shorter failure timeout.
+
+The external Webhook is optional. InkFirst still records structured errors in Vercel Runtime Logs when it is not configured or temporarily unavailable.
+
 - [ ] Homepage loads with no console errors.
 - [ ] My Designs loads with the signed-in account.
 - [ ] Billing & Credits shows plan, credits, access, and payment history.

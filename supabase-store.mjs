@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
+import { reportError } from "./monitoring-core.mjs";
 import { billingStatusFromEventType, mergeBillingHistory } from "./billing-history-core.mjs";
 
 const generationStatuses = new Set(["queued", "processing", "succeeded", "failed", "mock"]);
@@ -1116,11 +1117,29 @@ export async function mergeAnonymousClientIntoUser(clientId, user, env = process
   return { skipped: false, merged: true };
 }
 
+function monitoringOwnerId(owner) {
+  return typeof owner === "object"
+    ? owner?.userId || owner?.clientId
+    : owner;
+}
+
 export async function safePersistGenerationToSupabase(...args) {
   try {
     return await persistGenerationToSupabase(...args);
   } catch (error) {
-    console.warn(`Supabase generation sync failed: ${error.message}`);
+    const [clientId, savedGeneration, , env = process.env] = args;
+    await reportError({
+      event: "concept_storage_persistence_failed",
+      stage: "storage_persistence",
+      route: "/api/generate",
+      generationId: savedGeneration?.id,
+      ownerId: monitoringOwnerId(clientId),
+      provider: savedGeneration?.provider,
+      providerPredictionId: savedGeneration?.providerGenerationId,
+      error,
+      statusCode: 500,
+      retryable: true
+    }, { env });
     return { skipped: true, error: error.message };
   }
 }
@@ -1138,7 +1157,19 @@ export async function safePersistLineworkToSupabase(...args) {
   try {
     return await persistLineworkToSupabase(...args);
   } catch (error) {
-    console.warn(`Supabase linework sync failed: ${error.message}`);
+    const [clientId, generation, , env = process.env] = args;
+    await reportError({
+      event: "linework_storage_persistence_failed",
+      stage: "storage_persistence",
+      route: "/api/generate/linework",
+      generationId: generation?.id,
+      ownerId: monitoringOwnerId(clientId),
+      provider: generation?.provider,
+      providerPredictionId: generation?.providerGenerationId,
+      error,
+      statusCode: 500,
+      retryable: true
+    }, { env });
     return { skipped: true, error: error.message };
   }
 }

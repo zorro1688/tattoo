@@ -5,6 +5,7 @@ import { extname, join } from "node:path";
 import { createCreemCheckout, parseCreemWebhook } from "./billing-core.mjs";
 import { isCreditGrantingEvent } from "./billing-history-core.mjs";
 import { resolveDownloadFile } from "./download-core.mjs";
+import { createRequestId, reportError } from "./monitoring-core.mjs";
 import { createGeneration, createLineworkGeneration } from "./generation-core.mjs";
 import {
   buildAuthCookie,
@@ -111,6 +112,7 @@ function writeDownload(response, file, headers = {}) {
 
 const server = createServer(async (request, response) => {
   const url = new URL(request.url ?? "/", `http://localhost:${port}`);
+  const requestId = createRequestId({ headers: new Headers(request.headers) });
 
   if (url.pathname === "/api/quota" && request.method === "GET") {
     const session = getClientSession(request.headers.cookie ?? "");
@@ -341,24 +343,70 @@ const server = createServer(async (request, response) => {
   }
 
   if (url.pathname === "/api/download" && request.method === "GET") {
+    const startedAt = Date.now();
     const session = getClientSession(request.headers.cookie ?? "");
-    const headers = session.isNew ? { "Set-Cookie": buildClientCookie(session.clientId) } : {};
-    const file = await resolveDownloadFile({
-      clientId: session.ownerId,
-      generationId: url.searchParams.get("generationId"),
-      type: url.searchParams.get("type"),
-      selectedConceptUrl: url.searchParams.get("selectedConceptUrl") ?? "",
-      publicBaseUrl: request.headers.host ? `http://${request.headers.host}` : `http://localhost:${PORT}`
-    });
+    const generationId = url.searchParams.get("generationId");
+    const headers = {
+      ...(session.isNew ? { "Set-Cookie": buildClientCookie(session.clientId) } : {}),
+      "X-Request-Id": requestId
+    };
 
-    writeDownload(response, file, headers);
+    try {
+      const file = await resolveDownloadFile({
+        clientId: session.ownerId,
+        generationId,
+        type: url.searchParams.get("type"),
+        selectedConceptUrl: url.searchParams.get("selectedConceptUrl") ?? "",
+        publicBaseUrl: request.headers.host ? `http://${request.headers.host}` : `http://localhost:${PORT}`
+      });
+
+      if (file.error && file.status >= 500) {
+        await reportError({
+          event: "download_resolution_failed",
+          stage: "download",
+          route: "/api/download",
+          requestId,
+          generationId,
+          ownerId: session.ownerId,
+          error: new Error(file.error),
+          statusCode: file.status,
+          durationMs: Date.now() - startedAt,
+          retryable: true
+        });
+      }
+
+      writeDownload(response, file, headers);
+    } catch (error) {
+      await reportError({
+        event: "download_resolution_failed",
+        stage: "download",
+        route: "/api/download",
+        requestId,
+        generationId,
+        ownerId: session.ownerId,
+        error,
+        statusCode: 500,
+        durationMs: Date.now() - startedAt,
+        retryable: true
+      });
+      writeJson(response, 500, {
+        error: error.message ?? "Could not prepare image download."
+      }, headers);
+    }
     return;
   }
 
   if (url.pathname === "/api/generate" && request.method === "POST") {
+    const startedAt = Date.now();
+    let session = null;
+    let providerPredictionId;
+
     try {
-      const session = getClientSession(request.headers.cookie ?? "");
-      const cookieHeaders = session.isNew ? { "Set-Cookie": buildClientCookie(session.clientId) } : {};
+      session = getClientSession(request.headers.cookie ?? "");
+      const cookieHeaders = {
+        ...(session.isNew ? { "Set-Cookie": buildClientCookie(session.clientId) } : {}),
+        "X-Request-Id": requestId
+      };
       const body = await readJsonBody(request);
 
       if (!body.idea?.trim()) {
@@ -384,7 +432,22 @@ const server = createServer(async (request, response) => {
 
       const generation = await createGeneration(body);
 
+      providerPredictionId = generation.predictionId;
+
       if (generation.error) {
+        await reportError({
+          event: "concept_generation_failed",
+          stage: "provider",
+          route: "/api/generate",
+          requestId,
+          ownerId: session.ownerId,
+          provider: generation.provider,
+          providerPredictionId: generation.predictionId,
+          error: new Error(generation.error),
+          statusCode: 501,
+          durationMs: Date.now() - startedAt,
+          retryable: true
+        });
         writeJson(response, 501, generation, cookieHeaders);
         return;
       }
@@ -405,16 +468,40 @@ const server = createServer(async (request, response) => {
         cookieHeaders
       );
     } catch (error) {
-      writeJson(response, 500, { error: error.message ?? "Could not complete generation. Please try again." });
+      await reportError({
+        event: "concept_route_failed",
+        stage: "route",
+        route: "/api/generate",
+        requestId,
+        ownerId: session?.ownerId,
+        provider: providerPredictionId ? "replicate" : undefined,
+        providerPredictionId,
+        error,
+        statusCode: 500,
+        durationMs: Date.now() - startedAt,
+        retryable: true
+      });
+      writeJson(response, 500, { error: error.message ?? "Could not complete generation. Please try again." }, {
+        "X-Request-Id": requestId
+      });
     }
     return;
   }
 
   if (url.pathname === "/api/generate/linework" && request.method === "POST") {
+    const startedAt = Date.now();
+    let session = null;
+    let generationId;
+    let providerPredictionId;
+
     try {
-      const session = getClientSession(request.headers.cookie ?? "");
-      const cookieHeaders = session.isNew ? { "Set-Cookie": buildClientCookie(session.clientId) } : {};
+      session = getClientSession(request.headers.cookie ?? "");
+      const cookieHeaders = {
+        ...(session.isNew ? { "Set-Cookie": buildClientCookie(session.clientId) } : {}),
+        "X-Request-Id": requestId
+      };
       const body = await readJsonBody(request);
+      generationId = body.generationId;
 
       if (!body.generationId) {
         writeJson(response, 400, { error: "Saved generation id is required." }, cookieHeaders);
@@ -460,8 +547,23 @@ const server = createServer(async (request, response) => {
         }
       };
       const linework = await createLineworkGeneration(lineworkGeneration);
+      providerPredictionId = linework.predictionId;
 
       if (linework.error) {
+        await reportError({
+          event: "linework_generation_failed",
+          stage: "provider",
+          route: "/api/generate/linework",
+          requestId,
+          generationId,
+          ownerId: session.ownerId,
+          provider: linework.provider,
+          providerPredictionId: linework.predictionId,
+          error: new Error(linework.error),
+          statusCode: 502,
+          durationMs: Date.now() - startedAt,
+          retryable: true
+        });
         writeJson(response, 502, { ...linework, quota }, cookieHeaders);
         return;
       }
@@ -480,7 +582,23 @@ const server = createServer(async (request, response) => {
         cookieHeaders
       );
     } catch (error) {
-      writeJson(response, 500, { error: error.message ?? "Could not complete generation. Please try again." });
+      await reportError({
+        event: "linework_route_failed",
+        stage: "route",
+        route: "/api/generate/linework",
+        requestId,
+        generationId,
+        ownerId: session?.ownerId,
+        provider: providerPredictionId ? "replicate" : undefined,
+        providerPredictionId,
+        error,
+        statusCode: 500,
+        durationMs: Date.now() - startedAt,
+        retryable: true
+      });
+      writeJson(response, 500, { error: error.message ?? "Could not complete generation. Please try again." }, {
+        "X-Request-Id": requestId
+      });
     }
     return;
   }

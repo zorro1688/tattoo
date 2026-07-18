@@ -76,7 +76,44 @@ await run("production deployment checklist documents required setup", async () =
 await run("env example includes production provider keys", async () => {
   const example = await readFile(".env.example", "utf8");
 
-  for (const name of ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "REPLICATE_API_TOKEN", "NEXT_PUBLIC_SUPABASE_URL", "CREEM_WEBHOOK_SECRET"]) {
+  for (const name of [
+    "GOOGLE_CLIENT_ID",
+    "GOOGLE_CLIENT_SECRET",
+    "REPLICATE_API_TOKEN",
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "CREEM_WEBHOOK_SECRET",
+    "ERROR_MONITOR_WEBHOOK_URL",
+    "ERROR_MONITOR_WEBHOOK_TOKEN",
+    "ERROR_MONITOR_TIMEOUT_MS"
+  ]) {
     assert.match(example, new RegExp(name));
+  }
+});
+
+await run("production checklist documents privacy-safe error monitoring", async () => {
+  const checklist = await readFile("docs/production-checklist.md", "utf8");
+
+  for (const text of [
+    "Vercel Runtime Logs",
+    "ERROR_MONITOR_WEBHOOK_URL",
+    "generation ID",
+    "prediction ID",
+    "hashed",
+    "prompt",
+    "payment payload"
+  ]) {
+    assert.match(checklist, new RegExp(text, "i"));
+  }
+});
+
+await run("regression runner includes production monitoring coverage", async () => {
+  const regression = await readFile("scripts/regression-check.mjs", "utf8");
+
+  for (const test of [
+    "monitoring-core.test.mjs",
+    "monitoring-routes.test.mjs",
+    "monitoring-storage-download.test.mjs"
+  ]) {
+    assert.match(regression, new RegExp(test.replaceAll(".", "\\.")));
   }
 });
