@@ -1,3 +1,5 @@
+import { buildCompositionGuidance } from "./candidate-quality-core.mjs";
+
 export const defaultMockModel = "mock-static-assets";
 export const defaultReplicateModel = "black-forest-labs/flux-schnell";
 export const defaultReplicateLineworkModel = "black-forest-labs/flux-canny-pro";
@@ -121,14 +123,9 @@ function normalizePromptText(value = "") {
 
 function subjectCompletenessGuidance(idea = "") {
   const text = normalizePromptText(idea).toLowerCase();
-  const isPortrait = /\b(head|face|portrait|bust|skull)\b/.test(text);
   const isCreature = /\b(dragon|eagle|bird|wolf|tiger|lion|cat|dog|fox|snake|fish|butterfly|moth|phoenix|animal|creature|wings|tail|claws)\b/.test(text);
 
-  if (isCreature && !isPortrait) {
-    return "Full body complete subject: show the whole creature in one tattoo motif, with feet, claws, wings, and tail fully inside the artwork. Do not crop or hide any body part.";
-  }
-
-  return "Complete tattoo motif: keep the full design visible inside the canvas, with no cropped edges or missing important elements.";
+  return buildCompositionGuidance({ idea, category: isCreature ? "creature" : "general" });
 }
 
 export function buildTattooPrompt(body) {
@@ -151,7 +148,6 @@ export function buildTattooPrompt(body) {
     "White canvas with black tattoo lines. Black ink only on white background; no black background, no transparent background, no inverted white lines, no white linework on black background.",
     "Only include the requested subject and explicitly requested elements. Do not add flowers, leaves, plants, moons, stars, jewelry, ornaments, or extra symbols unless the user asked for them.",
     subjectCompletenessGuidance(idea),
-    "For animals, dragons, and creatures, include all limbs, legs, claws, wings, horns, and tail inside the canvas unless the user asks for a portrait.",
     "Use clean contour lines and controlled contrast so the design can become a stencil or artist reference.",
     "Avoid poster art, logo design, sticker, clipart, 3d render, photorealism.",
     "No person, no model, no hand, no arm, no forearm, no wrist, no skin, no body parts, no clothing.",

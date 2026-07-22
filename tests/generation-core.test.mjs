@@ -34,7 +34,7 @@ await run("tattoo prompt avoids body and placement mockup language", () => {
   assert.match(prompt, /isolated fine line tattoo design reference/);
   assert.match(prompt, /do not show the placement itself/i);
   assert.match(prompt, /entire tattoo design fully visible and uncropped/i);
-  assert.match(prompt, /all limbs, legs, claws, wings, horns, and tail inside the canvas/i);
+  assert.match(prompt, /complete requested motif inside the canvas with generous clean margins/i);
   assert.match(prompt, /No person, no model, no hand, no arm, no forearm, no wrist, no skin/i);
   assert.match(prompt, /Additional user instructions: make the rose more delicate\./);
   assert.doesNotMatch(prompt, /suitable for forearm placement/i);
@@ -100,18 +100,30 @@ await run("explicit decorative subjects are not blocked by the negative prompt",
   assert.doesNotMatch(negative, /flowers, floral ornaments/);
   assert.doesNotMatch(negative, /moon, stars/);
 });
-await run("animal and creature concept prompts require a complete full-body subject", () => {
+
+await run("animal prompts use composition-aware defaults", () => {
+  const wolf = buildTattooPrompt({ idea: "wolf", style: "Fine line" });
+  const wolfHead = buildTattooPrompt({ idea: "wolf head", style: "Fine line" });
+  const fullBodyWolf = buildTattooPrompt({ idea: "full body wolf", style: "Fine line" });
+
+  assert.match(wolf, /portrait or upper-body/i);
+  assert.doesNotMatch(wolf, /all four legs/i);
+  assert.match(wolfHead, /portrait or upper-body/i);
+  assert.match(fullBodyWolf, /all four legs/i);
+});
+
+await run("explicit full-body animal and creature prompts require a complete subject", () => {
   const prompt = buildTattooPrompt({
-    idea: "dragon with eagle wings",
+    idea: "full body dragon with eagle wings",
     style: "Fine line",
     placement: "Chest",
     size: "Medium",
     complexity: "Balanced detail"
   });
 
-  assert.match(prompt, /full body complete subject/i);
-  assert.match(prompt, /feet, claws, wings, and tail fully inside the artwork/i);
-  assert.match(prompt, /do not crop or hide any body part/i);
+  assert.match(prompt, /complete full-body subject/i);
+  assert.match(prompt, /all four legs when applicable/i);
+  assert.match(prompt, /paws or feet, and tail fully inside the canvas/i);
 });
 
 await run("replicate concept requests include negative prompt when the model supports it", async () => {
