@@ -485,6 +485,22 @@ export async function prepareConceptCandidatesForSupabase(clientId, savedGenerat
   };
 }
 
+async function ensureAnonymousOwnerExists(owner, env, fetchImpl) {
+  const normalized = normalizeOwner(owner);
+
+  if (normalized.userId) {
+    return;
+  }
+
+  await requestSupabase("/anonymous_clients?on_conflict=id", {
+    method: "POST",
+    headers: {
+      Prefer: "resolution=ignore-duplicates,return=minimal"
+    },
+    body: JSON.stringify({ id: normalized.clientId })
+  }, env, fetchImpl);
+}
+
 async function upsertOwnerCredits(owner, quota, env, fetchImpl) {
   const normalized = normalizeOwner(owner);
 
@@ -582,6 +598,8 @@ export async function persistGenerationToSupabase(clientId, savedGeneration, quo
   if (!config) {
     return { skipped: true };
   }
+
+  await ensureAnonymousOwnerExists(clientId, env, fetchImpl);
 
   const payload = {
     local_generation_id: savedGeneration.id,

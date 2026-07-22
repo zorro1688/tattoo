@@ -267,21 +267,24 @@ await run("Supabase generation persistence writes client, generation, and assets
 
   const serviceCalls = calls.filter((call) => !call.url.includes("replicate.delivery"));
   assert.equal(result.skipped, false);
-  assert.equal(serviceCalls.length, 6);
-  assert.match(serviceCalls[0].url, /\/generations\?select=id$/);
-  assert.match(serviceCalls[1].url, /\/storage\/v1\/object\/inkfirst-designs\/anonymous\/anon_client\/gen_local_123\/concept\.webp$/);
-  assert.match(serviceCalls[2].url, /\/storage\/v1\/object\/inkfirst-designs\/anonymous\/anon_client\/gen_local_123\/placement\.png$/);
-  assert.match(serviceCalls[3].url, /\/generation_assets\?on_conflict=generation_id,asset_type,is_watermarked$/);
-  assert.match(serviceCalls[4].url, /\/generations\?/);
-  assert.match(serviceCalls[5].url, /\/anonymous_clients\?on_conflict=id$/);
+  assert.equal(serviceCalls.length, 7);
+  assert.match(serviceCalls[0].url, /\/anonymous_clients\?on_conflict=id$/);
+  assert.match(serviceCalls[1].url, /\/generations\?select=id$/);
+  assert.match(serviceCalls[2].url, /\/storage\/v1\/object\/inkfirst-designs\/anonymous\/anon_client\/gen_local_123\/concept\.webp$/);
+  assert.match(serviceCalls[3].url, /\/storage\/v1\/object\/inkfirst-designs\/anonymous\/anon_client\/gen_local_123\/placement\.png$/);
+  assert.match(serviceCalls[4].url, /\/generation_assets\?on_conflict=generation_id,asset_type,is_watermarked$/);
+  assert.match(serviceCalls[5].url, /\/generations\?/);
+  assert.match(serviceCalls[6].url, /\/anonymous_clients\?on_conflict=id$/);
+  assert.deepEqual(JSON.parse(serviceCalls[0].options.body), { id: "anon_client" });
+  assert.equal(serviceCalls[0].options.headers.Prefer, "resolution=ignore-duplicates,return=minimal");
 
-  const generationBody = JSON.parse(serviceCalls[0].options.body);
+  const generationBody = JSON.parse(serviceCalls[1].options.body);
   assert.equal(generationBody.local_generation_id, "gen_local_123");
   assert.equal(generationBody.anonymous_client_id, "anon_client");
   assert.equal(generationBody.input_idea, "small rose with moon");
   assert.deepEqual(generationBody.placement_adjustment, { x: 0.61, y: 0.37, scale: 1.24, rotation: -14 });
 
-  const assetsBody = JSON.parse(serviceCalls[3].options.body);
+  const assetsBody = JSON.parse(serviceCalls[4].options.body);
   assert.equal(assetsBody.length, 2);
   assert.equal(assetsBody[0].asset_type, "concept");
   assert.equal(assetsBody[0].storage_path, "anonymous/anon_client/gen_local_123/concept.webp");
@@ -305,11 +308,11 @@ await run("Supabase generation persistence uploads normalized data URL concept i
 
   const serviceCalls = calls.filter((call) => !call.url.includes("replicate.delivery"));
   assert.equal(result.skipped, false);
-  assert.match(serviceCalls[1].url, /\/storage\/v1\/object\/inkfirst-designs\/anonymous\/anon_client\/gen_local_123\/concept\.png$/);
-  assert.equal(serviceCalls[1].options.headers["Content-Type"], "image/png");
-  assert.equal(Buffer.from(serviceCalls[1].options.body).toString(), "normalized-png");
+  assert.match(serviceCalls[2].url, /\/storage\/v1\/object\/inkfirst-designs\/anonymous\/anon_client\/gen_local_123\/concept\.png$/);
+  assert.equal(serviceCalls[2].options.headers["Content-Type"], "image/png");
+  assert.equal(Buffer.from(serviceCalls[2].options.body).toString(), "normalized-png");
 
-  const assetsBody = JSON.parse(serviceCalls[2].options.body);
+  const assetsBody = JSON.parse(serviceCalls[3].options.body);
   assert.equal(assetsBody[0].storage_path, "anonymous/anon_client/gen_local_123/concept.png");
   assert.equal(assetsBody[0].content_type, "image/png");
 });
