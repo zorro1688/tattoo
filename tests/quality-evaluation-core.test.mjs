@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import sharp from "sharp";
 import {
   analyzeCandidate,
+  analyzeCandidateUrl,
   evaluateBatch,
   formatMarkdownReport,
   summarizeEvaluation,
@@ -132,3 +133,40 @@ assert.match(markdown, /50\.0%/);
 assert.match(markdown, /animal-wolf-portrait/);
 
 console.log("Quality evaluation core tests passed.");
+
+
+const validUrlAnalysis = await analyzeCandidateUrl("https://example.test/candidate.png", {
+  minDimension: 64,
+  fetchImpl: async () => new Response(cleanBuffer, {
+    status: 200,
+    headers: { "content-type": "image/png", "content-length": String(cleanBuffer.length) },
+  }),
+});
+assert.equal(validUrlAnalysis.passed, true);
+assert.equal(validUrlAnalysis.signature, clean.signature);
+
+const nonImageAnalysis = await analyzeCandidateUrl("https://example.test/page", {
+  fetchImpl: async () => new Response("<html></html>", {
+    status: 200,
+    headers: { "content-type": "text/html" },
+  }),
+});
+assert.equal(nonImageAnalysis.passed, false);
+assert.deepEqual(nonImageAnalysis.reasons, ["non_image_response"]);
+
+const oversizedAnalysis = await analyzeCandidateUrl("https://example.test/large.png", {
+  fetchImpl: async () => new Response("", {
+    status: 200,
+    headers: { "content-type": "image/png", "content-length": String((10 * 1024 * 1024) + 1) },
+  }),
+});
+assert.equal(oversizedAnalysis.passed, false);
+assert.deepEqual(oversizedAnalysis.reasons, ["image_too_large"]);
+
+const fetchFailureAnalysis = await analyzeCandidateUrl("https://example.test/missing.png", {
+  fetchImpl: async () => {
+    throw new Error("network down");
+  },
+});
+assert.equal(fetchFailureAnalysis.passed, false);
+assert.deepEqual(fetchFailureAnalysis.reasons, ["image_fetch_failed"]);

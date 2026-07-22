@@ -148,6 +148,83 @@ export async function analyzeCandidate(buffer, options = {}) {
   }
 }
 
+
+const DEFAULT_FETCH_TIMEOUT_MS = 15_000;
+const DEFAULT_MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
+function failedUrlAnalysis(reason) {
+  return {
+    passed: false,
+    automatedPass: false,
+    cleanliness: 0,
+    decodable: false,
+    signature: null,
+    reasons: [reason],
+  };
+}
+
+async function readResponseWithLimit(response, maxBytes) {
+  const declaredLength = Number(response.headers.get("content-length"));
+  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+    throw new Error("image_too_large");
+  }
+  if (!response.body?.getReader) {
+    const buffer = Buffer.from(await response.arrayBuffer());
+    if (buffer.length > maxBytes) throw new Error("image_too_large");
+    return buffer;
+  }
+  const reader = response.body.getReader();
+  const chunks = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel();
+      throw new Error("image_too_large");
+    }
+    chunks.push(Buffer.from(value));
+  }
+  return Buffer.concat(chunks, total);
+}
+
+export async function analyzeCandidateUrl(url, options = {}) {
+  const fetchImpl = options.fetchImpl || globalThis.fetch;
+  const timeoutMs = Math.max(1, Number(options.timeoutMs) || DEFAULT_FETCH_TIMEOUT_MS);
+  const maxBytes = Math.max(1, Number(options.maxBytes) || DEFAULT_MAX_IMAGE_BYTES);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetchImpl(url, { signal: controller.signal });
+    if (!response.ok) return failedUrlAnalysis("image_fetch_failed");
+    const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+    if (!contentType.startsWith("image/")) return failedUrlAnalysis("non_image_response");
+    const buffer = await readResponseWithLimit(response, maxBytes);
+    const analysis = await analyzeCandidate(buffer, options);
+    const cleanliness = Math.max(
+      0,
+      100
+        - (analysis.darkBackground ? 45 : 0)
+        - (analysis.clippingRisk ? 35 : 0)
+        - (!analysis.decodable ? 100 : 0)
+        - (analysis.reasons.includes("image_too_small") ? 20 : 0),
+    );
+    return {
+      ...analysis,
+      passed: analysis.automatedPass,
+      cleanliness,
+    };
+  } catch (error) {
+    const reason = error instanceof Error && error.message === "image_too_large"
+      ? "image_too_large"
+      : "image_fetch_failed";
+    return failedUrlAnalysis(reason);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function evaluateBatch(run, options = {}) {
   const signatures = new Map();
   const candidates = [];
