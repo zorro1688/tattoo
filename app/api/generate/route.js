@@ -1,4 +1,4 @@
-export const maxDuration = 60;
+export const maxDuration = 180;
 
 import { NextResponse } from "next/server";
 import { createGeneration } from "../../../generation-core.mjs";
@@ -50,20 +50,22 @@ export async function POST(request) {
     providerPredictionId = generation.predictionId;
 
     if ("error" in generation) {
+      const qualityFailure = generation.code === "quality_no_usable_candidates";
+      const failureStatus = qualityFailure ? 422 : 501;
       await reportError({
         event: "concept_generation_failed",
-        stage: "provider",
+        stage: qualityFailure ? "quality_gate" : "provider",
         route: "/api/generate",
         requestId,
         ownerId: session.ownerId,
         provider: generation.provider,
         providerPredictionId: generation.predictionId,
         error: new Error(generation.error),
-        statusCode: 501,
+        statusCode: failureStatus,
         durationMs: Date.now() - startedAt,
-        retryable: true
+        retryable: !qualityFailure
       });
-      return json(generation, 501, session, requestId);
+      return json(generation, failureStatus, session, requestId);
     }
 
     const saved = await consumeGenerationCredit(session.ownerId, body, generation);

@@ -1,4 +1,7 @@
 import { buildCompositionGuidance } from "./candidate-quality-core.mjs";
+import { runCandidateQualityGate } from "./candidate-quality-orchestrator.mjs";
+import { reviewCandidateWithReplicate } from "./candidate-quality-provider.mjs";
+import { analyzeCandidateUrl as analyzeCandidateImageUrl } from "./quality-evaluation-core.mjs";
 
 export const defaultMockModel = "mock-static-assets";
 export const defaultReplicateModel = "black-forest-labs/flux-schnell";
@@ -263,7 +266,23 @@ export function createMockGeneration(body, env = process.env) {
   };
 }
 
-async function createReplicateGeneration(body, env = process.env, fetchImpl = fetch) {
+export function resolveQualityConfig(env = process.env) {
+  return {
+    enabled: env.QUALITY_REVIEW_ENABLED === "true",
+    refillEnabled: env.QUALITY_REFILL_ENABLED === "true",
+    minScore: Number(env.QUALITY_REVIEW_MIN_SCORE || 70),
+    timeoutMs: Number(env.QUALITY_REVIEW_TIMEOUT_MS || 20_000),
+    model: env.REPLICATE_QUALITY_MODEL || "google/gemini-3-flash",
+    maxAccepted: 4
+  };
+}
+
+export async function createReplicateConceptBatch(
+  body,
+  env = process.env,
+  fetchImpl = fetch,
+  { round = "initial", originalIndexOffset = 0 } = {}
+) {
   const token = env.REPLICATE_API_TOKEN;
   const model = resolveGenerationModel(env);
 
@@ -276,7 +295,6 @@ async function createReplicateGeneration(body, env = process.env, fetchImpl = fe
     };
   }
 
-  const base = createBaseGeneration(body, env);
   const { modelEndpoint, requestBody } = createReplicatePredictionBody(model, {
     prompt: buildConceptBatchPrompt(body),
     negative_prompt: buildNegativePrompt(body),
@@ -297,7 +315,6 @@ async function createReplicateGeneration(body, env = process.env, fetchImpl = fe
   });
 
   const payload = await response.json().catch(async () => ({ error: await response.text() }));
-
   if (!response.ok) {
     return {
       error: payload.detail ?? payload.error ?? "Replicate generation failed.",
@@ -308,10 +325,8 @@ async function createReplicateGeneration(body, env = process.env, fetchImpl = fe
     };
   }
 
-  const conceptCandidates = [...new Set(extractImageUrls(payload.output))].slice(0, 4);
-  const conceptImage = conceptCandidates[0];
-
-  if (!conceptImage) {
+  const urls = [...new Set(extractImageUrls(payload.output))].slice(0, 4);
+  if (!urls.length) {
     return {
       error: `Replicate prediction did not return an image yet. Status: ${payload.status ?? "unknown"}.`,
       provider: "replicate",
@@ -322,14 +337,109 @@ async function createReplicateGeneration(body, env = process.env, fetchImpl = fe
   }
 
   return {
-    id: payload.id ?? `replicate-${Date.now()}`,
     provider: "replicate",
+    model,
     status: payload.status ?? "succeeded",
+    predictionId: payload.id ?? null,
+    candidates: urls.map((url, index) => ({
+      id: `${round}-${index + 1}`,
+      url,
+      predictionId: payload.id ?? null,
+      originalIndex: originalIndexOffset + index,
+      round
+    }))
+  };
+}
+
+export async function createReplicateGeneration(body, env = process.env, fetchImpl = fetch, options = {}) {
+  const model = resolveGenerationModel(env);
+  const base = createBaseGeneration(body, env);
+  const initialBatch = await createReplicateConceptBatch(body, env, fetchImpl, {
+    round: "initial",
+    originalIndexOffset: 0
+  });
+  if (initialBatch.error) return initialBatch;
+
+  const qualityConfig = {
+    ...resolveQualityConfig(env),
+    ...(options.qualityConfig || {})
+  };
+  let acceptedCandidates = initialBatch.candidates;
+  let quality = null;
+  const providerPredictionIds = initialBatch.predictionId ? [initialBatch.predictionId] : [];
+
+  if (qualityConfig.enabled) {
+    const gate = await runCandidateQualityGate({
+      input: body,
+      initialCandidates: initialBatch.candidates,
+      generateRefill: async () => {
+        const refillBatch = await createReplicateConceptBatch(body, env, fetchImpl, {
+          round: "refill",
+          originalIndexOffset: initialBatch.candidates.length
+        });
+        if (refillBatch.error) throw new Error(refillBatch.error);
+        if (refillBatch.predictionId) providerPredictionIds.push(refillBatch.predictionId);
+        return refillBatch.candidates;
+      },
+      analyzeCandidateUrl: options.analyzeCandidateUrl || ((url) => analyzeCandidateImageUrl(url, {
+        fetchImpl,
+        timeoutMs: qualityConfig.timeoutMs
+      })),
+      reviewCandidate: options.reviewCandidate || ((candidate, context) => reviewCandidateWithReplicate(
+        candidate,
+        context,
+        {
+          token: env.REPLICATE_API_TOKEN,
+          model: qualityConfig.model,
+          timeoutMs: qualityConfig.timeoutMs,
+          fetchImpl
+        }
+      )),
+      config: qualityConfig
+    });
+
+    if (gate.error) {
+      return {
+        error: gate.error.message,
+        code: gate.error.code,
+        billable: false,
+        provider: "replicate",
+        model,
+        status: "failed",
+        predictionId: initialBatch.predictionId,
+        quality: {
+          acceptedCount: 0,
+          rejectedCount: gate.rejectedCandidates.length,
+          refillAttempted: gate.refillAttempted,
+          reviewUnavailableCount: gate.reviewUnavailableCount
+        }
+      };
+    }
+
+    acceptedCandidates = gate.acceptedCandidates;
+    quality = {
+      acceptedCount: acceptedCandidates.length,
+      rejectedCount: gate.rejectedCandidates.length,
+      refillAttempted: gate.refillAttempted,
+      reviewUnavailableCount: gate.reviewUnavailableCount,
+      phaseDurations: gate.phaseDurations,
+      reviewPredictionIds: gate.predictionIds
+    };
+  }
+
+  const conceptCandidates = acceptedCandidates.map((candidate) => candidate.url).slice(0, 4);
+  const conceptImage = conceptCandidates[0];
+  return {
+    id: initialBatch.predictionId ?? `replicate-${Date.now()}`,
+    provider: "replicate",
+    model,
+    status: initialBatch.status,
+    predictionId: initialBatch.predictionId,
+    providerPredictionIds,
     ...base,
-    images: {
-      concept: conceptImage
-    },
-    conceptCandidates
+    images: { concept: conceptImage },
+    conceptCandidates,
+    ...(quality ? { quality } : {})
   };
 }
 function createReplicatePredictionBody(model, input) {
@@ -480,7 +590,7 @@ export async function createLineworkGeneration(generation, env = process.env, fe
   };
 }
 
-export async function createGeneration(body, env = process.env, fetchImpl = fetch) {
+export async function createGeneration(body, env = process.env, fetchImpl = fetch, options = {}) {
   const provider = env.GENERATION_PROVIDER ?? "mock";
   const model = resolveGenerationModel(env);
 
@@ -489,7 +599,7 @@ export async function createGeneration(body, env = process.env, fetchImpl = fetc
   }
 
   if (provider === "replicate") {
-    return createReplicateGeneration(body, env, fetchImpl);
+    return createReplicateGeneration(body, env, fetchImpl, options);
   }
 
   if (provider === "openai" && !env.OPENAI_API_KEY) {

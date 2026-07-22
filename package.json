@@ -9,7 +9,7 @@
     "start": "node ./node_modules/next/dist/bin/next start",
     "lint": "node ./node_modules/next/dist/bin/next lint",
     "test:billing": "node tests/billing-core.test.mjs",
-    "test:generate": "node tests/generation-core.test.mjs",
+    "test:generate": "node tests/generation-core.test.mjs && node tests/generation-quality-api.test.mjs",
     "test:quota": "node tests/quota-store.test.mjs",
     "test:quality": "node tests/quality-evaluation-dataset.test.mjs && node tests/quality-evaluation-core.test.mjs && node tests/quality-evaluation-cli.test.mjs && node tests/quality-evaluation-setup.test.mjs",
     "eval:quality": "node scripts/evaluate-generation-quality.mjs",
