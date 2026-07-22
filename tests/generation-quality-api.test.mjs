@@ -117,9 +117,16 @@ const failed = await createGeneration(
 );
 assert.equal(failed.code, "quality_no_usable_candidates");
 assert.equal(failed.billable, false);
+assert.equal(typeof failed.quality.phaseDurations.totalMs, "number");
 
 const routeSource = fs.readFileSync(new URL("../app/api/generate/route.js", import.meta.url), "utf8");
 assert.ok(
   routeSource.indexOf('if ("error" in generation)') < routeSource.indexOf("consumeGenerationCredit("),
   "quality and provider failures must return before credit consumption"
+);
+
+assert.match(
+  routeSource,
+  /reportCandidateQualityEvent\(\{/,
+  "quality-enabled generations must emit a privacy-safe production quality event"
 );

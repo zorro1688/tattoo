@@ -186,6 +186,7 @@ export async function runCandidateQualityGate({
     });
   }
 
+  acceptedCandidates = acceptedCandidates.slice(0, settings.maxAccepted);
   const acceptedIds = new Set(acceptedCandidates.map((candidate) => candidate.id));
   for (const candidate of evaluatedCandidates) {
     if (!acceptedIds.has(candidate.id)) {
@@ -197,7 +198,6 @@ export async function runCandidateQualityGate({
     }
   }
 
-  acceptedCandidates = acceptedCandidates.slice(0, settings.maxAccepted);
   const reviewUnavailableCount = evaluatedCandidates.filter(
     (candidate) => candidate.review?.reviewStatus === "unavailable"
       || candidate.review?.reviewStatus === "invalid_response"

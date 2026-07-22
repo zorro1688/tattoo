@@ -3,6 +3,7 @@ export const maxDuration = 180;
 import { NextResponse } from "next/server";
 import { createGeneration } from "../../../generation-core.mjs";
 import { createRequestId, reportError } from "../../../monitoring-core.mjs";
+import { reportCandidateQualityEvent } from "../../../candidate-quality-telemetry.mjs";
 import {
   buildClientCookie,
   consumeGenerationCredit,
@@ -48,6 +49,22 @@ export async function POST(request) {
 
     const generation = await createGeneration({ ...body, idea: body.idea.trim() });
     providerPredictionId = generation.predictionId;
+
+    if (generation.quality) {
+      await reportCandidateQualityEvent({
+        requestId,
+        ownerId: session.ownerId,
+        generationId: generation.id,
+        provider: generation.provider,
+        providerPredictionId: generation.predictionId,
+        acceptedCount: generation.quality.acceptedCount,
+        rejectedCount: generation.quality.rejectedCount,
+        refillAttempted: generation.quality.refillAttempted,
+        reviewUnavailableCount: generation.quality.reviewUnavailableCount,
+        durationMs: generation.quality.phaseDurations?.totalMs,
+        succeeded: !("error" in generation)
+      });
+    }
 
     if ("error" in generation) {
       const qualityFailure = generation.code === "quality_no_usable_candidates";

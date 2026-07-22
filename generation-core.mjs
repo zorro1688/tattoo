@@ -411,7 +411,8 @@ export async function createReplicateGeneration(body, env = process.env, fetchIm
           acceptedCount: 0,
           rejectedCount: gate.rejectedCandidates.length,
           refillAttempted: gate.refillAttempted,
-          reviewUnavailableCount: gate.reviewUnavailableCount
+          reviewUnavailableCount: gate.reviewUnavailableCount,
+          phaseDurations: gate.phaseDurations
         }
       };
     }
