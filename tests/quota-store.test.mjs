@@ -367,6 +367,54 @@ await run("Supabase-backed generation does not write local store when quota row 
 });
 
 
+await run("Supabase-backed generation does not save or charge when no concept candidate can be persisted", async () => {
+  await withTempStore(async (storePath) => {
+    const originalFetch = globalThis.fetch;
+    const originalEnv = {
+      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      SUPABASE_STORAGE_BUCKET: process.env.SUPABASE_STORAGE_BUCKET
+    };
+    const calls = [];
+
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
+    process.env.SUPABASE_STORAGE_BUCKET = "inkfirst-designs";
+    globalThis.fetch = async (url, options = {}) => {
+      calls.push({ url: String(url), method: options.method ?? "GET" });
+
+      if (String(url).includes("/anonymous_clients?") && (options.method ?? "GET") === "GET") {
+        return Response.json([]);
+      }
+
+      if (String(url).includes("replicate.delivery")) {
+        return new Response("upstream unavailable", { status: 502 });
+      }
+
+      return new Response("unexpected request", { status: 500 });
+    };
+
+    try {
+      await assert.rejects(
+        () => consumeGenerationCredit("client-supabase", input, generation, storePath),
+        /No usable concept candidates could be saved/
+      );
+
+      assert.equal(await fileExists(storePath), false);
+      assert.equal(calls.some((call) => call.url.includes("/generations?select=id")), false);
+      assert.equal(calls.some((call) => call.url.includes("/anonymous_clients?on_conflict=id")), false);
+    } finally {
+      globalThis.fetch = originalFetch;
+      for (const [key, value] of Object.entries(originalEnv)) {
+        if (value === undefined) {
+          delete process.env[key];
+        } else {
+          process.env[key] = value;
+        }
+      }
+    }
+  });
+});
 await run("generation placement adjustment can be saved and reloaded", async () => {
   await withTempStore(async (storePath) => {
     const saved = await consumeGenerationCredit("client-placement", input, generation, storePath);

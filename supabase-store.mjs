@@ -445,22 +445,31 @@ export async function prepareConceptCandidatesForSupabase(clientId, savedGenerat
   }
 
   const processedUrls = [];
+  let failedCount = 0;
 
   for (const [index, sourceUrl] of uniqueCandidates.entries()) {
-    const image = await readImageSource(sourceUrl, fetchImpl, config);
-    const normalized = await normalizeConceptImageForStorage(image);
-    const finalImage = normalized?.body ? normalized : image;
-    const extension = extensionFromSource(sourceUrl, finalImage.contentType);
-    const storagePath = `${storagePrefixForOwner(clientId)}/${savedGeneration.id}/concept-candidates/${index + 1}.${extension}`;
+    try {
+      const image = await readImageSource(sourceUrl, fetchImpl, config);
+      const normalized = await normalizeConceptImageForStorage(image);
+      const finalImage = normalized?.body ? normalized : image;
+      const extension = extensionFromSource(sourceUrl, finalImage.contentType);
+      const storagePath = `${storagePrefixForOwner(clientId)}/${savedGeneration.id}/concept-candidates/${index + 1}.${extension}`;
 
-    await uploadImageBodyToStorage({
-      storagePath,
-      image: finalImage,
-      config,
-      fetchImpl
-    });
+      await uploadImageBodyToStorage({
+        storagePath,
+        image: finalImage,
+        config,
+        fetchImpl
+      });
 
-    processedUrls.push(storageImageAppUrl(storagePath));
+      processedUrls.push(storageImageAppUrl(storagePath));
+    } catch {
+      failedCount += 1;
+    }
+  }
+
+  if (!processedUrls.length) {
+    throw new Error("No usable concept candidates could be saved.");
   }
 
   savedGeneration.conceptCandidates = processedUrls;
@@ -469,7 +478,11 @@ export async function prepareConceptCandidatesForSupabase(clientId, savedGenerat
     concept: processedUrls[0]
   };
 
-  return { skipped: false, conceptCandidates: processedUrls };
+  return {
+    skipped: false,
+    conceptCandidates: processedUrls,
+    failedCount
+  };
 }
 
 async function upsertOwnerCredits(owner, quota, env, fetchImpl) {

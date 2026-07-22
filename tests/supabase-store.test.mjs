@@ -403,6 +403,78 @@ await run("Supabase concept candidates are normalized, uploaded, and exposed thr
   assert.ok(uploadedPixel[0] > 240);
 });
 
+await run("Supabase concept candidate persistence keeps successful uploads when one candidate fails", async () => {
+  const image = await sharp({
+    create: {
+      width: 24,
+      height: 24,
+      channels: 3,
+      background: "#ffffff"
+    }
+  }).png().toBuffer();
+  const calls = [];
+  const fetchMock = async (url, options = {}) => {
+    calls.push({ url, options });
+
+    if (url.includes("replicate.delivery")) {
+      return {
+        ok: !url.includes("candidate-2"),
+        status: url.includes("candidate-2") ? 502 : 200,
+        headers: { get: () => "image/png" },
+        arrayBuffer: async () => image
+      };
+    }
+
+    if (url.includes("/storage/v1/object/")) {
+      return {
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify({ Key: "stored" })
+      };
+    }
+
+    throw new Error(`Unexpected fetch ${url}`);
+  };
+  const generation = {
+    ...savedGeneration,
+    images: { concept: "https://replicate.delivery/candidate-1.png" },
+    conceptCandidates: [
+      "https://replicate.delivery/candidate-1.png",
+      "https://replicate.delivery/candidate-2.png",
+      "https://replicate.delivery/candidate-3.png"
+    ]
+  };
+
+  const result = await prepareConceptCandidatesForSupabase("anon_client", generation, env, fetchMock);
+
+  assert.equal(result.skipped, false);
+  assert.equal(result.failedCount, 1);
+  assert.equal(result.conceptCandidates.length, 2);
+  assert.equal(generation.conceptCandidates.length, 2);
+  assert.equal(generation.images.concept, generation.conceptCandidates[0]);
+  assert.equal(calls.filter((call) => call.url.includes("/storage/v1/object/")).length, 2);
+});
+
+await run("Supabase concept candidate persistence rejects a batch when every upload fails", async () => {
+  const generation = {
+    ...savedGeneration,
+    images: { concept: "https://replicate.delivery/candidate-1.png" },
+    conceptCandidates: [
+      "https://replicate.delivery/candidate-1.png",
+      "https://replicate.delivery/candidate-2.png"
+    ]
+  };
+
+  await assert.rejects(
+    () => prepareConceptCandidatesForSupabase("anon_client", generation, env, async () => ({
+      ok: false,
+      status: 502,
+      headers: { get: () => "text/plain" },
+      text: async () => "upstream failure"
+    })),
+    /No usable concept candidates could be saved/
+  );
+});
 await run("Supabase owned storage image fetch only serves the current owner prefix", async () => {
   const calls = [];
   const fetchMock = async (url, options = {}) => {
