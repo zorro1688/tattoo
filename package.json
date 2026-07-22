@@ -10,6 +10,7 @@
     "lint": "node ./node_modules/next/dist/bin/next lint",
     "test:billing": "node tests/billing-core.test.mjs",
     "test:generate": "node tests/generation-core.test.mjs && node tests/generation-quality-api.test.mjs",
+    "test:candidate-quality": "node tests/candidate-quality-core.test.mjs && node tests/candidate-quality-provider.test.mjs && node tests/candidate-quality-orchestrator.test.mjs && node tests/candidate-quality-telemetry.test.mjs && node tests/production-quality-summary.test.mjs && node tests/candidate-quality-setup.test.mjs",
     "test:quota": "node tests/quota-store.test.mjs",
     "test:quality": "node tests/quality-evaluation-dataset.test.mjs && node tests/quality-evaluation-core.test.mjs && node tests/quality-evaluation-cli.test.mjs && node tests/quality-evaluation-setup.test.mjs",
     "eval:quality": "node scripts/evaluate-generation-quality.mjs",

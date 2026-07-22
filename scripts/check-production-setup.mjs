@@ -1,4 +1,4 @@
-﻿import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 function loadLocalEnv() {
@@ -88,6 +88,43 @@ function validateGeneration(errors, warnings) {
   }
 }
 
+function validateCandidateQuality(errors, warnings) {
+  const reviewEnabled = process.env.QUALITY_REVIEW_ENABLED?.trim();
+  const refillEnabled = process.env.QUALITY_REFILL_ENABLED?.trim();
+
+  for (const [name, value] of [
+    ["QUALITY_REVIEW_ENABLED", reviewEnabled],
+    ["QUALITY_REFILL_ENABLED", refillEnabled]
+  ]) {
+    if (!value) {
+      addWarning("[Candidate quality] " + name + " is not set. It defaults to false.", warnings);
+    } else if (!["true", "false"].includes(value)) {
+      errors.push("[Candidate quality] " + name + " must be true or false.");
+    }
+  }
+
+  if (reviewEnabled === "true") {
+    requireValue("REPLICATE_QUALITY_MODEL", "Candidate quality", errors);
+  }
+
+  if (refillEnabled === "true" && reviewEnabled !== "true") {
+    errors.push("[Candidate quality] QUALITY_REFILL_ENABLED requires QUALITY_REVIEW_ENABLED=true.");
+  }
+
+  if (hasValue("QUALITY_REVIEW_MIN_SCORE")) {
+    const score = Number(process.env.QUALITY_REVIEW_MIN_SCORE);
+    if (!Number.isFinite(score) || score < 0 || score > 100) {
+      errors.push("[Candidate quality] QUALITY_REVIEW_MIN_SCORE must be between 0 and 100.");
+    }
+  }
+
+  if (hasValue("QUALITY_REVIEW_TIMEOUT_MS")) {
+    const timeoutMs = Number(process.env.QUALITY_REVIEW_TIMEOUT_MS);
+    if (!Number.isInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > 120000) {
+      errors.push("[Candidate quality] QUALITY_REVIEW_TIMEOUT_MS must be an integer from 1000 to 120000.");
+    }
+  }
+}
 function validateSupabase(errors) {
   for (const name of [
     "NEXT_PUBLIC_SUPABASE_URL",
@@ -140,6 +177,7 @@ const warnings = [];
 
 validateAppUrl(errors, warnings);
 validateGeneration(errors, warnings);
+validateCandidateQuality(errors, warnings);
 validateSupabase(errors);
 validateCreem(errors);
 validateGoogleOAuth(errors);

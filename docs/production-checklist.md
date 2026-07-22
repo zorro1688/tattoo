@@ -1,4 +1,4 @@
-﻿# InkFirst Production Checklist
+# InkFirst Production Checklist
 
 Use this before deploying InkFirst to a real domain or before switching traffic from an ngrok test URL to production.
 
@@ -91,3 +91,14 @@ The external Webhook is optional. InkFirst still records structured errors in Ve
 - [ ] Keep generated reports out of Git because they may contain temporary provider image references.
 - [ ] Free users can download watermarked files only.
 - [ ] Paid users can download high-resolution Concept, Linework, and Placement files.
+## Candidate quality rollout
+
+The online candidate filter uses deterministic image checks plus google/gemini-3-flash visual review. It never logs raw prompts, image URLs, email addresses, access tokens, or payment payloads.
+
+1. Deploy with QUALITY_REVIEW_ENABLED=false and QUALITY_REFILL_ENABLED=false.
+2. Confirm normal generation, Storage persistence, credit charging, and Vercel Runtime Logs.
+3. Set QUALITY_REVIEW_ENABLED=true, REPLICATE_QUALITY_MODEL=google/gemini-3-flash, QUALITY_REVIEW_MIN_SCORE=70, and QUALITY_REVIEW_TIMEOUT_MS=20000.
+4. Observe latency, accepted candidate count, and reviewer availability before setting QUALITY_REFILL_ENABLED=true.
+5. Export the structured candidate_quality_gate_completed Vercel Runtime Logs and run npm run quality:summary -- --input path/to/vercel-quality-events.jsonl.
+6. Evaluate only after at least 100 batches. The launch target is at least two usable candidates in 85% or more of batches.
+7. Disable QUALITY_REFILL_ENABLED first if latency or Replicate cost rises. Disable QUALITY_REVIEW_ENABLED to restore the previous four-candidate flow.
