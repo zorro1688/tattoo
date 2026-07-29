@@ -413,9 +413,24 @@ async function normalizeConceptImageForStorage(image) {
   }
 }
 
+async function normalizeLineworkImageForStorage(image) {
+  try {
+    const { normalizeLineworkImage } = await import("./image-postprocess.mjs");
+    return await normalizeLineworkImage(image);
+  } catch (error) {
+    console.warn(`Linework image normalization skipped: ${error.message}`);
+    return { ...image, normalized: false };
+  }
+}
+
 async function uploadImageToStorage({ owner, localGenerationId, assetType, sourceUrl, config, fetchImpl }) {
-  const image = await readImageSource(sourceUrl, fetchImpl, config);
+  let image = await readImageSource(sourceUrl, fetchImpl, config);
   const storagePath = storagePathFromAppImageUrl(sourceUrl);
+
+  if (assetType === "linework") {
+    const normalized = await normalizeLineworkImageForStorage(image);
+    image = normalized?.body ? normalized : image;
+  }
   const extension = extensionFromSource(storagePath || sourceUrl, image.contentType);
   const targetPath = `${storagePrefixForOwner(owner)}/${localGenerationId}/${assetType}.${extension}`;
 
@@ -572,7 +587,7 @@ async function insertAssets(generationId, images = {}, config, env, fetchImpl, o
       asset_type: assetType,
       storage_bucket: config.bucket,
       storage_path: uploaded.storagePath,
-      source_url: sourceUrl,
+      source_url: assetType === "linework" ? storageImageAppUrl(uploaded.storagePath) : sourceUrl,
       content_type: uploaded.contentType,
       is_watermarked: false
     });

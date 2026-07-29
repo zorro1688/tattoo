@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import sharp from "sharp";
-import { normalizeConceptImage, normalizeConceptImageUrl } from "../image-postprocess.mjs";
+import { normalizeConceptImage, normalizeConceptImageUrl, normalizeLineworkImage } from "../image-postprocess.mjs";
 
 async function run(name, testBody) {
   try {
@@ -73,4 +73,31 @@ await run("URL normalization never returns base64 image data to the frontend", a
   assert.equal(result.url, "https://replicate.delivery/dark.png");
   assert.equal(result.url.startsWith("data:"), false);
   assert.equal(result.image.contentType, "image/png");
+});
+
+await run("gray-background linework becomes pure white without washing out black strokes", async () => {
+  const grayLinework = await sharp({
+    create: {
+      width: 96,
+      height: 96,
+      channels: 3,
+      background: { r: 224, g: 223, b: 217 }
+    }
+  })
+    .composite([{
+      input: Buffer.from('<svg width="96" height="96"><path d="M18 78 L48 18 L78 78" stroke="black" stroke-width="8" fill="none" stroke-linecap="round"/></svg>'),
+      top: 0,
+      left: 0
+    }])
+    .png()
+    .toBuffer();
+
+  const result = await normalizeLineworkImage({ body: grayLinework, contentType: "image/png" });
+  const background = await sharp(result.body).extract({ left: 0, top: 0, width: 1, height: 1 }).raw().toBuffer();
+  const stroke = await sharp(result.body).extract({ left: 47, top: 20, width: 1, height: 1 }).raw().toBuffer();
+
+  assert.equal(result.contentType, "image/png");
+  assert.equal(result.normalized, true);
+  assert.deepEqual([...background.slice(0, 3)], [255, 255, 255]);
+  assert.ok(stroke[0] < 16 && stroke[1] < 16 && stroke[2] < 16, `expected black stroke, got ${[...stroke]}`);
 });

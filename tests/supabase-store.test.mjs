@@ -31,6 +31,17 @@ const env = {
   SUPABASE_STORAGE_BUCKET: "inkfirst-designs"
 };
 
+const lineworkFixture = await sharp({
+  create: {
+    width: 24,
+    height: 24,
+    channels: 3,
+    background: { r: 224, g: 223, b: 217 }
+  }
+})
+  .composite([{ input: Buffer.from('<svg width="24" height="24"><path d="M4 20 L12 4 L20 20" stroke="black" stroke-width="3" fill="none"/></svg>') }])
+  .webp()
+  .toBuffer();
 const savedGeneration = {
   id: "gen_local_123",
   clientId: "anon_client",
@@ -109,7 +120,7 @@ function createFetchMock() {
         headers: {
           get: () => "image/webp"
         },
-        arrayBuffer: async () => Buffer.from(`source:${url}`)
+        arrayBuffer: async () => url.includes("linework") ? lineworkFixture : Buffer.from(`source:${url}`)
       };
     }
 
@@ -537,13 +548,105 @@ await run("Supabase linework persistence updates the saved generation asset", as
   assert.equal(serviceCalls.length, 6);
   assert.match(serviceCalls[0].url, /\/generations\?/);
   assert.equal(serviceCalls[1].options.method, "PATCH");
-  assert.match(serviceCalls[2].url, /\/storage\/v1\/object\/inkfirst-designs\/anonymous\/anon_client\/gen_local_123\/linework\.webp$/);
+  assert.match(serviceCalls[2].url, /\/storage\/v1\/object\/inkfirst-designs\/anonymous\/anon_client\/gen_local_123\/linework\.png$/);
   assert.match(serviceCalls[4].url, /generation_assets/);
 
   const assetsBody = JSON.parse(serviceCalls[3].options.body);
   assert.equal(assetsBody.length, 1);
   assert.equal(assetsBody[0].asset_type, "linework");
-  assert.equal(assetsBody[0].storage_path, "anonymous/anon_client/gen_local_123/linework.webp");
+  assert.equal(assetsBody[0].storage_path, "anonymous/anon_client/gen_local_123/linework.png");
+});
+
+await run("Supabase linework persistence uploads normalized pure-white PNG", async () => {
+  const grayLinework = await sharp({
+    create: {
+      width: 48,
+      height: 48,
+      channels: 3,
+      background: { r: 224, g: 223, b: 217 }
+    }
+  })
+    .composite([{
+      input: Buffer.from('<svg width="48" height="48"><path d="M8 40 L24 8 L40 40" stroke="black" stroke-width="5" fill="none"/></svg>'),
+      top: 0,
+      left: 0
+    }])
+    .png()
+    .toBuffer();
+  const calls = [];
+  let uploadedBody;
+
+  const fetchMock = async (url, options = {}) => {
+    calls.push({ url, options });
+
+    if (url === "https://replicate.delivery/gray-linework.png") {
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => "image/png" },
+        arrayBuffer: async () => grayLinework
+      };
+    }
+
+    if (url.includes("/storage/v1/object/")) {
+      uploadedBody = Buffer.from(options.body);
+      return { ok: true, status: 200, text: async () => JSON.stringify({ Key: "stored" }) };
+    }
+
+    if (url.includes("/generations?") && options.method === "GET") {
+      const withAssets = url.includes("generation_assets");
+      return {
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify([withAssets ? {
+          id: "00000000-0000-4000-8000-000000000001",
+          local_generation_id: "gen_local_123",
+          provider: "replicate",
+          model: "linework-model",
+          status: "succeeded",
+          prompt: "linework",
+          input_idea: "tiger",
+          input_style: "Traditional",
+          input_placement: "Shoulder",
+          input_size: "Medium",
+          input_complexity: "Detailed",
+          created_at: "2026-07-29T00:00:00.000Z",
+          updated_at: "2026-07-29T00:01:00.000Z",
+          generation_assets: [{
+            asset_type: "linework",
+            storage_bucket: "inkfirst-designs",
+            storage_path: "anonymous/anon_client/gen_local_123/linework.png",
+            source_url: "https://replicate.delivery/gray-linework.png"
+          }]
+        } : { id: "00000000-0000-4000-8000-000000000001" }])
+      };
+    }
+
+    return { ok: true, status: 204, text: async () => "" };
+  };
+
+  await persistLineworkToSupabase(
+    "anon_client",
+    {
+      ...savedGeneration,
+      images: { ...savedGeneration.images, linework: "https://replicate.delivery/gray-linework.png" },
+      lineworkStatus: "succeeded",
+      updatedAt: "2026-07-29T00:01:00.000Z"
+    },
+    { freeRemaining: 1, paidRemaining: 0, highResolution: false },
+    env,
+    fetchMock
+  );
+
+  const background = await sharp(uploadedBody).extract({ left: 0, top: 0, width: 1, height: 1 }).raw().toBuffer();
+  const storageCall = calls.find((call) => call.url.includes("/storage/v1/object/"));
+
+  const assetCall = calls.find((call) => call.url.includes("/generation_assets?on_conflict="));
+  const assetBody = JSON.parse(assetCall.options.body);
+  assert.deepEqual([...background.slice(0, 3)], [255, 255, 255]);
+  assert.match(storageCall.url, /linework\.png$/);
+  assert.equal(storageCall.options.headers["Content-Type"], "image/png");
+  assert.match(assetBody[0].source_url, /^\/api\/storage-image\?path=.*linework\.png/);
 });
 
 

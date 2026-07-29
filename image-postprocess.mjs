@@ -60,6 +60,38 @@ export async function normalizeConceptImage(image) {
   };
 }
 
+export async function normalizeLineworkImage(image) {
+  if (!image?.body || !isSupportedImage(image.contentType)) {
+    return { ...image, normalized: false };
+  }
+
+  const edgeLuminance = await estimateEdgeLuminance(image.body);
+
+  if (edgeLuminance >= 250) {
+    return { ...image, normalized: false };
+  }
+
+  let pipeline = sharp(image.body).flatten({ background: "#ffffff" });
+
+  if (edgeLuminance < 72) {
+    pipeline = pipeline.negate({ alpha: false });
+  } else {
+    const backgroundScale = Math.min(1.35, 255 / Math.max(edgeLuminance, 1));
+    pipeline = pipeline
+      .grayscale()
+      .linear(backgroundScale, 0)
+      .toColourspace("srgb");
+  }
+
+  const body = await pipeline.png().toBuffer();
+
+  return {
+    body,
+    contentType: "image/png",
+    normalized: true
+  };
+}
+
 export async function normalizeConceptImageUrl(sourceUrl, fetchImpl = fetch) {
   try {
     if (!sourceUrl || !/^https?:\/\//i.test(sourceUrl)) {
