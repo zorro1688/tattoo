@@ -18,7 +18,8 @@ import {
   safeListGenerationsFromSupabase,
   safeGetQuotaFromSupabase,
   safeGetDownloadAccessFromSupabase,
-  getQuotaFromSupabase
+  getQuotaFromSupabase,
+  grantPaidCreditsInSupabase
 } from "./supabase-store.mjs";
 import { billingStatusFromEventType, mergeBillingHistory } from "./billing-history-core.mjs";
 import { getAuthSession } from "./auth-core.mjs";
@@ -564,6 +565,15 @@ export async function addPaidCredits(clientId, credits, metadata = {}, storePath
 
   if (!Number.isFinite(amount) || amount <= 0) {
     throw new Error("Paid credits must be a positive number");
+  }
+
+  if (hasSupabaseStore()) {
+    const result = await grantPaidCreditsInSupabase(clientId, amount, metadata);
+
+    return {
+      granted: result.granted,
+      quota: result.quota
+    };
   }
 
   const store = await readStore(storePath);

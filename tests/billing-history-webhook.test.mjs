@@ -101,6 +101,68 @@ await run("completed webhook records billing event and grants credits once", asy
   });
 });
 
+await run("production credit grants use Supabase without writing the read-only local store", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "inkfirst-production-credit-"));
+  const previousStorePath = process.env.INKFIRST_STORE_PATH;
+  const previousSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const previousSupabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const previousFetch = globalThis.fetch;
+  const userId = "00000000-0000-4000-8000-000000000099";
+  const calls = [];
+
+  process.env.INKFIRST_STORE_PATH = dir;
+  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
+  globalThis.fetch = async (url, options = {}) => {
+    calls.push({ url, options });
+
+    if (url.includes("/credit_events?")) {
+      return {
+        ok: true,
+        status: 201,
+        text: async () => JSON.stringify([{ id: "00000000-0000-4000-8000-000000000001" }]),
+      };
+    }
+
+    if (url.includes("/user_entitlements?")) {
+      return {
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify([{
+          free_credits_remaining: 41,
+          paid_credits_remaining: 20,
+          high_resolution_downloads_unlocked: true,
+        }]),
+      };
+    }
+
+    throw new Error(`Unexpected Supabase request: ${url}`);
+  };
+
+  try {
+    const result = await addPaidCredits(userId, 20, {
+      source: "creem",
+      externalEventId: "evt_production_credit",
+      plan: "creator-pack",
+    });
+
+    assert.equal(result.granted, true);
+    assert.equal(result.quota.freeRemaining, 41);
+    assert.equal(result.quota.paidRemaining, 20);
+    assert.equal(result.quota.highResolution, true);
+    assert.equal(calls.some((call) => call.url.includes("/credit_events?")), true);
+  } finally {
+    globalThis.fetch = previousFetch;
+    if (previousStorePath === undefined) delete process.env.INKFIRST_STORE_PATH;
+    else process.env.INKFIRST_STORE_PATH = previousStorePath;
+    if (previousSupabaseUrl === undefined) delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    else process.env.NEXT_PUBLIC_SUPABASE_URL = previousSupabaseUrl;
+    if (previousSupabaseKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    else process.env.SUPABASE_SERVICE_ROLE_KEY = previousSupabaseKey;
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 for (const eventType of ["checkout.failed", "checkout.cancelled", "payment.refunded"]) {
   await run(`${eventType} webhook records but does not grant credits`, async () => {
     await withTempStore(async () => {

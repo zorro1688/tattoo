@@ -767,6 +767,53 @@ export async function persistLineworkToSupabase(clientId, generation, quota, env
     generation: verified.generation
   };
 }
+export async function grantPaidCreditsInSupabase(clientId, credits, metadata = {}, env = process.env, fetchImpl = fetch) {
+  if (!getSupabaseConfig(env)) {
+    return { skipped: true, granted: false, quota: null };
+  }
+
+  const amount = Number(credits);
+  const eventId = metadata.externalEventId;
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error("Paid credits must be a positive number");
+  }
+
+  if (!eventId) {
+    throw new Error("Paid credit grants require an external event id");
+  }
+
+  await ensureAnonymousOwnerExists(clientId, env, fetchImpl);
+
+  const { body } = await requestSupabase("/credit_events?on_conflict=source,external_event_id&select=id", {
+    method: "POST",
+    headers: {
+      Prefer: "resolution=ignore-duplicates,return=representation"
+    },
+    body: JSON.stringify({
+      ...ownerCreditPayload(clientId),
+      source: toBillingProvider(metadata.source),
+      external_event_id: eventId,
+      plan: toBillingPlan(metadata.plan),
+      credits_delta: amount,
+      high_resolution_unlocked: true,
+      metadata
+    })
+  }, env, fetchImpl);
+
+  const quotaResult = await getQuotaFromSupabase(clientId, env, fetchImpl);
+
+  if (!quotaResult.quota) {
+    throw new Error("Paid credits were recorded but the updated entitlement could not be verified");
+  }
+
+  return {
+    skipped: false,
+    granted: Boolean(body?.length),
+    quota: quotaResult.quota
+  };
+}
+
 
 export async function persistCreditEventToSupabase(clientId, credits, metadata, quota, env = process.env, fetchImpl = fetch) {
   const config = getSupabaseConfig(env);
