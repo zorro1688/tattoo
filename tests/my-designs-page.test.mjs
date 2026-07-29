@@ -36,7 +36,8 @@ await run("My Designs cards render saved placement previews instead of only conc
 
   assert.match(script, /const placementSkinAssets = \{/);
   assert.match(script, /function renderPlacementPreview\(design, title\)/);
-  assert.match(script, /design\.placementAdjustment \?\? getDefaultPlacementAdjustment\(design\)/);
+  assert.match(script, /const fit = getDefaultPlacementAdjustment\(design\)/);
+  assert.match(script, /design\.placementAdjustment \?\? fit/);
   assert.match(script, /--tattoo-x:\s*\$\{Math\.round\(adjustment\.x \* 1000\) \/ 10\}%/);
   assert.match(script, /--tattoo-y:\s*\$\{Math\.round\(adjustment\.y \* 1000\) \/ 10\}%/);
   assert.match(script, /class="my-design-placement-preview"/);
@@ -60,4 +61,47 @@ await run("My Designs placement previews remove square artwork backgrounds", asy
     assert.match(source, /estimateTattooBackgroundColor/);
     assert.match(source, /isNearTattooBackground/);
   }
+});
+
+await run("My Designs placement thumbnails preserve detail-page sizing and body fit", async () => {
+  const scripts = [
+    await readFile("my-designs.js", "utf8"),
+    await readFile("public/my-designs.js", "utf8")
+  ];
+  const styleSources = [
+    await readFile("styles.css", "utf8"),
+    await readFile("app/globals.css", "utf8")
+  ];
+
+  for (const script of scripts) {
+    assert.match(script, /chest:\s*\{ x: 0\.5, y: 0\.42, rotation: 0, scale: 0\.78, squash: 0\.95 \}/);
+    assert.match(script, /shoulder:\s*\{ x: 0\.58, y: 0\.34, rotation: -8, scale: 0\.92, squash: 0\.9 \}/);
+    assert.match(script, /data-size="\$\{escapeHtml\(normalizePlacementValue\(design\.input\?\.size \?\? "Small"\)\)\}"/);
+    assert.match(script, /--tattoo-squash:\s*\$\{fit\.squash\}/);
+  }
+
+  for (const styles of styleSources) {
+    assert.match(styles, /\.my-design-placement-preview\[data-size="small"\] \.my-design-placement-tattoo/);
+    assert.match(styles, /\.my-design-placement-preview\[data-size="medium"\] \.my-design-placement-tattoo/);
+    assert.match(styles, /\.my-design-placement-preview\[data-size="large"\] \.my-design-placement-tattoo/);
+    assert.doesNotMatch(styles, /\.my-design-placement-tattoo \{[\s\S]*?width: 72%;[\s\S]*?height: 72%;/);
+  }
+});
+
+await run("My Designs refreshes stale placement data after returning from details", async () => {
+  const scripts = [
+    await readFile("my-designs.js", "utf8"),
+    await readFile("public/my-designs.js", "utf8")
+  ];
+  const route = await readFile("app/api/generations/route.js", "utf8");
+
+  for (const script of scripts) {
+    assert.match(script, /fetch\("\/api\/generations\?limit=24", \{ cache: "no-store" \}\)/);
+    assert.match(script, /function refreshDesignsAfterReturn\(\)/);
+    assert.match(script, /window\.addEventListener\("pageshow", refreshDesignsAfterReturn\)/);
+    assert.match(script, /window\.addEventListener\("focus", refreshDesignsAfterReturn\)/);
+  }
+
+  assert.match(route, /Cache-Control/);
+  assert.match(route, /private, no-store/);
 });

@@ -1,5 +1,6 @@
 const myDesignsGrid = document.querySelector("#myDesignsGrid");
 const designsStatus = document.querySelector("#designsStatus");
+const myDesignsRefreshKey = "inkfirst:my-designs-refresh";
 let savedDesigns = [];
 
 const placementSkinAssets = {
@@ -14,14 +15,14 @@ const placementSkinAssets = {
 };
 
 const placementTattooFits = {
-  forearm: { x: 0.54, y: 0.55, rotation: -7, scale: 0.82 },
-  wrist: { x: 0.48, y: 0.58, rotation: -4, scale: 0.56 },
-  "upper-arm": { x: 0.53, y: 0.46, rotation: -5, scale: 0.82 },
-  chest: { x: 0.5, y: 0.59, rotation: 0, scale: 0.78 },
-  back: { x: 0.5, y: 0.43, rotation: 0, scale: 0.9 },
-  ankle: { x: 0.5, y: 0.58, rotation: -3, scale: 0.58 },
-  shoulder: { x: 0.58, y: 0.34, rotation: -8, scale: 0.92 },
-  rib: { x: 0.57, y: 0.5, rotation: 5, scale: 0.62 }
+  forearm: { x: 0.54, y: 0.55, rotation: -7, scale: 0.82, squash: 0.9 },
+  wrist: { x: 0.48, y: 0.58, rotation: -4, scale: 0.56, squash: 0.86 },
+  "upper-arm": { x: 0.53, y: 0.46, rotation: -5, scale: 0.82, squash: 0.9 },
+  chest: { x: 0.5, y: 0.42, rotation: 0, scale: 0.78, squash: 0.95 },
+  back: { x: 0.5, y: 0.43, rotation: 0, scale: 0.9, squash: 0.95 },
+  ankle: { x: 0.5, y: 0.58, rotation: -3, scale: 0.58, squash: 0.86 },
+  shoulder: { x: 0.58, y: 0.34, rotation: -8, scale: 0.92, squash: 0.9 },
+  rib: { x: 0.57, y: 0.5, rotation: 5, scale: 0.62, squash: 0.86 }
 };
 
 function normalizePlacementValue(value = "Forearm") {
@@ -195,9 +196,10 @@ function normalizePlacementAdjustment(adjustment, fallback) {
 
 function renderPlacementPreview(design, title) {
   const placement = design.input?.placement ?? "Forearm";
+  const fit = getDefaultPlacementAdjustment(design);
   const adjustment = normalizePlacementAdjustment(
-    design.placementAdjustment ?? getDefaultPlacementAdjustment(design),
-    getDefaultPlacementAdjustment(design)
+    design.placementAdjustment ?? fit,
+    fit
   );
   const tattooImage = hasGeneratedLinework(design)
     ? design.images?.linework
@@ -207,11 +209,12 @@ function renderPlacementPreview(design, title) {
     `--tattoo-x: ${Math.round(adjustment.x * 1000) / 10}%`,
     `--tattoo-y: ${Math.round(adjustment.y * 1000) / 10}%`,
     `--tattoo-fit-scale: ${adjustment.scale}`,
-    `--tattoo-rotation: ${adjustment.rotation}deg`
+    `--tattoo-rotation: ${adjustment.rotation}deg`,
+    `--tattoo-squash: ${fit.squash}`
   ].join("; ");
 
   return `
-    <div class="my-design-placement-preview" data-placement="${escapeHtml(normalizePlacementValue(placement))}" style="${escapeHtml(style)}">
+    <div class="my-design-placement-preview" data-placement="${escapeHtml(normalizePlacementValue(placement))}" data-size="${escapeHtml(normalizePlacementValue(design.input?.size ?? "Small"))}" style="${escapeHtml(style)}">
       <img class="my-design-placement-skin" src="${escapeHtml(getPlacementSkinAsset(placement))}" alt="" aria-hidden="true" loading="lazy">
       <img class="my-design-placement-tattoo" src="${escapeHtml(safeTattooImage)}" data-placement-tattoo-source="${escapeHtml(safeTattooImage)}" alt="${escapeHtml(title)} placement preview" loading="lazy">
     </div>
@@ -352,7 +355,7 @@ async function generateLinework(generationId, button) {
 
 async function loadDesigns() {
   try {
-    const response = await fetch("/api/generations?limit=24");
+    const response = await fetch("/api/generations?limit=24", { cache: "no-store" });
     const data = await response.json();
 
     if (!response.ok) {
@@ -378,5 +381,27 @@ myDesignsGrid.addEventListener("click", (event) => {
 
   generateLinework(button.dataset.lineworkId, button);
 });
+
+function readMyDesignsRefreshMarker() {
+  try {
+    return window.sessionStorage.getItem(myDesignsRefreshKey);
+  } catch {
+    return null;
+  }
+}
+
+let handledMyDesignsRefreshMarker = readMyDesignsRefreshMarker();
+
+function refreshDesignsAfterReturn() {
+  const marker = readMyDesignsRefreshMarker();
+  if (!marker || marker === handledMyDesignsRefreshMarker) {
+    return;
+  }
+  handledMyDesignsRefreshMarker = marker;
+  loadDesigns();
+}
+
+window.addEventListener("pageshow", refreshDesignsAfterReturn);
+window.addEventListener("focus", refreshDesignsAfterReturn);
 
 loadDesigns();

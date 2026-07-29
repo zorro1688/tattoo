@@ -909,14 +909,26 @@ textarea {
   position: absolute;
   left: var(--tattoo-x, 54%);
   top: var(--tattoo-y, 55%);
-  width: 72%;
-  height: 72%;
+  width: 27.1%;
+  height: auto;
   object-fit: contain;
   opacity: 0.74;
   mix-blend-mode: multiply;
   filter: grayscale(1) contrast(0.92) brightness(0.72) blur(0.25px);
-  transform: translate(-50%, -50%) rotate(var(--tattoo-rotation, -7deg)) scale(var(--tattoo-fit-scale, 0.82));
+  transform: translate(-50%, -50%) rotate(var(--tattoo-rotation, -7deg)) scale(var(--tattoo-fit-scale, 0.82)) scaleX(var(--tattoo-squash, 0.9)) skewX(-2deg);
   transform-origin: center;
+}
+
+.my-design-placement-preview[data-size="small"] .my-design-placement-tattoo {
+  width: 27.1%;
+}
+
+.my-design-placement-preview[data-size="medium"] .my-design-placement-tattoo {
+  width: 39.1%;
+}
+
+.my-design-placement-preview[data-size="large"] .my-design-placement-tattoo {
+  width: 54.2%;
 }
 
 .my-design-copy,

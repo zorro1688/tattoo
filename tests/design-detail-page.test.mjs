@@ -216,6 +216,18 @@ await run("design detail placement can be dragged directly without jumping to th
 });
 
 
+await run("design detail marks My Designs stale after placement save or reset", async () => {
+  const scripts = [
+    await readFile("design.js", "utf8"),
+    await readFile("public/design.js", "utf8")
+  ];
+
+  for (const script of scripts) {
+    assert.match(script, /const myDesignsRefreshKey = "inkfirst:my-designs-refresh"/);
+    assert.match(script, /function markMyDesignsStale\(\)/);
+    assert.equal((script.match(/markMyDesignsStale\(\);/g) ?? []).length, 2);
+  }
+});
 await run("design detail download buttons show active feedback and protect slow placement downloads", async () => {
   const script = await readFile("design.js", "utf8");
   const publicScript = await readFile("public/design.js", "utf8");

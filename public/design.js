@@ -23,6 +23,7 @@ const placementScaleControl = document.querySelector("#placementScaleControl");
 const placementRotateControl = document.querySelector("#placementRotateControl");
 const savePlacementButton = document.querySelector("#savePlacementButton");
 const resetPlacementButton = document.querySelector("#resetPlacementButton");
+const myDesignsRefreshKey = "inkfirst:my-designs-refresh";
 
 
 async function readJsonResponse(response) {
@@ -418,6 +419,13 @@ function loadDrawableImage(url) {
 }
 
 
+function markMyDesignsStale() {
+  try {
+    window.sessionStorage.setItem(myDesignsRefreshKey, String(Date.now()));
+  } catch {
+    // The placement is still saved when session storage is unavailable.
+  }
+}
 function clampNumber(value, min, max) {
   return Math.min(max, Math.max(min, Number(value)));
 }
@@ -551,6 +559,7 @@ async function savePlacementAdjustment(adjustment = currentPlacementAdjustment) 
     }
 
     currentDesign = data.generation;
+    markMyDesignsStale();
     applyPlacementAdjustment(currentDesign.placementAdjustment ?? getDefaultPlacementAdjustment(currentDesign));
     designStatus.textContent = "Placement saved.";
   } catch (error) {
@@ -588,6 +597,7 @@ async function resetPlacementAdjustment() {
 
     currentDesign = data.generation;
     currentDesign.placementAdjustment = null;
+    markMyDesignsStale();
     applyPlacementAdjustment(fallback);
     designStatus.textContent = "Placement reset.";
   } catch (error) {
