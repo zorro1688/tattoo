@@ -676,7 +676,7 @@ const server = createServer(async (request, response) => {
             ? "success.html"
             : url.pathname === "/billing"
               ? "billing.html"
-              : url.pathname === "/qa-checklist"
+              : url.pathname === "/privacy"`r`n                ? "privacy.html"`r`n                : url.pathname === "/terms"`r`n                  ? "terms.html"`r`n                  : url.pathname === "/refunds"`r`n                    ? "refunds.html"`r`n                                  : url.pathname === "/qa-checklist"
                 ? "qa-checklist.html"
                 : url.pathname === "/billing-cancelled"
               ? "billing-cancelled.html"
