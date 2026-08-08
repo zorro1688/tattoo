@@ -71,3 +71,25 @@ await run("Next routes render the corresponding legal documents", async () => {
     assert.match(page, /dangerouslySetInnerHTML/);
   }
 });
+await run("landing footer links to the legal pages and uses a copyright entity", async () => {
+  const home = await readFile("index.html", "utf8");
+
+  assert.match(home, /href="\/privacy">Privacy Policy<\/a>/);
+  assert.match(home, /href="\/terms">Terms of Service<\/a>/);
+  assert.match(home, /href="\/refunds">Refund Policy<\/a>/);
+  assert.match(home, /&copy; 2026 InkFirst\. All rights reserved\./);
+  assert.doesNotMatch(home, /\? 2026 InkFirst/);
+});
+
+await run("legal pages have matching responsive styles in both runtimes", async () => {
+  for (const cssFile of ["app/globals.css", "styles.css"]) {
+    const css = await readFile(cssFile, "utf8");
+
+    for (const selector of [".legal-page", ".legal-brand", ".legal-kicker", ".legal-updated", ".legal-section"]) {
+      assert.match(css, new RegExp(selector.replace(".", "\\.")));
+    }
+
+    assert.match(css, /\.legal-page a/);
+    assert.match(css, /max-width:\s*720px[\s\S]*\.legal-page/);
+  }
+});

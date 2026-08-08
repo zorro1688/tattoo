@@ -3005,3 +3005,93 @@ textarea {
 .detail-placement-mockup.is-dragging .detail-placement-tattoo {
   cursor: grabbing;
 }
+
+.legal-page {
+  width: min(100% - 40px, 780px);
+  margin: 0 auto;
+  padding: 72px 0 96px;
+  color: #1d1d1f;
+}
+
+.legal-brand {
+  display: inline-block;
+  color: #1d1d1f;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  text-decoration: none;
+}
+
+.legal-kicker {
+  margin: 52px 0 10px;
+  color: #0071e3;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.legal-page h1 {
+  margin: 0;
+  font-size: clamp(42px, 7vw, 68px);
+  letter-spacing: -0.055em;
+  line-height: 1;
+}
+
+.legal-updated {
+  margin: 16px 0 34px;
+  color: #6e6e73;
+  font-size: 14px;
+}
+
+.legal-section {
+  margin-top: 16px;
+  padding: 28px;
+  border: 1px solid #e5e5e7;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.04);
+}
+
+.legal-section h2 {
+  margin: 0 0 12px;
+  font-size: 22px;
+  letter-spacing: -0.025em;
+}
+
+.legal-section p {
+  margin: 0;
+  color: #424245;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.legal-page a {
+  color: #0071e3;
+  text-underline-offset: 3px;
+}
+
+.legal-brand:hover,
+.legal-brand:focus-visible {
+  color: #0071e3;
+}
+
+@media (max-width: 720px) {
+  .legal-page {
+    width: min(100% - 32px, 780px);
+    padding: 42px 0 64px;
+  }
+
+  .legal-kicker {
+    margin-top: 36px;
+  }
+
+  .legal-section {
+    padding: 22px;
+    border-radius: 20px;
+  }
+
+  .legal-section h2 {
+    font-size: 20px;
+  }
+}
