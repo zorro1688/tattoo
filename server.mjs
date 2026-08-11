@@ -695,8 +695,10 @@ const server = createServer(async (request, response) => {
                         ? "billing-cancelled.html"
                         : url.pathname === "/robots.txt"
                           ? "robots.txt"
-                          : url.pathname === "/sitemap.xml"
+                        : url.pathname === "/sitemap.xml"
                             ? "sitemap.xml"
+                        : url.pathname === "/guide-prompts.js"
+                          ? "public/guide-prompts.js"
                         : url.pathname.split("/")[1] === "guides"
                           ? "__not_found__.html"
                           : url.pathname.slice(1)

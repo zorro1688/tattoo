@@ -3185,3 +3185,281 @@ textarea {
     font-size: 20px;
   }
 }
+/* First Tattoo Guides */
+.guide-body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(0, 113, 227, 0.1), transparent 30rem),
+    #f5f5f7;
+}
+
+.guide-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1180px;
+  min-height: 64px;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 4vw, 48px);
+}
+
+.guide-brand {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.guide-header-cta {
+  border-radius: 999px;
+  background: #fff;
+  padding: 9px 16px;
+  color: #0066cc;
+  font-size: 14px;
+  font-weight: 750;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.07);
+}
+
+.guide-page {
+  display: grid;
+  gap: 24px;
+  width: min(1080px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: clamp(38px, 7vw, 84px) 0 72px;
+}
+
+.guide-hero {
+  max-width: 850px;
+  padding: clamp(18px, 4vw, 48px) 0 clamp(16px, 3vw, 30px);
+}
+
+.guide-eyebrow {
+  margin: 0 0 12px;
+  color: #0066cc;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.guide-page h1 {
+  max-width: 900px;
+  margin: 0;
+  font-size: clamp(46px, 8vw, 82px);
+  line-height: 0.98;
+  text-transform: capitalize;
+}
+
+.guide-page h2 {
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1.08;
+}
+
+.guide-lead {
+  max-width: 760px;
+  margin: 22px 0 0;
+  font-size: clamp(19px, 2.4vw, 25px);
+  line-height: 1.5;
+}
+
+.guide-content-card,
+.guide-prompts,
+.guide-generator-card {
+  border-radius: 30px;
+  background: #fff;
+  padding: clamp(26px, 5vw, 54px);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.06);
+}
+
+.guide-content-card ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 34px;
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guide-content-card li {
+  position: relative;
+  padding: 0 0 0 24px;
+  color: #424245;
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.guide-content-card li::before {
+  content: "";
+  position: absolute;
+  top: 0.6em;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #0071e3;
+}
+
+.guide-section-heading {
+  max-width: 720px;
+}
+
+.guide-section-heading > p:last-child {
+  margin: 14px 0 0;
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+.guide-prompt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 30px;
+}
+
+.guide-prompt-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  border: 1px solid #e8e8ed;
+  border-radius: 22px;
+  background: #fbfbfd;
+  padding: 20px;
+}
+
+.guide-prompt-card h3 {
+  font-size: 18px;
+}
+
+.guide-prompt-card textarea {
+  min-height: 144px;
+  margin: 14px 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #424245;
+  font-size: 15px;
+  line-height: 1.55;
+  resize: none;
+}
+
+.guide-copy-button {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #d2d2d7;
+  border-radius: 999px;
+  background: #fff;
+  color: #0066cc;
+  font-weight: 800;
+}
+
+.guide-copy-button:hover,
+.guide-copy-button:focus-visible {
+  border-color: #0071e3;
+  outline: none;
+}
+
+.guide-copy-status {
+  min-height: 20px;
+  margin-top: 8px;
+  color: #6e6e73;
+  font-size: 12px;
+  text-align: center;
+}
+
+.guide-generator-card {
+  background:
+    radial-gradient(circle at 85% 20%, rgba(64, 156, 255, 0.35), transparent 24rem),
+    #111114;
+  color: #fff;
+}
+
+.guide-generator-card h2 {
+  max-width: 760px;
+}
+
+.guide-generator-card > p:not(.guide-eyebrow) {
+  max-width: 680px;
+  margin: 16px 0 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+.guide-primary-cta {
+  display: inline-flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 26px;
+  border-radius: 999px;
+  background: #fff;
+  padding: 0 24px;
+  color: #0066cc;
+  font-weight: 800;
+}
+
+.guide-boundary {
+  border-left: 4px solid #0071e3;
+  border-radius: 0 18px 18px 0;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 20px 24px;
+  color: #6e6e73;
+  line-height: 1.55;
+}
+
+.guide-boundary strong {
+  color: #1d1d1f;
+}
+
+.guide-related {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 0 0;
+}
+
+.guide-related span {
+  margin-right: 4px;
+  color: #6e6e73;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.guide-related a {
+  border-radius: 999px;
+  background: #fff;
+  padding: 10px 14px;
+  color: #0066cc;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .guide-header {
+    padding: 0 18px;
+  }
+
+  .guide-page {
+    width: min(100% - 24px, 1080px);
+    padding-top: 24px;
+  }
+
+  .guide-content-card,
+  .guide-prompts,
+  .guide-generator-card {
+    border-radius: 22px;
+  }
+
+  .guide-content-card ul,
+  .guide-prompt-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .guide-prompt-card textarea {
+    min-height: 110px;
+  }
+
+  .guide-primary-cta {
+    width: 100%;
+  }
+}
