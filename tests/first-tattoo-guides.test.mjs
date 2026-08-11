@@ -20,6 +20,15 @@ const { siteUrl, guideSlugs, guidesBySlug } = await import("../guide-catalog.mjs
 assert.equal(siteUrl, "https://tattoo-pink.vercel.app");
 assert.deepEqual(guideSlugs, required.map(([slug]) => slug));
 
+const sitemap = await readFile("sitemap.xml", "utf8");
+const robots = await readFile("robots.txt", "utf8");
+assert.match(robots, /Sitemap: https:\/\/tattoo-pink\.vercel\.app\/sitemap\.xml/);
+for (const slug of guideSlugs) {
+  assert.match(sitemap, new RegExp(`<loc>https://tattoo-pink\\.vercel\\.app/guides/${slug}</loc>`));
+}
+assert.match(await readFile("app/robots.ts", "utf8"), /guideSlugs/);
+assert.match(await readFile("app/sitemap.ts", "utf8"), /guideSlugs/);
+
 for (const [slug, keyword] of required) {
   const guide = guidesBySlug[slug];
   assert.ok(guide, `registry includes ${slug}`);

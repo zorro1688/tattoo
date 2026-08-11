@@ -69,7 +69,9 @@ const types = {
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
   ".webp": "image/webp",
-  ".svg": "image/svg+xml"
+  ".svg": "image/svg+xml",
+  ".txt": "text/plain; charset=utf-8",
+  ".xml": "application/xml; charset=utf-8"
 };
 
 async function readRawBody(request) {
@@ -691,6 +693,10 @@ const server = createServer(async (request, response) => {
                       ? "qa-checklist.html"
                       : url.pathname === "/billing-cancelled"
                         ? "billing-cancelled.html"
+                        : url.pathname === "/robots.txt"
+                          ? "robots.txt"
+                          : url.pathname === "/sitemap.xml"
+                            ? "sitemap.xml"
                         : url.pathname.split("/")[1] === "guides"
                           ? "__not_found__.html"
                           : url.pathname.slice(1)
