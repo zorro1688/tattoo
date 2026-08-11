@@ -37,6 +37,8 @@ for (const [slug, keyword] of required) {
   assert.match(html, /href="\/#generator"/);
   assert.match(html, /creative reference material/i);
   assert.match(html, /qualified tattoo artist/i);
+  assert.doesNotMatch(html, /artist can (help adapt|assess|advise|make the final)/i);
+  assert.doesNotMatch(html, /lineweight|sizing decision|design.?s orientation and fit/i);
 }
 
 const server = await readFile("server.mjs", "utf8");
@@ -49,5 +51,13 @@ assert.match(page, /export function generateStaticParams/);
 assert.match(page, /export async function generateMetadata/);
 assert.match(page, /notFound\(\)/);
 assert.match(page, /guidesBySlug\[slug\]/);
+const metadataFunction = page.slice(
+  page.indexOf("export async function generateMetadata"),
+  page.indexOf("export default async function GuidePage")
+);
+assert.match(metadataFunction, /if \(!guide\) notFound\(\);/);
+
+const placementGuide = await readFile("guides/first-tattoo-placement.html", "utf8");
+assert.doesNotMatch(placementGuide, /[’‘]/);
 
 console.log("first tattoo guide contracts passed");
