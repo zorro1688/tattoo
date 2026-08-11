@@ -333,6 +333,7 @@ p {
 .product-showcase,
 .gallery-section,
 .use-cases-section,
+.guides-section,
 .why-section,
 .artist-workflow-section,
 .lead-magnet-section,
@@ -1528,6 +1529,59 @@ textarea {
   line-height: 1.5;
 }
 
+.guides-section {
+  text-align: center;
+}
+
+.guides-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  text-align: left;
+}
+
+.guide-card {
+  display: block;
+  min-height: 236px;
+  border-radius: 28px;
+  background: #fff;
+  padding: 28px;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.guide-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(29, 29, 31, 0.08);
+}
+
+.guide-card span {
+  color: #0071e3;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.guide-card h3 {
+  margin-top: 42px;
+  font-size: clamp(22px, 2.1vw, 30px);
+  line-height: 1.08;
+}
+
+.guide-card p {
+  margin-top: 16px;
+  color: #6e6e73;
+  line-height: 1.5;
+}
+
+.guides-section .secondary-button {
+  margin-top: 28px;
+  background: #0071e3;
+  color: #fff;
+}
+
+.guides-section .secondary-button:hover {
+  background: #0077ed;
+}
+
 .why-section {
   padding-top: 72px;
 }
@@ -2215,6 +2269,7 @@ textarea {
   .my-designs-page,
   .gallery-section,
   .use-cases-section,
+  .guides-section,
   .why-section,
   .artist-workflow-section,
   .lead-magnet-section,
@@ -2271,6 +2326,7 @@ textarea {
   .my-designs-grid,
   .gallery-grid,
   .use-cases-grid,
+  .guides-grid,
   .artist-workflow-grid,
   .story-grid,
   .style-grid,
@@ -2279,6 +2335,18 @@ textarea {
   .artist-brief dl,
   .site-footer {
     grid-template-columns: 1fr;
+  }
+
+  .guides-section {
+    padding-inline: 32px;
+  }
+
+  .guides-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .guide-card {
+    padding: 20px;
   }
 
   .results-head {

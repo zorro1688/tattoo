@@ -71,4 +71,22 @@ assert.match(sizeGuide, /placement area/i);
 assert.match(sizeGuide, /size preference/i);
 assert.match(sizeGuide, /future design space/i);
 
+const home = await readFile("index.html", "utf8");
+assert.match(home, /<section class="guides-section" id="guides">/);
+assert.ok(home.indexOf('id="use-cases"') < home.indexOf('id="guides"'));
+assert.ok(home.indexOf('id="guides"') < home.indexOf('id="styles"'));
+for (const slug of guideSlugs) {
+  assert.match(home, new RegExp(`href="/guides/${slug}"`));
+}
+assert.match(home, /href="#guides">Guides<\/a>/);
+assert.match(home, /href="\/guides\/first-tattoo-ideas">First Tattoo Guides<\/a>/);
+
+for (const stylesheetPath of ["app/globals.css", "styles.css"]) {
+  const stylesheet = await readFile(stylesheetPath, "utf8");
+  for (const selector of [".guides-section", ".guides-grid", ".guide-card"]) {
+    assert.match(stylesheet, new RegExp(`\\${selector}`));
+  }
+  assert.match(stylesheet, /@media \(max-width: 720px\) \{[\s\S]*?\.guides-grid/);
+}
+
 console.log("first tattoo guide contracts passed");
