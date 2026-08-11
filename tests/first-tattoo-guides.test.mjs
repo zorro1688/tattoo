@@ -38,7 +38,7 @@ for (const [slug, keyword] of required) {
   assert.match(html, /creative reference material/i);
   assert.match(html, /qualified tattoo artist/i);
   assert.doesNotMatch(html, /artist can (help adapt|assess|advise|make the final)/i);
-  assert.doesNotMatch(html, /lineweight|sizing decision|design.?s orientation and fit/i);
+  assert.doesNotMatch(html, /medical|pain|aftercare|healing|needle|machine|ink depth|guarantee/i);
 }
 
 const server = await readFile("server.mjs", "utf8");
@@ -58,6 +58,17 @@ const metadataFunction = page.slice(
 assert.match(metadataFunction, /if \(!guide\) notFound\(\);/);
 
 const placementGuide = await readFile("guides/first-tattoo-placement.html", "utf8");
-assert.doesNotMatch(placementGuide, /[’‘]/);
+assert.match(placementGuide, /visibility preference/i);
+assert.match(placementGuide, /body flow/i);
+assert.match(placementGuide, /future tattoo space/i);
+assert.match(placementGuide, /clothing coverage/i);
+assert.match(placementGuide, /design orientation/i);
+assert.doesNotMatch(placementGuide, /[\u2018\u2019]/);
+
+const sizeGuide = await readFile("guides/first-tattoo-size.html", "utf8");
+assert.match(sizeGuide, /readable detail/i);
+assert.match(sizeGuide, /placement area/i);
+assert.match(sizeGuide, /size preference/i);
+assert.match(sizeGuide, /future design space/i);
 
 console.log("first tattoo guide contracts passed");
