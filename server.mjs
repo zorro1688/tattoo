@@ -34,6 +34,7 @@ import {
   recordBillingEvent
 } from "./quota-store.mjs";
 import { createSignedConceptUrlForLinework, fetchOwnedStorageImage, mergeAnonymousClientIntoUser } from "./supabase-store.mjs";
+import { guideSlugs } from "./guide-catalog.mjs";
 
 function loadLocalEnv() {
   const envPath = join(process.cwd(), ".env.local");
@@ -665,7 +666,11 @@ const server = createServer(async (request, response) => {
     return;
   }
 
-  const filePath =
+  const guideSlug = url.pathname.match(/^\/guides\/([^/]+)$/)?.[1];
+  const guideFilePath = guideSlug && guideSlugs.includes(guideSlug)
+    ? join("guides", `${guideSlug}` + ".html")
+    : null;
+  const filePath = guideFilePath ?? (
     url.pathname === "/"
       ? "index.html"
       : url.pathname === "/my-designs"
@@ -676,11 +681,20 @@ const server = createServer(async (request, response) => {
             ? "success.html"
             : url.pathname === "/billing"
               ? "billing.html"
-              : url.pathname === "/privacy"`r`n                ? "privacy.html"`r`n                : url.pathname === "/terms"`r`n                  ? "terms.html"`r`n                  : url.pathname === "/refunds"`r`n                    ? "refunds.html"`r`n                                  : url.pathname === "/qa-checklist"
-                ? "qa-checklist.html"
-                : url.pathname === "/billing-cancelled"
-              ? "billing-cancelled.html"
-              : url.pathname.slice(1);
+              : url.pathname === "/privacy"
+                ? "privacy.html"
+                : url.pathname === "/terms"
+                  ? "terms.html"
+                  : url.pathname === "/refunds"
+                    ? "refunds.html"
+                    : url.pathname === "/qa-checklist"
+                      ? "qa-checklist.html"
+                      : url.pathname === "/billing-cancelled"
+                        ? "billing-cancelled.html"
+                        : url.pathname.split("/")[1] === "guides"
+                          ? "__not_found__.html"
+                          : url.pathname.slice(1)
+  );
 
   try {
     const body = await readFile(join(root, filePath));
