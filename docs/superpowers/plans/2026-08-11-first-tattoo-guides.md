@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - URLs: \`/guides/first-tattoo-ideas\`, \`/guides/small-first-tattoo-ideas\`, \`/guides/first-tattoo-placement\`, and \`/guides/first-tattoo-size\`.
-- Every guide is English; it has one H1 matching its primary keyword and contains no medical, pain, aftercare, or professional-tattooing advice.
+- Every guide is English; it has one H1 matching its primary keyword and contains no medical, pain, aftercare, tattooing-technique, or professional-tattooing advice. Consumer-facing creative planning is allowed: visibility, body flow, design orientation, readable detail, size preference, and room for future designs.
 - Every guide has six planning directions, three copyable prompts, a \`/#generator\` CTA, related-guide links, and the qualified-artist creative-reference notice.
 - Use \`https://tattoo-pink.vercel.app\` for static sitemap and canonical metadata.
 - Do not include \`.playwright-cli/\` or \`.superpowers/\` in any commit.

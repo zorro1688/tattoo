@@ -17,7 +17,7 @@ Each page uses its URL phrase as the primary keyword in the title and H1, with r
 
 Each guide has a unique decision framework, six concrete design or planning directions, three copyable InkFirst prompts, a prominent generator CTA linking to `/#generator`, a related-guides section, and a short notice that output is creative reference material to discuss with a qualified tattoo artist.
 
-Because no tattoo artist is reviewing the first release, guides must not give medical advice, pain ratings, aftercare advice, or make professional tattooing guarantees. They must not use fabricated expert attribution.
+Because no tattoo artist is reviewing the first release, guides must not give medical advice, pain ratings, aftercare advice, tattooing-technique instructions, or professional tattooing guarantees. They must not use fabricated expert attribution. Consumer-facing design-planning guidance is allowed: visibility preference, body flow, design orientation, readable detail, size preference, and room for future designs, provided it remains a creative reference rather than an instruction for performing a tattoo.
 
 ## Discovery and homepage
 
