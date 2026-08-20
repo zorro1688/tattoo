@@ -10,11 +10,12 @@ const required = [
   ["first-tattoo-size", "first tattoo size"]
 ];
 
+const expectedSiteUrl = "https://www.inkfirsttattoo.art";
 const expectedUrls = {
-  "first-tattoo-ideas": "https://tattoo-pink.vercel.app/guides/first-tattoo-ideas",
-  "small-first-tattoo-ideas": "https://tattoo-pink.vercel.app/guides/small-first-tattoo-ideas",
-  "first-tattoo-placement": "https://tattoo-pink.vercel.app/guides/first-tattoo-placement",
-  "first-tattoo-size": "https://tattoo-pink.vercel.app/guides/first-tattoo-size"
+  "first-tattoo-ideas": "https://www.inkfirsttattoo.art/guides/first-tattoo-ideas",
+  "small-first-tattoo-ideas": "https://www.inkfirsttattoo.art/guides/small-first-tattoo-ideas",
+  "first-tattoo-placement": "https://www.inkfirsttattoo.art/guides/first-tattoo-placement",
+  "first-tattoo-size": "https://www.inkfirsttattoo.art/guides/first-tattoo-size"
 };
 
 const {
@@ -25,7 +26,7 @@ const {
   guidesBySlug
 } = await import("../guide-catalog.mjs");
 
-assert.equal(siteUrl, "https://tattoo-pink.vercel.app");
+assert.equal(siteUrl, expectedSiteUrl);
 assert.deepEqual(guideSlugs, required.map(([slug]) => slug));
 
 const expectedSitemapUrls = [
@@ -37,7 +38,8 @@ const expectedSitemapUrls = [
 ];
 const sitemap = await readFile("sitemap.xml", "utf8");
 const robots = await readFile("robots.txt", "utf8");
-assert.match(robots, /Sitemap: https:\/\/tattoo-pink\.vercel\.app\/sitemap\.xml/);
+assert.match(robots, new RegExp(`Sitemap: ${escapeRegExp(expectedSiteUrl)}/sitemap\\.xml`));
+assert.doesNotMatch(`${sitemap}\n${robots}`, /tattoo-pink\.vercel\.app/);
 assert.deepEqual(
   [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]),
   expectedSitemapUrls
@@ -84,6 +86,11 @@ for (const [slug, keyword] of required) {
   });
 
   const html = await readFile(`guides/${slug}.html`, "utf8");
+  assert.match(html, new RegExp(`<link rel="canonical" href="${escapeRegExp(guide.url)}">`));
+  assert.match(html, new RegExp(`<meta property="og:url" content="${escapeRegExp(guide.url)}">`));
+  assert.match(html, new RegExp(`"mainEntityOfPage":"${escapeRegExp(guide.url)}"`));
+  assert.match(html, new RegExp(`"url":"${escapeRegExp(siteUrl)}"`));
+  assert.doesNotMatch(html, /tattoo-pink\.vercel\.app/);
   assert.match(html, /<link rel="stylesheet" href="\/styles\.css">/);
   assert.match(html, /<body class="guide-body">/);
   assert.match(html, /<main class="guide-page">/);
@@ -139,6 +146,10 @@ assert.match(sizeGuide, /size preference/i);
 assert.match(sizeGuide, /future design space/i);
 
 const home = await readFile("index.html", "utf8");
+assert.match(home, new RegExp(`<link rel="canonical" href="${escapeRegExp(expectedSiteUrl)}/"\\s*/>`));
+assert.match(home, new RegExp(`<meta property="og:url" content="${escapeRegExp(expectedSiteUrl)}/"\\s*/>`));
+assert.match(home, new RegExp(`"url": "${escapeRegExp(expectedSiteUrl)}"`));
+assert.doesNotMatch(home, /tattoo-pink\.vercel\.app/);
 assert.match(home, /<section class="guides-section" id="guides">/);
 assert.ok(home.indexOf('id="use-cases"') < home.indexOf('id="guides"'));
 assert.ok(home.indexOf('id="guides"') < home.indexOf('id="styles"'));
@@ -171,6 +182,12 @@ const promptScript = await readFile("public/guide-prompts.js", "utf8");
 assert.match(promptScript, /navigator\.clipboard\.writeText/);
 assert.match(promptScript, /data-copy-guide-prompt/);
 assert.match(promptScript, /data-guide-prompt-value/);
+
+const layout = await readFile("app/layout.tsx", "utf8");
+assert.match(layout, new RegExp(`metadataBase: new URL\\("${escapeRegExp(expectedSiteUrl)}"\\)`));
+
+const appHome = await readFile("app/page.tsx", "utf8");
+assert.match(appHome, new RegExp(`url: "${escapeRegExp(expectedSiteUrl)}"`));
 
 const port = await reservePort();
 const staticServer = spawn(process.execPath, ["server.mjs"], {
@@ -208,7 +225,7 @@ try {
 
   const robotsResponse = await fetch(`http://127.0.0.1:${port}/robots.txt`);
   assert.equal(robotsResponse.status, 200);
-  assert.match(await robotsResponse.text(), /Sitemap: https:\/\/tattoo-pink\.vercel\.app\/sitemap\.xml/);
+  assert.match(await robotsResponse.text(), new RegExp(`Sitemap: ${escapeRegExp(expectedSiteUrl)}/sitemap\\.xml`));
 
   const missingGuideResponse = await fetch(`http://127.0.0.1:${port}/guides/not-a-guide`);
   assert.equal(missingGuideResponse.status, 404);

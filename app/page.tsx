@@ -5,6 +5,7 @@ const structuredData = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   name: "InkFirst",
+  url: "https://www.inkfirsttattoo.art",
   applicationCategory: "DesignApplication",
   operatingSystem: "Web",
   description:

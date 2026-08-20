@@ -1,4 +1,4 @@
-export const siteUrl = "https://tattoo-pink.vercel.app";
+export const siteUrl = "https://www.inkfirsttattoo.art";
 
 export const guideSlugs = [
   "first-tattoo-ideas",
