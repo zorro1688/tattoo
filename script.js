@@ -81,6 +81,7 @@ let currentGenerationId = "";
 let conceptPhase = "idle";
 let isGenerating = false;
 let generationError = "";
+let generationErrorCode = "";
 let lineworkError = "";
 let lineworkPhase = "not_generated";
 let pendingCheckoutPlan = "";
@@ -869,6 +870,7 @@ function resetGeneratedResult() {
   currentGenerationId = "";
   conceptPhase = "idle";
   generationError = "";
+  generationErrorCode = "";
   lineworkError = "";
   lineworkPhase = "not_generated";
 }
@@ -1075,7 +1077,9 @@ function renderHeroPreview() {
   heroPreviewPanel.classList.toggle("is-error", blockingError);
   heroPreviewPanel.classList.toggle("is-generated", generated);
   heroModeLabel.textContent = state.label;
-  heroPreviewTitle.textContent = state.title;
+  heroPreviewTitle.textContent = blockingError && generationErrorCode === "prompt_rejected"
+    ? "Prompt blocked"
+    : state.title;
   heroPreviewCopy.textContent = conceptPhase === "generating"
     ? "Generating your tattoo..."
     : conceptPhase === "saving"
@@ -1294,6 +1298,7 @@ async function generate() {
   conceptPhase = "generating";
   isGenerating = true;
   generationError = "";
+  generationErrorCode = "";
   lineworkError = "";
   lineworkPhase = "not_generated";
   heroMode = "concept";
@@ -1320,7 +1325,9 @@ async function generate() {
     applyQuota(data.quota);
 
     if (!response.ok) {
-      throw new Error(data.error ?? "Generation failed.");
+      const requestError = new Error(data.error ?? "Generation failed.");
+      requestError.code = data.code ?? "";
+      throw requestError;
     }
 
     conceptPhase = "saving";
@@ -1343,6 +1350,7 @@ async function generate() {
   } catch (error) {
     conceptPhase = "failed";
     generationError = error.message ?? "Generation failed. Try again.";
+    generationErrorCode = error.code ?? "";
     promptPreview.innerHTML = `<strong>Prompt preview:</strong> ${escapeHtml(error.message ?? "Generation failed. Try again.")}`;
   } finally {
     isGenerating = false;
@@ -1417,6 +1425,7 @@ async function generateLinework() {
       throw new Error("Linework was created but could not be saved. Try again.");
     }
     generationError = "";
+    generationErrorCode = "";
     lineworkError = "";
     renderHeroPreview();
     renderConcepts();

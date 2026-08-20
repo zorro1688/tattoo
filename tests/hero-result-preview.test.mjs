@@ -173,6 +173,17 @@ await run("homepage generation fetch handles non-JSON platform errors", async ()
   }
 });
 
+await run("homepage labels moderation rejections as prompt blocked", async () => {
+  const scripts = [await readFile("script.js", "utf8"), await readFile("public/script.js", "utf8")];
+
+  for (const source of scripts) {
+    assert.match(source, /let generationErrorCode = ""/);
+    assert.match(source, /data\.code \?\? ""/);
+    assert.match(source, /generationErrorCode === "prompt_rejected"/);
+    assert.match(source, /"Prompt blocked"/);
+  }
+});
+
 await run("generation APIs return saved Storage image URLs and expose a private image proxy", async () => {
   const nextRoute = await readFile("app/api/generate/route.js", "utf8");
   const staticServer = await readFile("server.mjs", "utf8");

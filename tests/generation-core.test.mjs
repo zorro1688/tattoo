@@ -435,6 +435,47 @@ await run("replicate linework generation uses the saved concept image", async ()
   assert.equal(linework.provider, "replicate");
 });
 
+await run("replicate concept generation polls starting predictions until output is ready", async () => {
+  const calls = [];
+  const responses = [
+    { id: "concept_poll", status: "starting", output: null, urls: { get: "https://api.replicate.com/v1/predictions/concept_poll" } },
+    { id: "concept_poll", status: "processing", output: null, urls: { get: "https://api.replicate.com/v1/predictions/concept_poll" } },
+    { id: "concept_poll", status: "succeeded", output: ["https://replicate.delivery/concept-ready.webp"] }
+  ];
+
+  const generation = await createGeneration(
+    { idea: "small rose", style: "Fine line", placement: "Forearm", size: "Small", complexity: "Simple" },
+    { GENERATION_PROVIDER: "replicate", REPLICATE_API_TOKEN: "r8_test" },
+    async (url, init = {}) => {
+      calls.push({ url, init });
+      return { ok: true, json: async () => responses.shift() };
+    },
+    { polling: { intervalMs: 0, timeoutMs: 1000, sleep: async () => {} } }
+  );
+
+  assert.equal(calls.length, 3);
+  assert.equal(calls[1].url, "https://api.replicate.com/v1/predictions/concept_poll");
+  assert.equal(calls[1].init.method, "GET");
+  assert.equal(calls[1].init.headers.Authorization, "Bearer r8_test");
+  assert.equal(generation.images.concept, "https://replicate.delivery/concept-ready.webp");
+});
+
+await run("replicate linework generation polls starting predictions until output is ready", async () => {
+  const responses = [
+    { id: "linework_poll", status: "starting", output: null, urls: { get: "https://api.replicate.com/v1/predictions/linework_poll" } },
+    { id: "linework_poll", status: "succeeded", output: ["https://replicate.delivery/linework-ready.webp"] }
+  ];
+
+  const linework = await createLineworkGeneration(
+    { id: "gen_poll", images: { concept: "https://replicate.delivery/concept.webp" }, input: { idea: "rose", style: "Fine line", size: "Small" } },
+    { GENERATION_PROVIDER: "replicate", REPLICATE_API_TOKEN: "r8_test" },
+    async () => ({ ok: true, json: async () => responses.shift() }),
+    { polling: { intervalMs: 0, timeoutMs: 1000, sleep: async () => {} } }
+  );
+
+  assert.equal(linework.images.linework, "https://replicate.delivery/linework-ready.webp");
+});
+
 await run("mock linework generation returns a downloadable linework asset", async () => {
   const linework = await createLineworkGeneration(
     {

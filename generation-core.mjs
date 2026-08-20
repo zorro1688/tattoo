@@ -278,11 +278,59 @@ export function resolveQualityConfig(env = process.env) {
   };
 }
 
+function delay(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+export async function waitForReplicatePrediction(
+  initialPayload,
+  { token, fetchImpl = fetch, intervalMs = 1_500, timeoutMs = 120_000, sleep = delay } = {}
+) {
+  let payload = initialPayload;
+  const deadline = Date.now() + timeoutMs;
+
+  while (
+    !extractImageUrls(payload?.output).length
+    && ["starting", "processing"].includes(payload?.status)
+    && Date.now() < deadline
+  ) {
+    await sleep(intervalMs);
+    const predictionUrl = payload.urls?.get
+      ?? (payload.id ? `https://api.replicate.com/v1/predictions/${payload.id}` : "");
+    if (!predictionUrl) break;
+
+    const response = await fetchImpl(predictionUrl, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const nextPayload = await response.json().catch(async () => ({ error: await response.text() }));
+    if (!response.ok) {
+      return {
+        ...nextPayload,
+        id: nextPayload.id ?? payload.id,
+        status: "failed",
+        error: nextPayload.detail ?? nextPayload.error ?? "Could not check Replicate prediction status."
+      };
+    }
+    payload = nextPayload;
+  }
+
+  if (!extractImageUrls(payload?.output).length && ["starting", "processing"].includes(payload?.status)) {
+    return {
+      ...payload,
+      status: "timeout",
+      error: "Replicate generation is taking longer than expected. Please try again."
+    };
+  }
+
+  return payload;
+}
+
 export async function createReplicateConceptBatch(
   body,
   env = process.env,
   fetchImpl = fetch,
-  { round = "initial", originalIndexOffset = 0 } = {}
+  { round = "initial", originalIndexOffset = 0, polling = {} } = {}
 ) {
   const token = env.REPLICATE_API_TOKEN;
   const model = resolveGenerationModel(env);
@@ -315,7 +363,7 @@ export async function createReplicateConceptBatch(
     body: JSON.stringify(requestBody)
   });
 
-  const payload = await response.json().catch(async () => ({ error: await response.text() }));
+  let payload = await response.json().catch(async () => ({ error: await response.text() }));
   if (!response.ok) {
     return {
       error: payload.detail ?? payload.error ?? "Replicate generation failed.",
@@ -326,10 +374,12 @@ export async function createReplicateConceptBatch(
     };
   }
 
+  payload = await waitForReplicatePrediction(payload, { token, fetchImpl, ...polling });
+
   const urls = [...new Set(extractImageUrls(payload.output))].slice(0, 4);
   if (!urls.length) {
     return {
-      error: `Replicate prediction did not return an image yet. Status: ${payload.status ?? "unknown"}.`,
+      error: payload.error ?? `Replicate prediction did not return an image. Status: ${payload.status ?? "unknown"}.`,
       provider: "replicate",
       model,
       status: payload.status ?? "failed",
@@ -357,7 +407,8 @@ export async function createReplicateGeneration(body, env = process.env, fetchIm
   const base = createBaseGeneration(body, env);
   const initialBatch = await createReplicateConceptBatch(body, env, fetchImpl, {
     round: "initial",
-    originalIndexOffset: 0
+    originalIndexOffset: 0,
+    polling: options.polling
   });
   if (initialBatch.error) return initialBatch;
 
@@ -376,7 +427,8 @@ export async function createReplicateGeneration(body, env = process.env, fetchIm
       generateRefill: async () => {
         const refillBatch = await createReplicateConceptBatch(body, env, fetchImpl, {
           round: "refill",
-          originalIndexOffset: initialBatch.candidates.length
+          originalIndexOffset: initialBatch.candidates.length,
+          polling: options.polling
         });
         if (refillBatch.error) throw new Error(refillBatch.error);
         if (refillBatch.predictionId) providerPredictionIds.push(refillBatch.predictionId);
@@ -486,7 +538,7 @@ function createLineworkFailure({ provider, model, status = "failed", providerErr
   };
 }
 
-async function createReplicateLineworkGeneration(generation, env = process.env, fetchImpl = fetch) {
+async function createReplicateLineworkGeneration(generation, env = process.env, fetchImpl = fetch, options = {}) {
   const token = env.REPLICATE_API_TOKEN;
   const model = resolveLineworkModel(env);
   const conceptImage = generation.images?.concept;
@@ -529,7 +581,7 @@ async function createReplicateLineworkGeneration(generation, env = process.env, 
     body: JSON.stringify(requestBody)
   });
 
-  const payload = await response.json().catch(async () => ({ error: await response.text() }));
+  let payload = await response.json().catch(async () => ({ error: await response.text() }));
 
   if (!response.ok) {
     return createLineworkFailure({
@@ -540,6 +592,8 @@ async function createReplicateLineworkGeneration(generation, env = process.env, 
     });
   }
 
+  payload = await waitForReplicatePrediction(payload, { token, fetchImpl, ...(options.polling || {}) });
+
   const lineworkImage = extractFirstImageUrl(payload.output);
 
   if (!lineworkImage) {
@@ -547,7 +601,7 @@ async function createReplicateLineworkGeneration(generation, env = process.env, 
       provider: "replicate",
       model,
       status: payload.status ?? "processing",
-      providerError: `Replicate linework prediction did not return an image yet. Status: ${payload.status ?? "unknown"}.`,
+      providerError: payload.error ?? `Replicate linework prediction did not return an image. Status: ${payload.status ?? "unknown"}.`,
       predictionId: payload.id
     });
   }
@@ -564,7 +618,7 @@ async function createReplicateLineworkGeneration(generation, env = process.env, 
   };
 }
 
-export async function createLineworkGeneration(generation, env = process.env, fetchImpl = fetch) {
+export async function createLineworkGeneration(generation, env = process.env, fetchImpl = fetch, options = {}) {
   const provider = env.GENERATION_PROVIDER ?? "mock";
 
   if (provider === "mock") {
@@ -581,7 +635,7 @@ export async function createLineworkGeneration(generation, env = process.env, fe
   }
 
   if (provider === "replicate") {
-    return createReplicateLineworkGeneration(generation, env, fetchImpl);
+    return createReplicateLineworkGeneration(generation, env, fetchImpl, options);
   }
 
   return {
