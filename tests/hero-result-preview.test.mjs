@@ -244,7 +244,7 @@ await run("homepage does not expose an inactive email subscription form", async 
     await readFile("app/globals.css", "utf8")
   ];
 
-  assert.doesNotMatch(html, /lead-magnet-section|leadForm|Weekly tattoo inspiration/);
+  assert.doesNotMatch(html, /lead-magnet-section|leadForm|Weekly tattoo inspiration|Weekly Inspiration|#tattoo-inspiration/);
   for (const source of sources) {
     assert.doesNotMatch(source, /leadForm|leadEmail|leadStatus|lead-magnet|lead-form|lead-note/);
   }
