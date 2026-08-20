@@ -234,3 +234,18 @@ await run("homepage disables candidate-dependent actions while selection is savi
     assert.match(script, /heroLineworkAction\.disabled = [^;]*selectionSaving/);
   }
 });
+
+await run("homepage does not expose an inactive email subscription form", async () => {
+  const html = await readFile("index.html", "utf8");
+  const sources = [
+    await readFile("script.js", "utf8"),
+    await readFile("public/script.js", "utf8"),
+    await readFile("styles.css", "utf8"),
+    await readFile("app/globals.css", "utf8")
+  ];
+
+  assert.doesNotMatch(html, /lead-magnet-section|leadForm|Weekly tattoo inspiration/);
+  for (const source of sources) {
+    assert.doesNotMatch(source, /leadForm|leadEmail|leadStatus|lead-magnet|lead-form|lead-note/);
+  }
+});

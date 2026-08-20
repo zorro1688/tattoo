@@ -60,9 +60,6 @@ const conceptCandidateStrip = document.querySelector("#conceptCandidateStrip");
 const regenerateConceptButton = document.querySelector("#regenerateConceptButton");
 const generateAnotherButton = document.querySelector("#generateAnotherButton");
 const priceCards = document.querySelectorAll(".price-card");
-const leadForm = document.querySelector("#leadForm");
-const leadEmail = document.querySelector("#leadEmail");
-const leadStatus = document.querySelector("#leadStatus");
 
 let generated = false;
 let linework = false;
@@ -1655,23 +1652,6 @@ styleCards.forEach((card) => {
     }
   });
 });
-
-if (leadForm) {
-  leadForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const email = leadEmail.value.trim();
-
-    if (!leadEmail.checkValidity()) {
-      leadStatus.textContent = "Enter a valid email address to get tattoo ideas.";
-      leadEmail.focus();
-      return;
-    }
-
-    localStorage.setItem("inkfirst-lead-email", email);
-    leadStatus.textContent = "You're on the list. We'll send tattoo inspiration soon.";
-    leadForm.reset();
-  });
-}
 
 renderPrompt();
 renderConcepts();
