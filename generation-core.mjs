@@ -2,6 +2,7 @@ import { buildCompositionGuidance } from "./candidate-quality-core.mjs";
 import { runCandidateQualityGate } from "./candidate-quality-orchestrator.mjs";
 import { reviewCandidateWithReplicate } from "./candidate-quality-provider.mjs";
 import { analyzeCandidateUrl as analyzeCandidateImageUrl } from "./quality-evaluation-core.mjs";
+export { buildCreemModerationPrompt, moderateImagePrompt } from "./creem-moderation.mjs";
 
 export const defaultMockModel = "mock-static-assets";
 export const defaultReplicateModel = "black-forest-labs/flux-schnell";

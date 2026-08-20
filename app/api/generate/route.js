@@ -1,7 +1,11 @@
 export const maxDuration = 180;
 
 import { NextResponse } from "next/server";
-import { createGeneration } from "../../../generation-core.mjs";
+import {
+  buildCreemModerationPrompt,
+  createGeneration,
+  moderateImagePrompt
+} from "../../../generation-core.mjs";
 import { createRequestId, reportError } from "../../../monitoring-core.mjs";
 import { reportCandidateQualityEvent } from "../../../candidate-quality-telemetry.mjs";
 import {
@@ -31,6 +35,19 @@ export async function POST(request) {
 
     if (!body.idea?.trim()) {
       return json({ error: "Tattoo idea is required." }, 400, session, requestId);
+    }
+
+    const moderation = await moderateImagePrompt(buildCreemModerationPrompt(body), process.env, fetch, {
+      externalId: requestId
+    });
+
+    if (!moderation.allowed) {
+      return json(
+        { error: moderation.error, code: moderation.code },
+        moderation.status,
+        session,
+        requestId
+      );
     }
 
     const quota = await getQuotaState(session.ownerId);

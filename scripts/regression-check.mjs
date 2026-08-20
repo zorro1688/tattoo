@@ -5,6 +5,7 @@ const checks = [
   ["node", ["tests/auth-ui.test.mjs"]],
   ["node", ["tests/login-merge-flow.test.mjs"]],
   ["node", ["tests/generation-core.test.mjs"]],
+  ["node", ["tests/creem-moderation.test.mjs"]],
   ["node", ["tests/generation-quality-api.test.mjs"]],
   ["node", ["tests/candidate-quality-core.test.mjs"]],
   ["node", ["tests/candidate-quality-provider.test.mjs"]],

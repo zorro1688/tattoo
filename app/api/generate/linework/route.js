@@ -1,7 +1,11 @@
 export const maxDuration = 60;
 
 import { NextResponse } from "next/server";
-import { createLineworkGeneration } from "../../../../generation-core.mjs";
+import {
+  buildCreemModerationPrompt,
+  createLineworkGeneration,
+  moderateImagePrompt
+} from "../../../../generation-core.mjs";
 import { createRequestId, reportError } from "../../../../monitoring-core.mjs";
 import { createSignedConceptUrlForLinework } from "../../../../supabase-store.mjs";
 import {
@@ -41,6 +45,22 @@ export async function POST(request) {
 
     if (!savedGeneration) {
       return json({ error: "Saved generation was not found." }, 404, session, requestId);
+    }
+
+    const moderation = await moderateImagePrompt(
+      buildCreemModerationPrompt(savedGeneration) || "tattoo linework reference",
+      process.env,
+      fetch,
+      { externalId: `${requestId}:linework` }
+    );
+
+    if (!moderation.allowed) {
+      return json(
+        { error: moderation.error, code: moderation.code },
+        moderation.status,
+        session,
+        requestId
+      );
     }
 
     if (body.selectedConceptUrl) {

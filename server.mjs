@@ -6,7 +6,12 @@ import { createCreemCheckout, parseCreemWebhook } from "./billing-core.mjs";
 import { isCreditGrantingEvent } from "./billing-history-core.mjs";
 import { resolveDownloadFile } from "./download-core.mjs";
 import { createRequestId, reportError } from "./monitoring-core.mjs";
-import { createGeneration, createLineworkGeneration } from "./generation-core.mjs";
+import {
+  buildCreemModerationPrompt,
+  createGeneration,
+  createLineworkGeneration,
+  moderateImagePrompt
+} from "./generation-core.mjs";
 import {
   buildAuthCookie,
   clearOAuthCookies,
@@ -417,6 +422,18 @@ const server = createServer(async (request, response) => {
         return;
       }
 
+      const moderation = await moderateImagePrompt(buildCreemModerationPrompt(body), process.env, fetch, {
+        externalId: requestId
+      });
+
+      if (!moderation.allowed) {
+        writeJson(response, moderation.status, {
+          error: moderation.error,
+          code: moderation.code
+        }, cookieHeaders);
+        return;
+      }
+
 
       const quota = await getQuotaState(session.ownerId);
 
@@ -515,6 +532,21 @@ const server = createServer(async (request, response) => {
 
       if (!savedGeneration) {
         writeJson(response, 404, { error: "Saved generation was not found." }, cookieHeaders);
+        return;
+      }
+
+      const moderation = await moderateImagePrompt(
+        buildCreemModerationPrompt(savedGeneration) || "tattoo linework reference",
+        process.env,
+        fetch,
+        { externalId: `${requestId}:linework` }
+      );
+
+      if (!moderation.allowed) {
+        writeJson(response, moderation.status, {
+          error: moderation.error,
+          code: moderation.code
+        }, cookieHeaders);
         return;
       }
 
@@ -689,6 +721,8 @@ const server = createServer(async (request, response) => {
                   ? "terms.html"
                   : url.pathname === "/refunds"
                     ? "refunds.html"
+                    : url.pathname === "/acceptable-use"
+                      ? "acceptable-use.html"
                     : url.pathname === "/qa-checklist"
                       ? "qa-checklist.html"
                       : url.pathname === "/billing-cancelled"

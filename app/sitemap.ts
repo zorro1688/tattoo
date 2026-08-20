@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { guideSlugs, siteUrl } from "../guide-catalog.mjs";
 
-const staticPaths = ["", "/privacy", "/terms", "/refunds"];
+const staticPaths = ["", "/privacy", "/terms", "/refunds", "/acceptable-use"];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [

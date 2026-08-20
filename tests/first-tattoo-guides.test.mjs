@@ -34,7 +34,8 @@ const expectedSitemapUrls = [
   ...guideSlugs.map((slug) => `${siteUrl}/guides/${slug}`),
   `${siteUrl}/privacy`,
   `${siteUrl}/terms`,
-  `${siteUrl}/refunds`
+  `${siteUrl}/refunds`,
+  `${siteUrl}/acceptable-use`
 ];
 const sitemap = await readFile("sitemap.xml", "utf8");
 const robots = await readFile("robots.txt", "utf8");
