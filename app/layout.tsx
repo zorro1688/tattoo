@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/"
   },
+  verification: {
+    google: "VUSzVZSCZ-fcwsZEULs577zlphOnO_RK3rm6PQPI3bg"
+  },
   openGraph: {
     title: "AI Tattoo Generator - Design Your First Tattoo Online | InkFirst",
     description:

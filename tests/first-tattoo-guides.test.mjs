@@ -148,6 +148,10 @@ assert.match(sizeGuide, /future design space/i);
 
 const home = await readFile("index.html", "utf8");
 assert.match(home, new RegExp(`<link rel="canonical" href="${escapeRegExp(expectedSiteUrl)}/"\\s*/>`));
+assert.match(
+  home,
+  /<meta name="google-site-verification" content="VUSzVZSCZ-fcwsZEULs577zlphOnO_RK3rm6PQPI3bg" \/>/
+);
 assert.match(home, new RegExp(`<meta property="og:url" content="${escapeRegExp(expectedSiteUrl)}/"\\s*/>`));
 assert.match(home, new RegExp(`"url": "${escapeRegExp(expectedSiteUrl)}"`));
 assert.doesNotMatch(home, /tattoo-pink\.vercel\.app/);
@@ -186,6 +190,7 @@ assert.match(promptScript, /data-guide-prompt-value/);
 
 const layout = await readFile("app/layout.tsx", "utf8");
 assert.match(layout, new RegExp(`metadataBase: new URL\\("${escapeRegExp(expectedSiteUrl)}"\\)`));
+assert.match(layout, /verification:\s*\{\s*google:\s*"VUSzVZSCZ-fcwsZEULs577zlphOnO_RK3rm6PQPI3bg"\s*\}/);
 
 const appHome = await readFile("app/page.tsx", "utf8");
 assert.match(appHome, new RegExp(`url: "${escapeRegExp(expectedSiteUrl)}"`));
