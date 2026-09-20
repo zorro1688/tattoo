@@ -17,6 +17,9 @@ const guides = [
     prompts: [
       "a continuous mountain ridgeline rising toward one small eight-point north star, representing independence and finding direction",
       "one complete ginkgo leaf with a gently split fan shape and one short curved stem, representing growth through change",
+      "one complete swallow in side flight with both wings and its forked tail fully visible, representing freedom and returning home",
+      "a compact vintage camera outline with one simple line extending from it into a short winding path, representing photography, memory, and travel",
+      "a small open doorway with one rising sun line visible beyond it, representing a new beginning without using words",
       "two incomplete intersecting circles with one small solid dot centered in their overlap, representing connection and balance"
     ]
   },

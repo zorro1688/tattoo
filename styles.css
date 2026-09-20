@@ -3441,6 +3441,27 @@ textarea {
   outline: none;
 }
 
+.guide-use-button {
+  display: inline-flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: #0071e3;
+  padding: 0 18px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.guide-use-button:hover,
+.guide-use-button:focus-visible {
+  background: #0066cc;
+  outline: none;
+}
+
 .guide-copy-status {
   min-height: 20px;
   margin-top: 8px;

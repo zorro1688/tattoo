@@ -1653,6 +1653,36 @@ styleCards.forEach((card) => {
   });
 });
 
+function applyGuidePrefill() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("source") !== "guide") return false;
+
+  const selectValues = [
+    [style, "style"],
+    [placement, "placement"],
+    [size, "size"],
+    [complexity, "complexity"]
+  ];
+  const ideaValue = params.get("idea")?.trim().slice(0, 500);
+  const advancedValue = params.get("advanced")?.trim().slice(0, 500);
+  if (ideaValue) idea.value = ideaValue;
+  if (advancedValue) advancedPrompt.value = advancedValue;
+  for (const [field, key] of selectValues) {
+    const value = params.get(key);
+    if (value && [...field.options].some((option) => option.value === value)) {
+      field.value = value;
+    }
+  }
+  window.dispatchEvent(new CustomEvent("inkfirst:guide-prefill-applied", {
+    detail: {
+      guide: params.get("guide") ?? "",
+      caseId: params.get("case") ?? ""
+    }
+  }));
+  return true;
+}
+
+applyGuidePrefill();
 renderPrompt();
 renderConcepts();
 updateQuota();

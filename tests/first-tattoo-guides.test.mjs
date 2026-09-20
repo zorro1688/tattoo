@@ -58,8 +58,9 @@ for (const [slug, keyword] of required) {
   assert.ok(guide.description);
   assert.equal(guide.primaryKeyword, keyword);
   assert.equal(guide.htmlFile, `guides/${slug}.html`);
-  assert.equal(guide.prompts.length, 3);
-  assert.equal(new Set(guide.prompts).size, 3);
+  const expectedPromptCount = slug === "first-tattoo-ideas" ? 6 : 3;
+  assert.equal(guide.prompts.length, expectedPromptCount);
+  assert.equal(new Set(guide.prompts).size, expectedPromptCount);
 
   assert.deepEqual(buildGuideMetadata(guide), {
     title: guide.title,
@@ -97,8 +98,8 @@ for (const [slug, keyword] of required) {
   assert.match(html, /<main class="guide-page">/);
   assert.match(html, new RegExp(`<h1>${keyword}</h1>`, "i"));
   assert.equal((html.match(/<h1\b/gi) ?? []).length, 1);
-  assert.equal((html.match(/data-guide-prompt-value/g) ?? []).length, 3);
-  assert.equal((html.match(/data-copy-guide-prompt/g) ?? []).length, 3);
+  assert.equal((html.match(/data-guide-prompt-value/g) ?? []).length, expectedPromptCount);
+  assert.equal((html.match(/data-copy-guide-prompt/g) ?? []).length, expectedPromptCount);
   for (const prompt of guide.prompts) {
     assert.match(html, new RegExp(escapeRegExp(prompt)));
   }
@@ -150,17 +151,24 @@ const ideasGuide = await readFile("guides/first-tattoo-ideas.html", "utf8");
 const expectedFirstIdeaPrompts = [
   "a continuous mountain ridgeline rising toward one small eight-point north star, representing independence and finding direction",
   "one complete ginkgo leaf with a gently split fan shape and one short curved stem, representing growth through change",
+  "one complete swallow in side flight with both wings and its forked tail fully visible, representing freedom and returning home",
+  "a compact vintage camera outline with one simple line extending from it into a short winding path, representing photography, memory, and travel",
+  "a small open doorway with one rising sun line visible beyond it, representing a new beginning without using words",
   "two incomplete intersecting circles with one small solid dot centered in their overlap, representing connection and balance"
 ];
 const expectedFirstIdeaAssets = [
   ["mountain-north-star-concept-v1.webp", "1200", "600", "Fine-line mountain ridge and north star tattoo concept representing direction"],
   ["ginkgo-leaf-concept-v1.webp", "1200", "1200", "Minimalist single ginkgo leaf tattoo concept representing change and growth"],
+  ["swallow-flight-concept-v1.webp", "1200", "800", "Fine-line complete swallow in flight tattoo concept with a clear silhouette"],
+  ["camera-path-concept-v1.webp", "1200", "800", "Minimalist camera and winding path tattoo concept representing memory and travel"],
+  ["open-doorway-sunrise-concept-v1.webp", "800", "1200", "Minimalist open doorway and rising sun tattoo concept representing a new beginning"],
   ["intersecting-circles-concept-v1.webp", "1200", "800", "Geometric intersecting circles tattoo concept representing connection and balance"]
 ];
 assert.deepEqual(guidesBySlug["first-tattoo-ideas"].prompts, expectedFirstIdeaPrompts);
 assert.equal((ideasGuide.match(/data-guide-choice-row/g) ?? []).length, 6);
-assert.equal((ideasGuide.match(/data-guide-case/g) ?? []).length, 3);
-assert.equal((ideasGuide.match(/AI-generated tattoo concept/g) ?? []).length, 3);
+assert.equal((ideasGuide.match(/data-guide-case/g) ?? []).length, 6);
+assert.equal((ideasGuide.match(/AI-generated tattoo concept/g) ?? []).length, 6);
+assert.equal((ideasGuide.match(/data-use-guide-prompt/g) ?? []).length, 6);
 for (const [asset, width, height, alt] of expectedFirstIdeaAssets) {
   assert.match(
     ideasGuide,
@@ -228,6 +236,12 @@ const promptScript = await readFile("public/guide-prompts.js", "utf8");
 assert.match(promptScript, /navigator\.clipboard\.writeText/);
 assert.match(promptScript, /data-copy-guide-prompt/);
 assert.match(promptScript, /data-guide-prompt-value/);
+assert.match(promptScript, /inkfirst:guide-generator-entry/);
+assert.match(promptScript, /window\.location\.assign/);
+
+const homepageScript = await readFile("script.js", "utf8");
+assert.match(homepageScript, /function applyGuidePrefill\(\)/);
+assert.match(homepageScript, /inkfirst:guide-prefill-applied/);
 
 const layout = await readFile("app/layout.tsx", "utf8");
 assert.match(layout, new RegExp(`metadataBase: new URL\\("${escapeRegExp(expectedSiteUrl)}"\\)`));

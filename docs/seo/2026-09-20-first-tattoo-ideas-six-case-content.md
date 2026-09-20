@@ -1,6 +1,6 @@
 # First Tattoo Ideas: six-case content draft
 
-Status: content approved for image prototyping, not yet published.
+Status: six cases implemented and verified locally.
 
 This draft turns the current six broad idea categories into six distinct examples that a first-time tattoo seeker can understand, personalize, and take into the InkFirst generator. Meanings are presented as possible personal interpretations, not universal symbol definitions.
 
@@ -214,8 +214,11 @@ Reviewed and accepted on 2026-09-20:
 | Mountain and north star | `/assets/guides/first-tattoo-ideas/mountain-north-star-concept-v1.webp` | 1200 x 600 | 8 KB | Accepted after simplifying the ridge and removing interior texture |
 | Single ginkgo leaf | `/assets/guides/first-tattoo-ideas/ginkgo-leaf-concept-v1.webp` | 1200 x 1200 | 19 KB | Accepted after reducing the leaf to a clean contour and restrained veins |
 | Intersecting circles | `/assets/guides/first-tattoo-ideas/intersecting-circles-concept-v1.webp` | 1200 x 800 | 12 KB | Accepted with two incomplete circles and one centered dot |
+| Swallow in flight | `/assets/guides/first-tattoo-ideas/swallow-flight-concept-v1.webp` | 1200 x 800 | 25 KB | Accepted after removing the dark background and dense feather texture |
+| Camera and path | `/assets/guides/first-tattoo-ideas/camera-path-concept-v1.webp` | 1200 x 800 | 9 KB | Accepted with one camera outline and one continuing path line |
+| Open doorway and sunrise | `/assets/guides/first-tattoo-ideas/open-doorway-sunrise-concept-v1.webp` | 800 x 1200 | 5 KB | Accepted after removing shading, depth effects, and the door knob |
 
-All three are opaque black-on-white WebP assets. The rejected initial versions remain outside the project asset directory and must not be referenced by the page.
+All six are opaque black-on-white WebP assets. The rejected initial versions remain outside the project asset directory and must not be referenced by the page.
 
 ## Image acceptance checklist
 
