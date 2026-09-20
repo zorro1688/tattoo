@@ -1292,6 +1292,13 @@ async function generate() {
     return;
   }
 
+  window.InkFirstAnalytics?.track("generation_started", {
+    style: style.value,
+    placement: placement.value,
+    size: size.value,
+    complexity: complexity.value
+  });
+
   conceptPhase = "generating";
   isGenerating = true;
   generationError = "";
@@ -1342,12 +1349,25 @@ async function generate() {
       throw new Error("Generated concept was not saved. Please try again.");
     }
     conceptPhase = "ready";
+    window.InkFirstAnalytics?.track("generation_succeeded", {
+      style: style.value,
+      placement: placement.value,
+      size: size.value,
+      complexity: complexity.value
+    });
     renderConcepts();
     renderPrompt();
   } catch (error) {
     conceptPhase = "failed";
     generationError = error.message ?? "Generation failed. Try again.";
     generationErrorCode = error.code ?? "";
+    window.InkFirstAnalytics?.track("generation_failed", {
+      style: style.value,
+      placement: placement.value,
+      size: size.value,
+      complexity: complexity.value,
+      error_code: generationErrorCode || "unknown"
+    });
     promptPreview.innerHTML = `<strong>Prompt preview:</strong> ${escapeHtml(error.message ?? "Generation failed. Try again.")}`;
   } finally {
     isGenerating = false;
