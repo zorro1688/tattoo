@@ -146,6 +146,20 @@ assert.match(sizeGuide, /placement area/i);
 assert.match(sizeGuide, /size preference/i);
 assert.match(sizeGuide, /future design space/i);
 
+const ideasGuide = await readFile("guides/first-tattoo-ideas.html", "utf8");
+const ideasContent = ideasGuide.slice(
+  ideasGuide.indexOf('<section class="guide-content-card">'),
+  ideasGuide.indexOf('<section class="guide-prompts"')
+);
+const ideasRelated = ideasGuide.slice(
+  ideasGuide.indexOf('<nav class="guide-related"'),
+  ideasGuide.indexOf("</nav>")
+);
+assert.match(ideasContent, /href="\/guides\/small-first-tattoo-ideas"/);
+assert.match(ideasContent, /href="\/guides\/first-tattoo-size"/);
+assert.match(ideasContent, /href="\/guides\/first-tattoo-placement"/);
+assert.doesNotMatch(ideasRelated, /href="\/guides\/first-tattoo-ideas"/);
+
 const home = await readFile("index.html", "utf8");
 assert.match(home, new RegExp(`<link rel="canonical" href="${escapeRegExp(expectedSiteUrl)}/"\\s*/>`));
 assert.match(
