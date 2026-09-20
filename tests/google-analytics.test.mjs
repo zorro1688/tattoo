@@ -4,14 +4,14 @@ import vm from "node:vm";
 
 const measurementId = "G-GLXCWGBQZP";
 const layout = await readFile("app/layout.tsx", "utf8");
-const analytics = await readFile("public/analytics.js", "utf8").catch(() => "");
+const analytics = await readFile("public/site-events.js", "utf8").catch(() => "");
 const rootScript = await readFile("script.js", "utf8");
 const publicScript = await readFile("public/script.js", "utf8");
 
 assert.match(layout, /from "next\/script"/);
 assert.match(layout, new RegExp(`googletagmanager\\.com/gtag/js\\?id=${measurementId}`));
 assert.match(layout, new RegExp(`gtag\\('config', '${measurementId}'`));
-assert.match(layout, /src="\/analytics\.js"/);
+assert.match(layout, /src="\/site-events\.js"/);
 
 for (const eventName of [
   "guide_prompt_copy",

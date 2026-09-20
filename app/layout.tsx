@@ -40,7 +40,7 @@ function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', 'G-GLXCWGBQZP');`}
       </Script>
-      <Script src="/analytics.js" strategy="afterInteractive" />
+      <Script src="/site-events.js" strategy="afterInteractive" />
     </html>
   );
 }
