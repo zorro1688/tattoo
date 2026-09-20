@@ -733,6 +733,8 @@ const server = createServer(async (request, response) => {
                             ? "sitemap.xml"
                         : url.pathname === "/guide-prompts.js"
                           ? "public/guide-prompts.js"
+                        : url.pathname.startsWith("/assets/")
+                          ? join("public", url.pathname.slice(1))
                         : url.pathname.split("/")[1] === "guides"
                           ? "__not_found__.html"
                           : url.pathname.slice(1)

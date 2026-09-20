@@ -152,15 +152,16 @@ const expectedFirstIdeaPrompts = [
   "one complete ginkgo leaf with a gently split fan shape and one short curved stem, representing growth through change",
   "two incomplete intersecting circles with one small solid dot centered in their overlap, representing connection and balance"
 ];
+const expectedFirstIdeaAssets = [
+  ["mountain-north-star-concept-v1.webp", "1200", "600", "Fine-line mountain ridge and north star tattoo concept representing direction"],
+  ["ginkgo-leaf-concept-v1.webp", "1200", "1200", "Minimalist single ginkgo leaf tattoo concept representing change and growth"],
+  ["intersecting-circles-concept-v1.webp", "1200", "800", "Geometric intersecting circles tattoo concept representing connection and balance"]
+];
 assert.deepEqual(guidesBySlug["first-tattoo-ideas"].prompts, expectedFirstIdeaPrompts);
 assert.equal((ideasGuide.match(/data-guide-choice-row/g) ?? []).length, 6);
 assert.equal((ideasGuide.match(/data-guide-case/g) ?? []).length, 3);
 assert.equal((ideasGuide.match(/AI-generated tattoo concept/g) ?? []).length, 3);
-for (const [asset, width, height, alt] of [
-  ["mountain-north-star-concept-v1.webp", "1200", "600", "Fine-line mountain ridge and north star tattoo concept representing direction"],
-  ["ginkgo-leaf-concept-v1.webp", "1200", "1200", "Minimalist single ginkgo leaf tattoo concept representing change and growth"],
-  ["intersecting-circles-concept-v1.webp", "1200", "800", "Geometric intersecting circles tattoo concept representing connection and balance"]
-]) {
+for (const [asset, width, height, alt] of expectedFirstIdeaAssets) {
   assert.match(
     ideasGuide,
     new RegExp(`<img src="/assets/guides/first-tattoo-ideas/${asset}" alt="${alt}" width="${width}" height="${height}" loading="lazy">`)
@@ -257,6 +258,12 @@ try {
   const stylesheetResponse = await fetch(`http://127.0.0.1:${port}/styles.css`);
   assert.equal(stylesheetResponse.status, 200);
   assert.match(stylesheetResponse.headers.get("content-type") ?? "", /text\/css/);
+
+  for (const [asset] of expectedFirstIdeaAssets) {
+    const imageResponse = await fetch(`http://127.0.0.1:${port}/assets/guides/first-tattoo-ideas/${asset}`);
+    assert.equal(imageResponse.status, 200);
+    assert.match(imageResponse.headers.get("content-type") ?? "", /image\/webp/);
+  }
 
   const scriptResponse = await fetch(`http://127.0.0.1:${port}/guide-prompts.js`);
   assert.equal(scriptResponse.status, 200);
