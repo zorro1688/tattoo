@@ -201,6 +201,9 @@ assert.match(home, new RegExp(`<meta property="og:url" content="${escapeRegExp(e
 assert.match(home, new RegExp(`"url": "${escapeRegExp(expectedSiteUrl)}"`));
 assert.doesNotMatch(home, /tattoo-pink\.vercel\.app/);
 assert.match(home, /<section class="guides-section" id="guides">/);
+assert.match(home, /<a href="\/guides\/first-tattoo-ideas">First Tattoo Ideas<\/a>/);
+assert.match(home, /<a href="\/guides\/small-first-tattoo-ideas">Small Tattoo Ideas<\/a>/);
+assert.doesNotMatch(home, /<a href="#generator">(?:First Tattoo Ideas|Small Tattoo Ideas)<\/a>/);
 assert.ok(home.indexOf('id="use-cases"') < home.indexOf('id="guides"'));
 assert.ok(home.indexOf('id="guides"') < home.indexOf('id="styles"'));
 for (const slug of guideSlugs) {
