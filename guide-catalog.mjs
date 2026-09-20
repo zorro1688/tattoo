@@ -15,9 +15,9 @@ const guides = [
     description: "Explore first tattoo ideas through symbols, motifs, lettering, and geometry before turning a concept into an artist conversation.",
     primaryKeyword: "first tattoo ideas",
     prompts: [
-      "Fine Line first tattoo ideas with a personal symbol, clean delicate contour, creative reference material",
-      "Minimalist first tattoo ideas using a nature motif, simple balanced composition, creative reference material",
-      "Geometric first tattoo ideas with abstract geometry, precise balanced shapes, creative reference material"
+      "a continuous mountain ridgeline rising toward one small eight-point north star, representing independence and finding direction",
+      "one complete ginkgo leaf with a gently split fan shape and one short curved stem, representing growth through change",
+      "two incomplete intersecting circles with one small solid dot centered in their overlap, representing connection and balance"
     ]
   },
   {

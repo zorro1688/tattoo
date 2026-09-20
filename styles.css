@@ -3173,6 +3173,7 @@ textarea {
 .guide-content-card,
 .guide-prompts,
 .guide-generator-card {
+  min-width: 0;
   border-radius: 30px;
   background: #fff;
   padding: clamp(26px, 5vw, 54px);
@@ -3217,11 +3218,74 @@ textarea {
   line-height: 1.5;
 }
 
+.guide-choice-intro {
+  max-width: 760px;
+  margin: 14px 0 0;
+  color: #424245;
+  font-size: 18px;
+  line-height: 1.55;
+}
+
+.guide-choice-table-wrap {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  margin-top: 28px;
+  border: 1px solid #e8e8ed;
+  border-radius: 18px;
+}
+
+.guide-choice-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.guide-choice-table th,
+.guide-choice-table td {
+  padding: 16px 18px;
+  border-bottom: 1px solid #e8e8ed;
+  vertical-align: top;
+  line-height: 1.45;
+}
+
+.guide-choice-table th {
+  background: #f5f5f7;
+  color: #1d1d1f;
+  font-size: 14px;
+}
+
+.guide-choice-table td {
+  color: #424245;
+  font-size: 15px;
+}
+
+.guide-choice-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.guide-choice-note {
+  margin: 22px 0 0;
+  color: #424245;
+  line-height: 1.6;
+}
+
+.guide-choice-note a {
+  color: #0066cc;
+  font-weight: 700;
+}
+
 .guide-prompt-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   margin-top: 30px;
+}
+
+.guide-case-grid {
+  grid-template-columns: 1fr;
+  gap: 24px;
 }
 
 .guide-prompt-card {
@@ -3248,6 +3312,117 @@ textarea {
   font-size: 15px;
   line-height: 1.55;
   resize: none;
+}
+
+.guide-case-card {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: clamp(24px, 4vw, 46px);
+  padding: clamp(22px, 4vw, 38px);
+}
+
+.guide-case-figure {
+  align-self: start;
+  margin: 0;
+  border: 1px solid #e8e8ed;
+  border-radius: 18px;
+  background: #fff;
+  padding: 14px;
+}
+
+.guide-case-figure img {
+  display: block;
+  width: 100%;
+  max-height: 500px;
+  border-radius: 12px;
+  object-fit: contain;
+}
+
+.guide-case-figure figcaption {
+  margin-top: 10px;
+  color: #6e6e73;
+  font-size: 12px;
+  text-align: center;
+}
+
+.guide-case-copy h3 {
+  margin-top: 6px;
+  font-size: clamp(26px, 3vw, 34px);
+}
+
+.guide-case-copy > p:not(.guide-case-category, .guide-case-label, .guide-artist-check) {
+  margin: 14px 0 0;
+  color: #424245;
+  line-height: 1.6;
+}
+
+.guide-case-category {
+  margin: 0;
+  color: #0066cc;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.guide-case-details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 20px 0 0;
+}
+
+.guide-case-details div {
+  border-radius: 14px;
+  background: #fff;
+  padding: 12px;
+}
+
+.guide-case-details dt {
+  color: #6e6e73;
+  font-size: 11px;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.guide-case-details dd {
+  margin: 4px 0 0;
+  color: #1d1d1f;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.guide-case-label,
+.guide-prompt-label {
+  display: block;
+  margin: 20px 0 0;
+  color: #1d1d1f;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.guide-case-copy ul {
+  margin: 10px 0 0;
+  padding-left: 20px;
+  color: #424245;
+  line-height: 1.55;
+}
+
+.guide-case-copy li + li {
+  margin-top: 7px;
+}
+
+.guide-case-card textarea {
+  min-height: 94px;
+}
+
+.guide-artist-check {
+  margin: 12px 0 0;
+  border-left: 3px solid #0071e3;
+  padding-left: 12px;
+  color: #6e6e73;
+  font-size: 14px;
+  line-height: 1.55;
 }
 
 .guide-copy-button {
@@ -3362,6 +3537,14 @@ textarea {
 
   .guide-content-card ul,
   .guide-prompt-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .guide-case-card {
+    grid-template-columns: 1fr;
+  }
+
+  .guide-case-details {
     grid-template-columns: 1fr;
   }
 

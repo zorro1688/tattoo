@@ -147,6 +147,28 @@ assert.match(sizeGuide, /size preference/i);
 assert.match(sizeGuide, /future design space/i);
 
 const ideasGuide = await readFile("guides/first-tattoo-ideas.html", "utf8");
+const expectedFirstIdeaPrompts = [
+  "a continuous mountain ridgeline rising toward one small eight-point north star, representing independence and finding direction",
+  "one complete ginkgo leaf with a gently split fan shape and one short curved stem, representing growth through change",
+  "two incomplete intersecting circles with one small solid dot centered in their overlap, representing connection and balance"
+];
+assert.deepEqual(guidesBySlug["first-tattoo-ideas"].prompts, expectedFirstIdeaPrompts);
+assert.equal((ideasGuide.match(/data-guide-choice-row/g) ?? []).length, 6);
+assert.equal((ideasGuide.match(/data-guide-case/g) ?? []).length, 3);
+assert.equal((ideasGuide.match(/AI-generated tattoo concept/g) ?? []).length, 3);
+for (const [asset, width, height, alt] of [
+  ["mountain-north-star-concept-v1.webp", "1200", "600", "Fine-line mountain ridge and north star tattoo concept representing direction"],
+  ["ginkgo-leaf-concept-v1.webp", "1200", "1200", "Minimalist single ginkgo leaf tattoo concept representing change and growth"],
+  ["intersecting-circles-concept-v1.webp", "1200", "800", "Geometric intersecting circles tattoo concept representing connection and balance"]
+]) {
+  assert.match(
+    ideasGuide,
+    new RegExp(`<img src="/assets/guides/first-tattoo-ideas/${asset}" alt="${alt}" width="${width}" height="${height}" loading="lazy">`)
+  );
+}
+for (const prompt of expectedFirstIdeaPrompts) {
+  assert.match(ideasGuide, new RegExp(escapeRegExp(prompt)));
+}
 const ideasContent = ideasGuide.slice(
   ideasGuide.indexOf('<section class="guide-content-card">'),
   ideasGuide.indexOf('<section class="guide-prompts"')
@@ -195,6 +217,10 @@ for (const stylesheetPath of ["app/globals.css", "styles.css"]) {
   }
   assert.match(stylesheet, /@media \(max-width: 720px\) \{[\s\S]*?\.guides-grid/);
   assert.match(stylesheet, /@media \(max-width: 720px\) \{[\s\S]*?\.guide-prompt-grid/);
+  assert.match(
+    stylesheet,
+    /\.guide-content-card,[\s\S]*?\.guide-generator-card \{[\s\S]*?min-width: 0;/
+  );
 }
 
 const promptScript = await readFile("public/guide-prompts.js", "utf8");
@@ -224,7 +250,7 @@ try {
     assert.equal(response.status, 200);
     assert.match(response.headers.get("content-type") ?? "", /text\/html/);
     const html = await response.text();
-    assert.match(html, /class="guide-prompt-grid"/);
+    assert.match(html, /class="[^"]*\bguide-prompt-grid\b[^"]*"/);
     assert.match(html, /class="guide-primary-cta" href="\/#generator"/);
   }
 
