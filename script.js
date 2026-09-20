@@ -702,6 +702,10 @@ async function downloadGenerationFile(type) {
   );
   const objectUrl = URL.createObjectURL(blob);
   triggerDownload(objectUrl, filename);
+  window.InkFirstAnalytics?.trackDownload(
+    type,
+    downloadAccess.highResolution ? "paid" : "free"
+  );
   window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1200);
 
   if (!downloadAccess.highResolution) {

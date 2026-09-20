@@ -25,6 +25,15 @@ assert.doesNotMatch(analytics, /idea|advancedPrompt/);
 const listeners = new Map();
 const trackedEvents = [];
 const context = {
+  localStorage: {
+    values: new Map(),
+    getItem(key) {
+      return this.values.get(key) ?? null;
+    },
+    setItem(key, value) {
+      this.values.set(key, value);
+    }
+  },
   window: {
     addEventListener(name, listener) {
       listeners.set(name, listener);
@@ -50,11 +59,52 @@ assert.deepEqual(JSON.parse(JSON.stringify(trackedEvents)), [
   }]
 ]);
 
+context.window.InkFirstAnalytics.trackDownload("concept", "paid");
+context.window.InkFirstAnalytics.trackPurchase({
+  transactionId: "evt_paid_once",
+  plan: "creator-pack",
+  itemName: "Creator Pack",
+  value: 9.99,
+  currency: "USD"
+});
+context.window.InkFirstAnalytics.trackPurchase({
+  transactionId: "evt_paid_once",
+  plan: "creator-pack",
+  itemName: "Creator Pack",
+  value: 9.99,
+  currency: "USD"
+});
+assert.deepEqual(JSON.parse(JSON.stringify(trackedEvents.slice(1))), [
+  ["event", "download_completed", {
+    download_type: "concept",
+    access_tier: "paid"
+  }],
+  ["event", "purchase", {
+    transaction_id: "evt_paid_once",
+    value: 9.99,
+    currency: "USD",
+    items: [{
+      item_id: "creator-pack",
+      item_name: "Creator Pack",
+      price: 9.99,
+      quantity: 1
+    }]
+  }]
+]);
+
 for (const script of [rootScript, publicScript]) {
   assert.match(script, /generation_started/);
   assert.match(script, /generation_succeeded/);
   assert.match(script, /generation_failed/);
   assert.match(script, /window\.InkFirstAnalytics\?\.track/);
+  assert.match(script, /trackDownload\(\s*type/);
 }
+
+const successScript = await readFile("public/success.js", "utf8");
+assert.match(successScript, /trackConfirmedPurchase\(data\.purchase\)/);
+
+const downloadAccessRoute = await readFile("app/api/download-access/route.js", "utf8");
+assert.match(downloadAccessRoute, /purchase/);
+assert.match(downloadAccessRoute, /transactionId/);
 
 console.log("google analytics contracts passed");

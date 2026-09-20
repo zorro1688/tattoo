@@ -4,18 +4,24 @@ const plans = {
   "creator-pack": {
     name: "Creator Pack",
     credits: 20,
+    price: 9.99,
+    currency: "USD",
     productEnv: "CREEM_CREATOR_PACK_PRODUCT_ID",
     fallbackProductEnv: "CREEM_PRO_PRODUCT_ID"
   },
   "pro-monthly": {
     name: "Pro",
     credits: 50,
+    price: 12.99,
+    currency: "USD",
     productEnv: "CREEM_PRO_MONTHLY_PRODUCT_ID",
     fallbackProductEnv: "CREEM_PRO_PRODUCT_ID"
   },
   "pro-yearly": {
     name: "Pro Yearly",
     credits: 600,
+    price: 69,
+    currency: "USD",
     productEnv: "CREEM_PRO_YEARLY_PRODUCT_ID",
     fallbackProductEnv: "CREEM_PRO_PRODUCT_ID"
   }

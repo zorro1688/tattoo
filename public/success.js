@@ -4,6 +4,19 @@ const successReturnLink = document.querySelector("#successReturnLink");
 const successCheckAgain = document.querySelector("#successCheckAgain");
 const MAX_ACCESS_CHECKS = 8;
 const ACCESS_CHECK_INTERVAL_MS = 1500;
+const checkoutParams = new URLSearchParams(window.location.search);
+const checkoutPlan = checkoutParams.get("plan") ?? "";
+
+function trackConfirmedPurchase(purchase, attempt = 1) {
+  if (window.InkFirstAnalytics?.trackPurchase) {
+    window.InkFirstAnalytics.trackPurchase(purchase);
+    return;
+  }
+
+  if (attempt < 10) {
+    window.setTimeout(() => trackConfirmedPurchase(purchase, attempt + 1), 250);
+  }
+}
 
 function getSafeReturnTo(params) {
   const returnTo = params.get("returnTo") ?? "";
@@ -52,10 +65,21 @@ async function refreshDownloadAccess(attempt = 1, manual = false) {
   setSuccessStatus(manual ? "Checking your download access..." : "Payment received. Finalizing your access...");
 
   try {
-    const response = await fetch("/api/download-access");
+    const accessParams = new URLSearchParams();
+    if (checkoutParams.get("checkout") === "success") {
+      accessParams.set("includePurchase", "1");
+      if (checkoutPlan) {
+        accessParams.set("plan", checkoutPlan);
+      }
+    }
+    const query = accessParams.toString();
+    const response = await fetch(`/api/download-access${query ? `?${query}` : ""}`);
     const data = await response.json();
 
     if (response.ok && data.downloadAccess?.highResolution) {
+      if (data.purchase) {
+        trackConfirmedPurchase(data.purchase);
+      }
       setSuccessTitle("High-resolution downloads unlocked");
       setSuccessStatus("High-resolution downloads are unlocked. Open My Designs to download your files.");
       setCheckAgainState(false);
