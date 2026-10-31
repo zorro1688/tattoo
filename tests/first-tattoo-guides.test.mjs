@@ -96,7 +96,7 @@ for (const [slug, keyword] of required) {
   assert.match(html, /<link rel="stylesheet" href="\/styles\.css">/);
   assert.match(html, /<body class="guide-body">/);
   assert.match(html, /<main class="guide-page">/);
-  assert.match(html, new RegExp(`<h1>${keyword}</h1>`, "i"));
+  assert.match(html, new RegExp(`<h1>[^<]*${escapeRegExp(keyword)}[^<]*</h1>`, "i"));
   assert.equal((html.match(/<h1\b/gi) ?? []).length, 1);
   assert.equal((html.match(/data-guide-prompt-value/g) ?? []).length, expectedPromptCount);
   assert.equal((html.match(/data-copy-guide-prompt/g) ?? []).length, expectedPromptCount);
@@ -148,6 +148,11 @@ assert.match(sizeGuide, /size preference/i);
 assert.match(sizeGuide, /future design space/i);
 
 const ideasGuide = await readFile("guides/first-tattoo-ideas.html", "utf8");
+const expectedFirstIdeaMetadata = {
+  title: "First Tattoo Ideas: How to Choose a Meaningful Design | InkFirst",
+  headline: "First Tattoo Ideas: 6 Meaningful Designs and How to Choose",
+  description: "Explore six meaningful first tattoo ideas, compare simple and expressive designs, and learn how to choose a personal concept to discuss with your tattoo artist."
+};
 const expectedFirstIdeaPrompts = [
   "a continuous mountain ridgeline rising toward one small eight-point north star, representing independence and finding direction",
   "one complete ginkgo leaf with a gently split fan shape and one short curved stem, representing growth through change",
@@ -164,6 +169,16 @@ const expectedFirstIdeaAssets = [
   ["open-doorway-sunrise-concept-v1.webp", "800", "1200", "Minimalist open doorway and rising sun tattoo concept representing a new beginning"],
   ["intersecting-circles-concept-v1.webp", "1200", "800", "Geometric intersecting circles tattoo concept representing connection and balance"]
 ];
+assert.equal(guidesBySlug["first-tattoo-ideas"].title, expectedFirstIdeaMetadata.title);
+assert.equal(guidesBySlug["first-tattoo-ideas"].headline, expectedFirstIdeaMetadata.headline);
+assert.equal(guidesBySlug["first-tattoo-ideas"].description, expectedFirstIdeaMetadata.description);
+assert.match(ideasGuide, new RegExp(`<title>${escapeRegExp(expectedFirstIdeaMetadata.title)}</title>`));
+assert.match(ideasGuide, new RegExp(`<meta name="description" content="${escapeRegExp(expectedFirstIdeaMetadata.description)}">`));
+assert.match(ideasGuide, new RegExp(`<meta property="og:title" content="${escapeRegExp(expectedFirstIdeaMetadata.title)}">`));
+assert.match(ideasGuide, new RegExp(`<meta property="og:description" content="${escapeRegExp(expectedFirstIdeaMetadata.description)}">`));
+assert.match(ideasGuide, new RegExp(`<h1>${escapeRegExp(expectedFirstIdeaMetadata.headline)}</h1>`));
+assert.match(ideasGuide, new RegExp(`"headline":"${escapeRegExp(expectedFirstIdeaMetadata.headline)}"`));
+assert.match(ideasGuide, new RegExp(`"description":"${escapeRegExp(expectedFirstIdeaMetadata.description)}"`));
 assert.deepEqual(guidesBySlug["first-tattoo-ideas"].prompts, expectedFirstIdeaPrompts);
 assert.equal((ideasGuide.match(/data-guide-choice-row/g) ?? []).length, 6);
 assert.equal((ideasGuide.match(/data-guide-case/g) ?? []).length, 6);

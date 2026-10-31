@@ -10,9 +10,9 @@ export const guideSlugs = [
 const guides = [
   {
     slug: "first-tattoo-ideas",
-    title: "First Tattoo Ideas: A Practical Starting Point | InkFirst",
-    headline: "First Tattoo Ideas: A Practical Starting Point",
-    description: "Explore first tattoo ideas through symbols, motifs, lettering, and geometry before turning a concept into an artist conversation.",
+    title: "First Tattoo Ideas: How to Choose a Meaningful Design | InkFirst",
+    headline: "First Tattoo Ideas: 6 Meaningful Designs and How to Choose",
+    description: "Explore six meaningful first tattoo ideas, compare simple and expressive designs, and learn how to choose a personal concept to discuss with your tattoo artist.",
     primaryKeyword: "first tattoo ideas",
     prompts: [
       "a continuous mountain ridgeline rising toward one small eight-point north star, representing independence and finding direction",
